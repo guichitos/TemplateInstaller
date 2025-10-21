@@ -1,0 +1,19 @@
+[Tue 10/21/2025 18:49:37.50] --- START UNINSTALL --- 
+[INFO] --- TARGET CLEANUP PATHS --- 
+Word path: C:\Users\PC\AppData\Roaming\Microsoft\Templates 
+PowerPoint path: C:\Users\PC\AppData\Roaming\Microsoft\Templates 
+Excel path: C:\Users\PC\AppData\Roaming\Microsoft\Excel\XLSTART 
+---------------------------- 
+
+[INFO] Processing Word...
+[INFO] "C:\Users\PC\AppData\Roaming\Microsoft\Templates\Normal.dotm" not found. 
+[OK] No backup found; folder left clean for "Word". 
+
+[INFO] Processing PowerPoint...
+[INFO] "C:\Users\PC\AppData\Roaming\Microsoft\Templates\Blank.potx" not found. 
+[OK] No backup found; folder left clean for "PowerPoint". 
+
+[INFO] Processing Excel...
+[INFO] "C:\Users\PC\AppData\Roaming\Microsoft\Excel\XLSTART\Book.xltx" not found. 
+[OK] No backup found; folder left clean for "Excel". 
+[Tue 10/21/2025 18:49:37.67] --- UNINSTALL COMPLETED --- 
