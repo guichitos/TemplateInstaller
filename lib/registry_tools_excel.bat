@@ -66,6 +66,9 @@ set "FILE_NAME=%~1"
 set "FULL_PATH=%~2"
 set "LOG_FILE=%~3"
 
+set "LOCAL_LOGGING=true"
+if /I "%IsDesignModeEnabled%"=="false" set "LOCAL_LOGGING=false"
+
 rem --- Detectar MRU real ---
 if not defined EXCEL_MRU_PATH call :DetectExcelMRUPath
 
@@ -84,14 +87,14 @@ rem ------------------------------------------------------
 set "REG_VALUE=Item !LOCAL_COUNT!"
 set "REG_DATA=[F00000000][T01DC3E24ECBDAAB0][O00000000]*%FULL_PATH%"
 
-echo [DEBUG] Escribiendo %REG_VALUE% en "%EXCEL_MRU_PATH%"
+if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Escribiendo %REG_VALUE% en "%EXCEL_MRU_PATH%"
 reg add "%EXCEL_MRU_PATH%" /v "!REG_VALUE!" /t REG_SZ /d "!REG_DATA!" /f >nul 2>&1
 
 if errorlevel 1 (
-  echo [ERROR] Falló al escribir %REG_VALUE% >> "%LOG_FILE%"
-  echo [ERROR] Falló al escribir %REG_VALUE%
+  if /I "%LOCAL_LOGGING%"=="true" echo [ERROR] Falló al escribir %REG_VALUE% >> "%LOG_FILE%"
+  if /I "%IsDesignModeEnabled%"=="true" echo [ERROR] Falló al escribir %REG_VALUE%
 ) else (
-  echo [OK] %REG_VALUE% agregado correctamente
+  if /I "%IsDesignModeEnabled%"=="true" echo [OK] %REG_VALUE% agregado correctamente
 )
 
 rem ------------------------------------------------------
@@ -101,23 +104,25 @@ for %%N in ("%FILE_NAME%") do set "BASENAME=%%~nN"
 set "META_VALUE=Item Metadata !LOCAL_COUNT!"
 set "META_DATA=<Metadata><AppSpecific><id>%FULL_PATH%</id><nm>%BASENAME%</nm><du>%FULL_PATH%</du></AppSpecific></Metadata>"
 
-echo [DEBUG] Escribiendo %META_VALUE% en "%EXCEL_MRU_PATH%"
+if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Escribiendo %META_VALUE% en "%EXCEL_MRU_PATH%"
 reg add "%EXCEL_MRU_PATH%" /v "!META_VALUE!" /t REG_SZ /d "!META_DATA!" /f >nul 2>&1
 
 if errorlevel 1 (
-  echo [ERROR] Falló al escribir %META_VALUE% >> "%LOG_FILE%"
-  echo [ERROR] Falló al escribir %META_VALUE%
+  if /I "%LOCAL_LOGGING%"=="true" echo [ERROR] Falló al escribir %META_VALUE% >> "%LOG_FILE%"
+  if /I "%IsDesignModeEnabled%"=="true" echo [ERROR] Falló al escribir %META_VALUE%
 ) else (
-  echo [OK] %META_VALUE% agregado correctamente
+  if /I "%IsDesignModeEnabled%"=="true" echo [OK] %META_VALUE% agregado correctamente
 )
 
-(
-  echo [REG ENTRY]
-  echo REG ADD "%EXCEL_MRU_PATH%" /v "!REG_VALUE!" /t REG_SZ /d "!REG_DATA!" /f
-  echo REG ADD "%EXCEL_MRU_PATH%" /v "!META_VALUE!" /t REG_SZ /d "!META_DATA!" /f
-  echo [INFO] Archivo: "!FILE_NAME!"
-  echo.
-) >> "%LOG_FILE%"
+if /I "%LOCAL_LOGGING%"=="true" (
+  (
+    echo [REG ENTRY]
+    echo REG ADD "%EXCEL_MRU_PATH%" /v "!REG_VALUE!" /t REG_SZ /d "!REG_DATA!" /f
+    echo REG ADD "%EXCEL_MRU_PATH%" /v "!META_VALUE!" /t REG_SZ /d "!META_DATA!" /f
+    echo [INFO] Archivo: "!FILE_NAME!"
+    echo.
+  ) >> "%LOG_FILE%"
+)
 
 endlocal & set /a GLOBAL_ITEM_COUNT_EXCEL=%LOCAL_COUNT%
 exit /b

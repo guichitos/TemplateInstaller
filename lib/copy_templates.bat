@@ -200,7 +200,11 @@ for %%F in ("%BASE_DIR%\*.dotx" "%BASE_DIR%\*.dotm" "%BASE_DIR%\*.potx" "%BASE_D
                 echo [DEBUG] Copying !FN! to !DEST! >> "%LOG_FILE%"
             )
             mkdir "!DEST!" 2>nul
-            copy /Y "%%~fF" "!DEST!\" >> "%LOG_FILE%" 2>&1
+            if /I "%IsDesignModeEnabled%"=="true" (
+                copy /Y "%%~fF" "!DEST!\" >> "%LOG_FILE%" 2>&1
+            ) else (
+                copy /Y "%%~fF" "!DEST!\" >nul 2>&1
+            )
 
             if exist "!DEST!\!FN!" (
                 if /I "%IsDesignModeEnabled%"=="true" (
