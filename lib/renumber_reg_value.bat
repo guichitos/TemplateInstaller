@@ -48,8 +48,7 @@ if not "!PS_PATH:~4,1!"==":" (
 
 set "TEMP_PS=%TEMP%\renumber_%RANDOM%%RANDOM%.ps1"
 > "!TEMP_PS!" (
-    echo param^
-    (
+    echo param^(
     echo     ^[Parameter^(Mandatory=$true^)^][string]$RegistryPath,
     echo     [int]$ShiftBy = 1,
     echo     [string]$LogFile = "",
