@@ -39,6 +39,20 @@ set "DETECT_LIB=%~dp0lib\detect_office_paths.bat"
 set "REGISTRY_LIB_PPT=%~dp0lib\registry_tools_ppt.bat"
 set "REGISTRY_LIB_WORD=%~dp0lib\registry_tools_word.bat"
 set "REGISTRY_LIB_EXCEL=%~dp0lib\registry_tools_excel.bat"
+set "RENUMBER_LIB=%~dp0lib\renumber_reg_value.bat"
+
+set "HAS_RENUMBER_LIB=0"
+if exist "%RENUMBER_LIB%" set "HAS_RENUMBER_LIB=1"
+
+if /I "%IsDesignModeEnabled%"=="true" (
+    if "%HAS_RENUMBER_LIB%"=="1" (
+        echo [DEBUG] renumber_reg_value.bat detected at: "%RENUMBER_LIB%"
+        echo [DEBUG] renumber_reg_value.bat detected at: "%RENUMBER_LIB%" >> "%LOG_FILE%"
+    ) else (
+        echo [WARNING] renumber_reg_value.bat not found. MRU renumbering skipped.
+        echo [WARNING] renumber_reg_value.bat not found. >> "%LOG_FILE%"
+    )
+)
 
 if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] detect_lib path resolved to: "%DETECT_LIB%" >> "%LOG_FILE%"
@@ -162,6 +176,48 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo -----------------------------------------------
 )
 
+set /a WORD_NEW_COUNT=0
+set /a PPT_NEW_COUNT=0
+set /a EXCEL_NEW_COUNT=0
+set "WORD_RENUMBERED=0"
+set "PPT_RENUMBERED=0"
+set "EXCEL_RENUMBERED=0"
+
+for %%F in ("%BASE_DIR%\*.dotx" "%BASE_DIR%\*.dotm" "%BASE_DIR%\*.potx" "%BASE_DIR%\*.potm" "%BASE_DIR%\*.xltx" "%BASE_DIR%\*.xltm") do (
+    if exist "%%~fF" (
+        set "FN=%%~nxF"
+        set "EXT=%%~xF"
+        set "SKIP=0"
+        if /I "!FN!"=="Normal.dotx" set "SKIP=1"
+        if /I "!FN!"=="Blank.potx" set "SKIP=1"
+        if /I "!FN!"=="Book.xltx" set "SKIP=1"
+        if /I "!FN!"=="Normal.dotm" set "SKIP=1"
+        if /I "!FN!"=="Blank.potm" set "SKIP=1"
+        if /I "!FN!"=="Book.xltm" set "SKIP=1"
+        if /I "!FN!"=="Sheet.xltx" set "SKIP=1"
+        if /I "!FN!"=="Sheet.xltm" set "SKIP=1"
+
+        set "APP="
+        if /I "!EXT!"==".dotx" set "APP=WORD"
+        if /I "!EXT!"==".dotm" set "APP=WORD"
+        if /I "!EXT!"==".potx" set "APP=PPT"
+        if /I "!EXT!"==".potm" set "APP=PPT"
+        if /I "!EXT!"==".xltx" set "APP=EXCEL"
+        if /I "!EXT!"==".xltm" set "APP=EXCEL"
+
+        if "!SKIP!"=="0" (
+            if /I "!APP!"=="WORD" if defined WORD_PATH set /a WORD_NEW_COUNT+=1
+            if /I "!APP!"=="PPT" if defined PPT_PATH set /a PPT_NEW_COUNT+=1
+            if /I "!APP!"=="EXCEL" if defined EXCEL_PATH set /a EXCEL_NEW_COUNT+=1
+        )
+    )
+)
+
+if /I "%IsDesignModeEnabled%"=="true" (
+    echo [DEBUG] Planned MRU inserts → WORD=!WORD_NEW_COUNT! PPT=!PPT_NEW_COUNT! EXCEL=!EXCEL_NEW_COUNT!
+    echo [DEBUG] Planned MRU inserts → WORD=!WORD_NEW_COUNT! PPT=!PPT_NEW_COUNT! EXCEL=!EXCEL_NEW_COUNT! >> "%LOG_FILE%"
+)
+
 for %%F in ("%BASE_DIR%\*.dotx" "%BASE_DIR%\*.dotm" "%BASE_DIR%\*.potx" "%BASE_DIR%\*.potm" "%BASE_DIR%\*.xltx" "%BASE_DIR%\*.xltm") do (
     if exist "%%~fF" (
         set "FN=%%~nxF"
@@ -219,12 +275,48 @@ for %%F in ("%BASE_DIR%\*.dotx" "%BASE_DIR%\*.dotm" "%BASE_DIR%\*.potx" "%BASE_D
                 set /a TOTAL_FILES+=1
 
                 rem === ADDED: MRU registration ===
-                if /I "!EXT!"==".potx" call "%REGISTRY_LIB_PPT%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
-                if /I "!EXT!"==".potm" call "%REGISTRY_LIB_PPT%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
-                if /I "!EXT!"==".dotx" call "%REGISTRY_LIB_WORD%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
-                if /I "!EXT!"==".dotm" call "%REGISTRY_LIB_WORD%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
-                if /I "!EXT!"==".xltx" call "%REGISTRY_LIB_EXCEL%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
-                if /I "!EXT!"==".xltm" call "%REGISTRY_LIB_EXCEL%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
+                if /I "!EXT!"==".potx" (
+                    if "%HAS_RENUMBER_LIB%"=="1" if defined PPT_MRU_PATH if "!PPT_RENUMBERED!"=="0" (
+                        if !PPT_NEW_COUNT! gtr 0 call "%RENUMBER_LIB%" "!PPT_MRU_PATH!" !PPT_NEW_COUNT! "!LOG_FILE!" "!IsDesignModeEnabled!"
+                        set "PPT_RENUMBERED=1"
+                    )
+                    call "%REGISTRY_LIB_PPT%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
+                )
+                if /I "!EXT!"==".potm" (
+                    if "%HAS_RENUMBER_LIB%"=="1" if defined PPT_MRU_PATH if "!PPT_RENUMBERED!"=="0" (
+                        if !PPT_NEW_COUNT! gtr 0 call "%RENUMBER_LIB%" "!PPT_MRU_PATH!" !PPT_NEW_COUNT! "!LOG_FILE!" "!IsDesignModeEnabled!"
+                        set "PPT_RENUMBERED=1"
+                    )
+                    call "%REGISTRY_LIB_PPT%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
+                )
+                if /I "!EXT!"==".dotx" (
+                    if "%HAS_RENUMBER_LIB%"=="1" if defined WORD_MRU_PATH if "!WORD_RENUMBERED!"=="0" (
+                        if !WORD_NEW_COUNT! gtr 0 call "%RENUMBER_LIB%" "!WORD_MRU_PATH!" !WORD_NEW_COUNT! "!LOG_FILE!" "!IsDesignModeEnabled!"
+                        set "WORD_RENUMBERED=1"
+                    )
+                    call "%REGISTRY_LIB_WORD%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
+                )
+                if /I "!EXT!"==".dotm" (
+                    if "%HAS_RENUMBER_LIB%"=="1" if defined WORD_MRU_PATH if "!WORD_RENUMBERED!"=="0" (
+                        if !WORD_NEW_COUNT! gtr 0 call "%RENUMBER_LIB%" "!WORD_MRU_PATH!" !WORD_NEW_COUNT! "!LOG_FILE!" "!IsDesignModeEnabled!"
+                        set "WORD_RENUMBERED=1"
+                    )
+                    call "%REGISTRY_LIB_WORD%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
+                )
+                if /I "!EXT!"==".xltx" (
+                    if "%HAS_RENUMBER_LIB%"=="1" if defined EXCEL_MRU_PATH if "!EXCEL_RENUMBERED!"=="0" (
+                        if !EXCEL_NEW_COUNT! gtr 0 call "%RENUMBER_LIB%" "!EXCEL_MRU_PATH!" !EXCEL_NEW_COUNT! "!LOG_FILE!" "!IsDesignModeEnabled!"
+                        set "EXCEL_RENUMBERED=1"
+                    )
+                    call "%REGISTRY_LIB_EXCEL%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
+                )
+                if /I "!EXT!"==".xltm" (
+                    if "%HAS_RENUMBER_LIB%"=="1" if defined EXCEL_MRU_PATH if "!EXCEL_RENUMBERED!"=="0" (
+                        if !EXCEL_NEW_COUNT! gtr 0 call "%RENUMBER_LIB%" "!EXCEL_MRU_PATH!" !EXCEL_NEW_COUNT! "!LOG_FILE!" "!IsDesignModeEnabled!"
+                        set "EXCEL_RENUMBERED=1"
+                    )
+                    call "%REGISTRY_LIB_EXCEL%" SimulateRegEntry "!FN!" "!DEST!\!FN!" "%LOG_FILE%"
+                )
                 rem === END ADDED ===
 
             ) else (
