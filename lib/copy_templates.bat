@@ -169,9 +169,14 @@ for %%F in ("%BASE_DIR%\*.dotx" "%BASE_DIR%\*.dotm" "%BASE_DIR%\*.potx" "%BASE_D
 
         rem === Skip generic templates ===
         set "SKIP=0"
-        if /I "!FN!"=="GenericTemplate.dotm" set "SKIP=1"
-        if /I "!FN!"=="GenericTemplate.potx" set "SKIP=1"
-        if /I "!FN!"=="GenericTemplate.xltx" set "SKIP=1"
+        if /I "!FN!"=="Normal.dotx" set "SKIP=1"
+        if /I "!FN!"=="Blank.potx" set "SKIP=1"
+        if /I "!FN!"=="Book.xltx" set "SKIP=1"
+        if /I "!FN!"=="Normal.dotm" set "SKIP=1"
+        if /I "!FN!"=="Blank.potm" set "SKIP=1"
+        if /I "!FN!"=="Book.xltm" set "SKIP=1"
+        if /I "!FN!"=="Sheet.xltx" set "SKIP=1"
+        if /I "!FN!"=="Sheet.xltm" set "SKIP=1"
 
         rem === Determine destination ===
         set "DEST="
