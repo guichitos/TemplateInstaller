@@ -63,13 +63,31 @@ rem === Install base templates for Word, PowerPoint, Excel ===
 if /I "%IsDesignModeEnabled%"=="true" (
     echo.
     echo [INFO] Starting base template installation phase...
-    call "%InstallerLibraryPath%" :InstallApp "WORD" "GenericTemplate.dotm" "%APPDATA%\Microsoft\Templates" "Normal.dotm" "%LogFilePath%" "%BaseDirectoryPath%" "%IsDesignModeEnabled%"
-    call "%InstallerLibraryPath%" :InstallApp "POWERPOINT" "GenericTemplate.potx" "%APPDATA%\Microsoft\Templates" "Blank.potx" "%LogFilePath%" "%BaseDirectoryPath%" "%IsDesignModeEnabled%"
-    call "%InstallerLibraryPath%" :InstallApp "EXCEL" "GenericTemplate.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltx" "%LogFilePath%" "%BaseDirectoryPath%" "%IsDesignModeEnabled%"
+    rem --- Word templates (Normal.dotx / Normal.dotm) ---
+    for %%T in ("Normal.dotx" "Normal.dotm") do (
+        call "%InstallerLibraryPath%" :InstallApp "WORD" %%~T "%APPDATA%\Microsoft\Templates" %%~T "%LogFilePath%" "%BaseDirectoryPath%" "%IsDesignModeEnabled%"
+    )
+    rem --- PowerPoint templates (Blank.potx / Blank.potm) ---
+    for %%T in ("Blank.potx" "Blank.potm") do (
+        call "%InstallerLibraryPath%" :InstallApp "POWERPOINT" %%~T "%APPDATA%\Microsoft\Templates" %%~T "%LogFilePath%" "%BaseDirectoryPath%" "%IsDesignModeEnabled%"
+    )
+    rem --- Excel templates (Book / Sheet in xltx & xltm) ---
+    for %%T in ("Book.xltx" "Book.xltm" "Sheet.xltx" "Sheet.xltm") do (
+        call "%InstallerLibraryPath%" :InstallApp "EXCEL" %%~T "%APPDATA%\Microsoft\Excel\XLSTART" %%~T "%LogFilePath%" "%BaseDirectoryPath%" "%IsDesignModeEnabled%"
+    )
 ) else (
-    call "%InstallerLibraryPath%" :InstallApp "WORD" "GenericTemplate.dotm" "%APPDATA%\Microsoft\Templates" "Normal.dotm" "" "%BaseDirectoryPath%" "%IsDesignModeEnabled%" >nul 2>&1
-    call "%InstallerLibraryPath%" :InstallApp "POWERPOINT" "GenericTemplate.potx" "%APPDATA%\Microsoft\Templates" "Blank.potx" "" "%BaseDirectoryPath%" "%IsDesignModeEnabled%" >nul 2>&1
-    call "%InstallerLibraryPath%" :InstallApp "EXCEL" "GenericTemplate.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltx" "" "%BaseDirectoryPath%" "%IsDesignModeEnabled%" >nul 2>&1
+    rem --- Word templates (Normal.dotx / Normal.dotm) ---
+    for %%T in ("Normal.dotx" "Normal.dotm") do (
+        call "%InstallerLibraryPath%" :InstallApp "WORD" %%~T "%APPDATA%\Microsoft\Templates" %%~T "" "%BaseDirectoryPath%" "%IsDesignModeEnabled%" >nul 2>&1
+    )
+    rem --- PowerPoint templates (Blank.potx / Blank.potm) ---
+    for %%T in ("Blank.potx" "Blank.potm") do (
+        call "%InstallerLibraryPath%" :InstallApp "POWERPOINT" %%~T "%APPDATA%\Microsoft\Templates" %%~T "" "%BaseDirectoryPath%" "%IsDesignModeEnabled%" >nul 2>&1
+    )
+    rem --- Excel templates (Book / Sheet in xltx & xltm) ---
+    for %%T in ("Book.xltx" "Book.xltm" "Sheet.xltx" "Sheet.xltm") do (
+        call "%InstallerLibraryPath%" :InstallApp "EXCEL" %%~T "%APPDATA%\Microsoft\Excel\XLSTART" %%~T "" "%BaseDirectoryPath%" "%IsDesignModeEnabled%" >nul 2>&1
+    )
 )
 
 

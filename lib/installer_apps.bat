@@ -5,9 +5,9 @@ rem ======================================================
 rem === INSTALLER LIBRARY FOR BASE TEMPLATES (v2) ===
 rem ------------------------------------------------------
 rem Handles installation of default Office templates:
-rem   - Word → Normal.dotm
-rem   - PowerPoint → Blank.potx
-rem   - Excel → Book.xltx
+rem   - Word → Normal.dotx / Normal.dotm
+rem   - PowerPoint → Blank.potx / Blank.potm
+rem   - Excel → Book.xltx / Book.xltm / Sheet.xltx / Sheet.xltm
 rem Performs backup, overwrites safely, logs activity,
 rem and optionally creates debug evidence files when
 rem IsDesignModeEnabled=true.

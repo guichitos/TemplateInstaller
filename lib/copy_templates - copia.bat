@@ -99,7 +99,7 @@ echo.
 
 if errorlevel 1 (
     echo [WARNING] No se encontraron archivos de plantilla en "%BASE_DIR%".
-    echo [WARNING] Ningún archivo .dotx / .potx / .xltx detectado. >> "%LOG_FILE%"
+    echo [WARNING] Ningún archivo .dotx / .dotm / .potx / .potm / .xltx / .xltm detectado. >> "%LOG_FILE%"
     pause
 )
 
@@ -136,9 +136,14 @@ for %%F in ("%BASE_DIR%\*.dotx" "%BASE_DIR%\*.dotm" "%BASE_DIR%\*.potx" "%BASE_D
 
         rem === Verificar si debe omitirse ===
         set "SKIP=0"
-        if /I "!FN!"=="GenericTemplate.dotm" set "SKIP=1"
-        if /I "!FN!"=="GenericTemplate.potx" set "SKIP=1"
-        if /I "!FN!"=="GenericTemplate.xltx" set "SKIP=1"
+        if /I "!FN!"=="Normal.dotx" set "SKIP=1"
+        if /I "!FN!"=="Normal.dotm" set "SKIP=1"
+        if /I "!FN!"=="Blank.potx" set "SKIP=1"
+        if /I "!FN!"=="Blank.potm" set "SKIP=1"
+        if /I "!FN!"=="Book.xltx" set "SKIP=1"
+        if /I "!FN!"=="Book.xltm" set "SKIP=1"
+        if /I "!FN!"=="Sheet.xltx" set "SKIP=1"
+        if /I "!FN!"=="Sheet.xltm" set "SKIP=1"
 
         rem === Determinar destino ===
         set "DEST="
@@ -154,8 +159,8 @@ for %%F in ("%BASE_DIR%\*.dotx" "%BASE_DIR%\*.dotm" "%BASE_DIR%\*.potx" "%BASE_D
         echo [DEBUG] Extensión detectada: !EXT!
 
         if "!SKIP!"=="1" (
-            echo [INFO] Archivo genérico omitido: !FN!
-            echo [INFO] Omitido genérico: !FN! >> "%LOG_FILE%"
+            echo [INFO] Plantilla base omitida: !FN!
+            echo [INFO] Omitido base: !FN! >> "%LOG_FILE%"
         ) else (
             if defined DEST (
                 echo [DEBUG] Destino asignado: !DEST!

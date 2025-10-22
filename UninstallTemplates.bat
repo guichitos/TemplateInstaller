@@ -6,7 +6,7 @@ rem ===========================================================
 rem === UNIVERSAL OFFICE TEMPLATE UNINSTALLER (v1.2) ==========
 rem -----------------------------------------------------------
 rem Uses the same hardcoded base paths as main_installer.bat
-rem to remove Normal.dotm, Blank.potx, and Book.xltx,
+rem to remove Normal.dotx/dotm, Blank.potx/potm, and Book/Sheet xltx/xltm,
 rem restoring backups if available.
 rem ===========================================================
 
@@ -47,14 +47,24 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 
 rem === Define files ==========================================
-set "WordFile=%WORD_PATH%\Normal.dotm"
-set "WordBackup=%WORD_PATH%\Normal_backup.dotm"
+set "WordFileDotx=%WORD_PATH%\Normal.dotx"
+set "WordBackupDotx=%WORD_PATH%\Normal_backup.dotx"
+set "WordFileDotm=%WORD_PATH%\Normal.dotm"
+set "WordBackupDotm=%WORD_PATH%\Normal_backup.dotm"
 
-set "PptFile=%PPT_PATH%\Blank.potx"
-set "PptBackup=%PPT_PATH%\Blank_backup.potx"
+set "PptFilePotx=%PPT_PATH%\Blank.potx"
+set "PptBackupPotx=%PPT_PATH%\Blank_backup.potx"
+set "PptFilePotm=%PPT_PATH%\Blank.potm"
+set "PptBackupPotm=%PPT_PATH%\Blank_backup.potm"
 
-set "ExcelFile=%EXCEL_PATH%\Book.xltx"
-set "ExcelBackup=%EXCEL_PATH%\Book_backup.xltx"
+set "ExcelFileBookXltx=%EXCEL_PATH%\Book.xltx"
+set "ExcelBackupBookXltx=%EXCEL_PATH%\Book_backup.xltx"
+set "ExcelFileBookXltm=%EXCEL_PATH%\Book.xltm"
+set "ExcelBackupBookXltm=%EXCEL_PATH%\Book_backup.xltm"
+set "ExcelFileSheetXltx=%EXCEL_PATH%\Sheet.xltx"
+set "ExcelBackupSheetXltx=%EXCEL_PATH%\Sheet_backup.xltx"
+set "ExcelFileSheetXltm=%EXCEL_PATH%\Sheet.xltm"
+set "ExcelBackupSheetXltm=%EXCEL_PATH%\Sheet_backup.xltm"
 
 rem === Folder existence check ================================
 for %%D in ("%WORD_PATH%" "%PPT_PATH%" "%EXCEL_PATH%") do (
@@ -67,9 +77,14 @@ for %%D in ("%WORD_PATH%" "%PPT_PATH%" "%EXCEL_PATH%") do (
 )
 
 rem === Helper routine: delete & restore =======================
-call :ProcessFile "Word" "%WordFile%" "%WordBackup%" "%LogFilePath%"
-call :ProcessFile "PowerPoint" "%PptFile%" "%PptBackup%" "%LogFilePath%"
-call :ProcessFile "Excel" "%ExcelFile%" "%ExcelBackup%" "%LogFilePath%"
+call :ProcessFile "Word (Normal.dotx)" "%WordFileDotx%" "%WordBackupDotx%" "%LogFilePath%"
+call :ProcessFile "Word (Normal.dotm)" "%WordFileDotm%" "%WordBackupDotm%" "%LogFilePath%"
+call :ProcessFile "PowerPoint (Blank.potx)" "%PptFilePotx%" "%PptBackupPotx%" "%LogFilePath%"
+call :ProcessFile "PowerPoint (Blank.potm)" "%PptFilePotm%" "%PptBackupPotm%" "%LogFilePath%"
+call :ProcessFile "Excel (Book.xltx)" "%ExcelFileBookXltx%" "%ExcelBackupBookXltx%" "%LogFilePath%"
+call :ProcessFile "Excel (Book.xltm)" "%ExcelFileBookXltm%" "%ExcelBackupBookXltm%" "%LogFilePath%"
+call :ProcessFile "Excel (Sheet.xltx)" "%ExcelFileSheetXltx%" "%ExcelBackupSheetXltx%" "%LogFilePath%"
+call :ProcessFile "Excel (Sheet.xltm)" "%ExcelFileSheetXltm%" "%ExcelBackupSheetXltm%" "%LogFilePath%"
 
 if /I "%IsDesignModeEnabled%"=="true" (
     echo [%DATE% %TIME%] --- UNINSTALL COMPLETED --- >> "%LogFilePath%"

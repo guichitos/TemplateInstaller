@@ -129,7 +129,7 @@ if /I "%IsDesignModeEnabled%"=="true" (
 if errorlevel 1 (
     if /I "%IsDesignModeEnabled%"=="true" (
         echo [WARNING] No template files found in "%BASE_DIR%".
-        echo [WARNING] No .dotx / .potx / .xltx files detected. >> "%LOG_FILE%"
+        echo [WARNING] No .dotx / .dotm / .potx / .potm / .xltx / .xltm files detected. >> "%LOG_FILE%"
     )
 )
 
@@ -167,11 +167,16 @@ for %%F in ("%BASE_DIR%\*.dotx" "%BASE_DIR%\*.dotm" "%BASE_DIR%\*.potx" "%BASE_D
         set "FN=%%~nxF"
         set "EXT=%%~xF"
 
-        rem === Skip generic templates ===
+        rem === Skip pre-installed base templates ===
         set "SKIP=0"
-        if /I "!FN!"=="GenericTemplate.dotm" set "SKIP=1"
-        if /I "!FN!"=="GenericTemplate.potx" set "SKIP=1"
-        if /I "!FN!"=="GenericTemplate.xltx" set "SKIP=1"
+        if /I "!FN!"=="Normal.dotx" set "SKIP=1"
+        if /I "!FN!"=="Normal.dotm" set "SKIP=1"
+        if /I "!FN!"=="Blank.potx" set "SKIP=1"
+        if /I "!FN!"=="Blank.potm" set "SKIP=1"
+        if /I "!FN!"=="Book.xltx" set "SKIP=1"
+        if /I "!FN!"=="Book.xltm" set "SKIP=1"
+        if /I "!FN!"=="Sheet.xltx" set "SKIP=1"
+        if /I "!FN!"=="Sheet.xltm" set "SKIP=1"
 
         rem === Determine destination ===
         set "DEST="
@@ -190,8 +195,8 @@ for %%F in ("%BASE_DIR%\*.dotx" "%BASE_DIR%\*.dotm" "%BASE_DIR%\*.potx" "%BASE_D
 
         if "!SKIP!"=="1" (
             if /I "%IsDesignModeEnabled%"=="true" (
-                echo [INFO] Skipped generic file: !FN!
-                echo [INFO] Skipped generic: !FN! >> "%LOG_FILE%"
+                echo [INFO] Skipped base template: !FN!
+                echo [INFO] Skipped base template: !FN! >> "%LOG_FILE%"
             )
         ) else if defined DEST (
             if /I "%IsDesignModeEnabled%"=="true" (

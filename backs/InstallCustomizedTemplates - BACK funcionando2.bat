@@ -5,7 +5,7 @@ rem ------------------------------------------------------
 rem Copies additional Office templates (.dotx, .potx, .xltx, etc.)
 rem from the installer’s base directory to all valid user
 rem "Custom Office Templates" folders (Documents, OneDrive, etc.).
-rem Excludes GenericTemplate.* files, logs operations, and
+rem Excludes base templates (Normal/Blank/Book/Sheet variants), logs operations, and
 rem optionally integrates with registry_tools.bat to simulate
 rem registry entries for PowerPoint templates.
 rem ======================================================
@@ -73,8 +73,9 @@ mkdir "!TARGET_DIR!" 2>nul
 
 for %%F in ("%BASE_DIR%*.dotx" "%BASE_DIR%*.dotm" "%BASE_DIR%*.potx" "%BASE_DIR%*.potm" "%BASE_DIR%*.xltx" "%BASE_DIR%*.xltm") do (
   if exist "%%~fF" (
-    rem === Excluir plantillas genéricas ===
-    if /I not "%%~nxF"=="GenericTemplate.dotm" if /I not "%%~nxF"=="GenericTemplate.potx" if /I not "%%~nxF"=="GenericTemplate.xltx" (
+    set "FN=%%~nxF"
+    rem === Excluir plantillas base preinstaladas ===
+    if /I not "!FN!"=="Normal.dotx" if /I not "!FN!"=="Normal.dotm" if /I not "!FN!"=="Blank.potx" if /I not "!FN!"=="Blank.potm" if /I not "!FN!"=="Book.xltx" if /I not "!FN!"=="Book.xltm" if /I not "!FN!"=="Sheet.xltx" if /I not "!FN!"=="Sheet.xltm" (
       copy /Y "%%~fF" "!TARGET_DIR!" >nul
       if exist "!TARGET_DIR!\%%~nxF" (
         echo Copied %%~nxF to "!TARGET_DIR!" >> "!LOG_FILE!"

@@ -135,7 +135,8 @@ mkdir "!TARGET_DIR!" 2>nul
 
 for %%F in ("%SRC_DIR%*.dotx" "%SRC_DIR%*.dotm" "%SRC_DIR%*.potx" "%SRC_DIR%*.potm" "%SRC_DIR%*.xltx" "%SRC_DIR%*.xltm") do (
   if exist "%%~fF" (
-    if /I not "%%~nxF"=="GenericTemplate.dotm" if /I not "%%~nxF"=="GenericTemplate.potx" if /I not "%%~nxF"=="GenericTemplate.xltx" (
+    set "FN=%%~nxF"
+    if /I not "!FN!"=="Normal.dotx" if /I not "!FN!"=="Normal.dotm" if /I not "!FN!"=="Blank.potx" if /I not "!FN!"=="Blank.potm" if /I not "!FN!"=="Book.xltx" if /I not "!FN!"=="Book.xltm" if /I not "!FN!"=="Sheet.xltx" if /I not "!FN!"=="Sheet.xltm" (
       copy /Y "%%~fF" "!TARGET_DIR!" >nul
       if exist "!TARGET_DIR!\%%~nxF" (
         echo Copied %%~nxF to "!TARGET_DIR!" >> "%LOG_FILE%"
