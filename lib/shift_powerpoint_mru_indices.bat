@@ -40,20 +40,26 @@ for /f "skip=2 tokens=* delims=" %%L in ('reg query "%PPT_MRU_PATH%" 2^>nul') do
       for /f "tokens=1 delims=|" %%P in ("!WORK_LINE!") do set "VALUE_NAME_RAW=%%P"
       call :Trim VALUE_NAME_RAW
       if defined VALUE_NAME_RAW (
-        set "T1="
-        set "T2="
-        set "T3="
+        set "FIRST="
+        set "SECOND="
+        set "THIRD="
         for /f "tokens=1-3" %%a in ("!VALUE_NAME_RAW!") do (
-          if not defined T1 set "T1=%%a" else if not defined T2 set "T2=%%a" else if not defined T3 set "T3=%%a"
+          if not defined FIRST set "FIRST=%%a"
+          if not defined SECOND set "SECOND=%%b"
+          if not defined THIRD set "THIRD=%%c"
         )
-        if /I "!T1!"=="Item" (
-          if defined T3 (
-            set "BASE=!T1! !T2!"
-            set "INDEX=!T3!"
+        set "BASE="
+        set "INDEX="
+        if /I "!FIRST!"=="Item" (
+          if /I "!SECOND!"=="Metadata" (
+            set "BASE=Item Metadata"
+            set "INDEX=!THIRD!"
           ) else (
-            set "BASE=!T1!"
-            set "INDEX=!T2!"
+            set "BASE=Item"
+            set "INDEX=!SECOND!"
           )
+        )
+        if defined INDEX (
           echo(!INDEX!| findstr /R "^[0-9][0-9]*$" >nul
           if not errorlevel 1 (
             set "FOUND_VALUES=1"
@@ -97,18 +103,29 @@ exit /b 0
 :ShiftValue
 setlocal EnableDelayedExpansion
 set "ORIGINAL_NAME=%~1"
-set "T1="
-set "T2="
-set "T3="
+set "FIRST="
+set "SECOND="
+set "THIRD="
 for /f "tokens=1-3" %%a in ("!ORIGINAL_NAME!") do (
-  if not defined T1 set "T1=%%a" else if not defined T2 set "T2=%%a" else if not defined T3 set "T3=%%a"
+  if not defined FIRST set "FIRST=%%a"
+  if not defined SECOND set "SECOND=%%b"
+  if not defined THIRD set "THIRD=%%c"
 )
-if defined T3 (
-  set "BASE=!T1! !T2!"
-  set "INDEX=!T3!"
-) else (
-  set "BASE=!T1!"
-  set "INDEX=!T2!"
+set "BASE="
+set "INDEX="
+if /I "!FIRST!"=="Item" (
+  if /I "!SECOND!"=="Metadata" (
+    set "BASE=Item Metadata"
+    set "INDEX=!THIRD!"
+  ) else (
+    set "BASE=Item"
+    set "INDEX=!SECOND!"
+  )
+)
+if not defined INDEX (
+  echo [WARN] No se pudo interpretar el nombre "!ORIGINAL_NAME!". Se omite.
+  endlocal
+  exit /b 0
 )
 set /a NEW_INDEX=INDEX+OFFSET
 set "NEW_NAME=!BASE! !NEW_INDEX!"
