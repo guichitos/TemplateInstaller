@@ -31,45 +31,44 @@ if exist "%TMP_FILE%" del "%TMP_FILE%" >nul 2>&1
 
 set "FOUND_VALUES="
 echo [INFO] Recolectando valores existentes...
-for /f "tokens=1,* delims=:" %%A in ('reg query "%PPT_MRU_PATH%" /z 2^>nul ^| findstr /C:"Value Name"') do (
-  set "VALUE_NAME_RAW=%%B"
-  call :Trim VALUE_NAME_RAW
-  if defined VALUE_NAME_RAW (
-    if /I "!VALUE_NAME_RAW!"=="(Default)" (
-      if /I "%DEBUG_MODE%"=="true" echo [DEBUG] Se omite valor predeterminado.
-    ) else (
-      set "FIRST="
-      set "SECOND="
-      set "THIRD="
-      for /f "tokens=1-3" %%a in ("!VALUE_NAME_RAW!") do (
-        if not defined FIRST set "FIRST=%%a"
-        if not defined SECOND set "SECOND=%%b"
-        if not defined THIRD set "THIRD=%%c"
-      )
-      set "BASE="
-      set "INDEX="
-      if /I "!FIRST!"=="Item" (
-        if /I "!SECOND!"=="Metadata" (
-          set "BASE=Item Metadata"
-          set "INDEX=!THIRD!"
-        ) else (
-          set "BASE=Item"
-          set "INDEX=!SECOND!"
+for /f "skip=2 tokens=* delims=" %%L in ('reg query "%PPT_MRU_PATH%" 2^>nul') do (
+  set "LINE=%%L"
+  if not "!LINE!"=="" (
+    echo !LINE! | findstr /C:"REG_SZ" >nul
+    if not errorlevel 1 (
+      set "WORK_LINE=!LINE:REG_SZ=|!"
+      for /f "tokens=1 delims=|" %%P in ("!WORK_LINE!") do set "VALUE_NAME_RAW=%%P"
+      call :Trim VALUE_NAME_RAW
+      if defined VALUE_NAME_RAW (
+        set "FIRST="
+        set "SECOND="
+        set "THIRD="
+        for /f "tokens=1-3" %%a in ("!VALUE_NAME_RAW!") do (
+          if not defined FIRST set "FIRST=%%a"
+          if not defined SECOND set "SECOND=%%b"
+          if not defined THIRD set "THIRD=%%c"
         )
-      )
-      if defined INDEX (
-        echo(!INDEX!| findstr /R "^[0-9][0-9]*$" >nul
-        if not errorlevel 1 (
-          set "FOUND_VALUES=1"
-          set "PAD=0000000000!INDEX!"
-          set "PAD=!PAD:~-10!"
-          >>"%TMP_FILE%" echo(!PAD!^|!VALUE_NAME_RAW!
-          if /I "%DEBUG_MODE%"=="true" echo [DEBUG] Valor localizado: !VALUE_NAME_RAW! (indice !INDEX!)
-        ) else (
-          if /I "%DEBUG_MODE%"=="true" echo [DEBUG] Se omite "!VALUE_NAME_RAW!" (indice no numerico).
+        set "BASE="
+        set "INDEX="
+        if /I "!FIRST!"=="Item" (
+          if /I "!SECOND!"=="Metadata" (
+            set "BASE=Item Metadata"
+            set "INDEX=!THIRD!"
+          ) else (
+            set "BASE=Item"
+            set "INDEX=!SECOND!"
+          )
         )
-      ) else (
-        if /I "%DEBUG_MODE%"=="true" echo [DEBUG] Se omite "!VALUE_NAME_RAW!" (sin indice).
+        if defined INDEX (
+          echo(!INDEX!| findstr /R "^[0-9][0-9]*$" >nul
+          if not errorlevel 1 (
+            set "FOUND_VALUES=1"
+            set "PAD=0000000000!INDEX!"
+            set "PAD=!PAD:~-10!"
+            >>"%TMP_FILE%" echo(!PAD!^|!VALUE_NAME_RAW!
+            if /I "%DEBUG_MODE%"=="true" echo [DEBUG] Valor localizado: !VALUE_NAME_RAW! (indice !INDEX!)
+          )
+        )
       )
     )
   )
