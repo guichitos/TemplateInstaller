@@ -36,7 +36,8 @@ for /f "skip=2 tokens=* delims=" %%L in ('reg query "%PPT_MRU_PATH%" 2^>nul') do
   if not "!LINE!"=="" (
     echo !LINE! | findstr /C:"REG_SZ" >nul
     if not errorlevel 1 (
-      for /f "tokens=1* delims=REG_SZ" %%P in ("!LINE!") do set "VALUE_NAME_RAW=%%P"
+      set "WORK_LINE=!LINE:REG_SZ=|!"
+      for /f "tokens=1 delims=|" %%P in ("!WORK_LINE!") do set "VALUE_NAME_RAW=%%P"
       call :Trim VALUE_NAME_RAW
       if defined VALUE_NAME_RAW (
         set "T1="
@@ -121,9 +122,9 @@ if not defined DATA_LINE (
   endlocal
   exit /b 0
 )
-for /f "tokens=1* delims=REG_SZ" %%P in ("!DATA_LINE!") do set "DATA_RAW=%%Q"
-set "DATA=!DATA_RAW!"
-call :Trim DATA
+set "DATA_LINE=!DATA_LINE:*REG_SZ=!"
+call :Trim DATA_LINE
+set "DATA=!DATA_LINE!"
 
 if /I "%DEBUG_MODE%"=="true" (
   echo [DEBUG] Datos capturados: "!DATA!"
@@ -147,13 +148,19 @@ exit /b 0
 :Trim
 setlocal EnableDelayedExpansion
 set "VALUE=!%~1!"
-for /f "tokens=*" %%a in ("!VALUE!") do set "VALUE=%%a"
-:TrimLoop
-if "!VALUE!"=="" goto :TrimDone
-if not "!VALUE:~-1!"==" " goto :TrimDone
-set "VALUE=!VALUE:~0,-1!"
-goto :TrimLoop
-:TrimDone
+
+:TrimLeading
+if defined VALUE if "!VALUE:~0,1!"==" " (
+  set "VALUE=!VALUE:~1!"
+  goto :TrimLeading
+)
+
+:TrimTrailing
+if defined VALUE if "!VALUE:~-1!"==" " (
+  set "VALUE=!VALUE:~0,-1!"
+  goto :TrimTrailing
+)
+
 endlocal & set "%~1=%VALUE%"
 exit /b 0
 
