@@ -35,7 +35,6 @@ rem === Library references ===============================
 set "InstallerLibraryPath=%LibraryDirectoryPath%\installer_apps.bat"
 set "CopyLibraryPath=%LibraryDirectoryPath%\copy_templates.bat"
 set "RegistryLibraryPath=%LibraryDirectoryPath%\registry_tools.bat"
-set "EnvironmentLibraryPath=%LibraryDirectoryPath%\env_check.bat"
 
 rem === Header message =============
 if /I "%IsDesignModeEnabled%"=="true" (
@@ -48,12 +47,12 @@ rem === Environment verification and Office shutdown =====
 if /I "%IsDesignModeEnabled%"=="true" (
     echo.
     echo [INFO] Verifying environment and closing Office applications...
-    call "%EnvironmentLibraryPath%" :CheckEnvironment "%LogFilePath%"
+    call :CheckEnvironment "%LogFilePath%"
     call :CloseOfficeApps "%LogFilePath%"
     echo [OK] Environment verification and Office app closure completed.
     echo [OK] Environment verification and Office app closure completed. >> "%LogFilePath%"
 ) else (
-    call "%EnvironmentLibraryPath%" :CheckEnvironment >nul 2>&1
+    call :CheckEnvironment "" >nul 2>&1
     call :CloseOfficeApps "" >nul 2>&1
 )
 
@@ -122,6 +121,30 @@ if /I "%IsDesignModeEnabled%"=="true" (
 Echo Successfully executed.
 pause
 goto :EndOfScript
+
+:CheckEnvironment
+rem Args: LOG_FILE
+set "LOG_FILE=%~1"
+
+if defined LOG_FILE (
+    echo [%DATE% %TIME%] Checking environment... >> "%LOG_FILE%"
+)
+
+openfiles >nul 2>&1
+if %errorlevel% NEQ 0 (
+    if defined LOG_FILE (
+        echo [%DATE% %TIME%] Elevation required. Attempting to relaunch as admin... >> "%LOG_FILE%"
+    )
+    powershell -NoProfile -ExecutionPolicy Bypass -Command ^
+        "Start-Process 'cmd.exe' -ArgumentList '/c','\"%~f0\"' -Verb RunAs"
+    exit /b
+)
+
+if defined LOG_FILE (
+    echo [%DATE% %TIME%] Environment check passed (already running as admin). >> "%LOG_FILE%"
+)
+
+exit /b
 
 :Log
 rem Args: LOG_FILE, MESSAGE
