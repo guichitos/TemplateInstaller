@@ -34,44 +34,17 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo.
 )
 
-rem === Detect library in same folder ===
-set "DETECT_LIB=%~dp0lib\detect_office_paths.bat"
 set "REGISTRY_LIB_PPT=%~dp0lib\registry_tools_ppt.bat"
 set "REGISTRY_LIB_WORD=%~dp0lib\registry_tools_word.bat"
 set "REGISTRY_LIB_EXCEL=%~dp0lib\registry_tools_excel.bat"
 
-if /I "%IsDesignModeEnabled%"=="true" (
-    echo [DEBUG] detect_lib path resolved to: "%DETECT_LIB%" >> "%LOG_FILE%"
-    echo [DEBUG] Detect library resolved to: "%DETECT_LIB%"
-)
-if not exist "%DETECT_LIB%" (
-    if /I "%IsDesignModeEnabled%"=="true" (
-        echo [ERROR] detect_office_paths.bat NOT FOUND: "%DETECT_LIB%" >> "%LOG_FILE%"
-        echo [ERROR] detect_office_paths.bat NOT FOUND
-    )
-    endlocal
-    exit /b 1
-)
-
-rem --- Run detector ---
-for /f "tokens=1,* delims=:" %%A in (
-    'call "%DETECT_LIB%" DetectOfficePaths ^| findstr /R /C:"WordPath:" /C:"PowerPointPath:" /C:"ExcelPath:"'
-) do (
-    for /f "tokens=* delims= " %%L in ("%%B") do (
-        if /I "%%A"=="WordPath" set "WORD_PATH=%%L"
-        if /I "%%A"=="PowerPointPath" set "PPT_PATH=%%L"
-        if /I "%%A"=="ExcelPath" set "EXCEL_PATH=%%L"
-    )
-)
-
-rem === Trim trailing backslashes ===
 if defined WORD_PATH if "!WORD_PATH:~-1!"=="\" set "WORD_PATH=!WORD_PATH:~0,-1!"
 if defined PPT_PATH  if "!PPT_PATH:~-1!"=="\"  set "PPT_PATH=!PPT_PATH:~0,-1!"
 if defined EXCEL_PATH if "!EXCEL_PATH:~-1!"=="\" set "EXCEL_PATH=!EXCEL_PATH:~0,-1!"
 
 if /I "%IsDesignModeEnabled%"=="true" (
     echo.
-    echo [DEBUG] === Detected paths (final) ===
+    echo [DEBUG] === Template destinations received ===
     echo   WORD_PATH = !WORD_PATH!
     echo   PPT_PATH  = !PPT_PATH!
     echo   EXCEL_PATH= !EXCEL_PATH!

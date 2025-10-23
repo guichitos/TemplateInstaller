@@ -87,6 +87,18 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 
 
+rem === Detect Office personal template directories ==========
+if /I "%IsDesignModeEnabled%"=="true" (
+    echo.
+    echo [INFO] Detecting Office personal template folders...
+)
+
+if /I "%IsDesignModeEnabled%"=="true" (
+    call :DetectOfficePaths "%LogFilePath%" "%IsDesignModeEnabled%"
+) else (
+    call :DetectOfficePaths "" "%IsDesignModeEnabled%" >nul 2>&1
+)
+
 rem === Copy custom templates and update registry MRUs ===
 if /I "%IsDesignModeEnabled%"=="true" (
     echo.
@@ -191,6 +203,67 @@ if defined LOG_FILE (
     echo [%DATE% %TIME%] Environment check passed (already running as admin). >> "%LOG_FILE%"
 )
 
+exit /b
+
+:DetectOfficePaths
+rem Args: LOG_FILE, DESIGN_MODE
+setlocal enabledelayedexpansion
+set "LOG_FILE=%~1"
+set "DESIGN_MODE=%~2"
+
+set "WORD_PATH="
+set "PPT_PATH="
+set "EXCEL_PATH="
+
+for /f "tokens=1,2,*" %%A in (
+  'reg query "HKCU\Software\Microsoft\Office\16.0\Word\Options" /v "PersonalTemplates" 2^>nul ^| find /I "PersonalTemplates"'
+) do set "WORD_PATH=%%C"
+
+for /f "tokens=1,2,*" %%A in (
+  'reg query "HKCU\Software\Microsoft\Office\16.0\PowerPoint\Options" /v "PersonalTemplates" 2^>nul ^| find /I "PersonalTemplates"'
+) do set "PPT_PATH=%%C"
+
+for /f "tokens=1,2,*" %%A in (
+  'reg query "HKCU\Software\Microsoft\Office\16.0\Excel\Options" /v "PersonalTemplates" 2^>nul ^| find /I "PersonalTemplates"'
+) do set "EXCEL_PATH=%%C"
+
+call :CleanPath WORD_PATH
+call :CleanPath PPT_PATH
+call :CleanPath EXCEL_PATH
+
+if /I "!DESIGN_MODE!"=="true" (
+    echo [DEBUG] Word templates folder detected: !WORD_PATH!
+    echo [DEBUG] PowerPoint templates folder detected: !PPT_PATH!
+    echo [DEBUG] Excel templates folder detected: !EXCEL_PATH!
+)
+
+if defined LOG_FILE (
+    if defined WORD_PATH  echo [%DATE% %TIME%] Word templates folder detected: !WORD_PATH! >> "!LOG_FILE!"
+    if defined PPT_PATH   echo [%DATE% %TIME%] PowerPoint templates folder detected: !PPT_PATH! >> "!LOG_FILE!"
+    if defined EXCEL_PATH echo [%DATE% %TIME%] Excel templates folder detected: !EXCEL_PATH! >> "!LOG_FILE!"
+)
+
+endlocal & (
+    if defined WORD_PATH  set "WORD_PATH=%WORD_PATH%"
+    if defined PPT_PATH   set "PPT_PATH=%PPT_PATH%"
+    if defined EXCEL_PATH set "EXCEL_PATH=%EXCEL_PATH%"
+)
+exit /b
+
+:CleanPath
+setlocal enabledelayedexpansion
+set "VAR_NAME=%~1"
+for /f "tokens=2 delims==" %%A in ('set !VAR_NAME! 2^>nul') do set "VALUE=%%A"
+
+if defined VALUE (
+    set "VALUE=!VALUE:"=!"
+    for /f "tokens=* delims= " %%Z in ('echo(!VALUE!') do set "VALUE=%%Z"
+    set "VALUE=!VALUE:        =!"
+    if "!VALUE:~0,1!"=="\" set "VALUE=C:!VALUE!"
+    if "!VALUE:~-1!"=="\" set "VALUE=!VALUE:~0,-1!"
+)
+
+endlocal & if defined VALUE set "%~1=%VALUE%"
 exit /b
 
 :Log
