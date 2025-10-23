@@ -120,6 +120,7 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo ----------------------------------------------------
     pause
 )
-
+Echo Successfully executed.
+pause
 endlocal
 exit /b
