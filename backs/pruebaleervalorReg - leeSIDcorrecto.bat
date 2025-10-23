@@ -31,7 +31,6 @@ for /f "usebackq tokens=*" %%S in (`powershell -NoProfile -Command "[System.Secu
 if "%SID%"=="" (
   echo ERROR: No se pudo obtener el SID del usuario actual.
   echo PowerShell devolvio vacío; revisa la instalación o políticas de PowerShell.
-  pause
   exit /b 1
 )
 
@@ -76,7 +75,6 @@ echo Creando clave si no existe...
 reg add "%FULL_KEY%" /f >nul
 if errorlevel 1 (
   echo ERROR: No se pudo crear la clave "%FULL_KEY%".
-  pause
   exit /b 1
 )
 
@@ -84,7 +82,6 @@ echo Escribiendo valor...
 reg add "%FULL_KEY%" /v "%VALUE_NAME%" /t REG_SZ /d "%VALUE_DATA%" /f >nul
 if errorlevel 1 (
   echo ERROR: No se pudo escribir el valor "%VALUE_NAME%".
-  pause
   exit /b 1
 )
 
@@ -97,6 +94,5 @@ reg query "%FULL_KEY%" /v "%VALUE_NAME%"
 echo.
 
 echo Operacion completada correctamente.
-pause
 endlocal
 exit /b 0

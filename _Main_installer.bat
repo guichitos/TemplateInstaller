@@ -15,7 +15,7 @@ rem ======================================================
 rem === DESIGN / DEBUG MODE CONTROL ======================
 rem If IsDesignModeEnabled=true  → shows console messages and generates log.
 rem If IsDesignModeEnabled=false → runs silently (no output, no log file).
-set "IsDesignModeEnabled=true"
+set "IsDesignModeEnabled=false"
 
 rem === Base paths and library references ================
 set "BaseDirectoryPath=%~dp0"
@@ -23,6 +23,7 @@ set "LibraryDirectoryPath=%BaseDirectoryPath%lib"
 set "LogsDirectoryPath=%BaseDirectoryPath%logs"
 set "LogFilePath=%LogsDirectoryPath%\install_log_all.txt"
 
+echo Executing. Please wait...
 rem === Initialize log only if design mode is enabled ====
 if /I "%IsDesignModeEnabled%"=="true" (
     if not exist "%LogsDirectoryPath%" mkdir "%LogsDirectoryPath%"

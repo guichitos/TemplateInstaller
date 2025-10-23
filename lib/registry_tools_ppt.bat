@@ -74,6 +74,21 @@ if not defined PPT_MRU_PATH (
   set "PPT_MRU_PATH=HKCU\Software\Microsoft\Office\16.0\PowerPoint\Recent Templates\File MRU"
 )
 
+
+rem ------------------------------------------------------
+rem === DESPLAZAR INDICES EXISTENTES ANTES DE REGISTRAR ===
+rem ------------------------------------------------------
+echo "Entrando en desplazamiento de índices MRU de PowerPoint..."
+
+set "SHIFT_SCRIPT=%~dp0lib\shift_powerpoint_mru_indices.bat"
+if exist "%SHIFT_SCRIPT%" (
+    call "%SHIFT_SCRIPT%"
+    if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] shift_powerpoint_mru_indices.bat ejecutado antes del registro.
+) else (
+    if /I "%IsDesignModeEnabled%"=="true" echo [WARN] No se encontró shift_powerpoint_mru_indices.bat.
+)
+echo "Desplazamiento de índices completado."
+
 rem --- Inicializar contador global si no existe ---
 if not defined GLOBAL_ITEM_COUNT set /a GLOBAL_ITEM_COUNT=0
 set /a LOCAL_COUNT=!GLOBAL_ITEM_COUNT!+1
@@ -81,8 +96,8 @@ set /a LOCAL_COUNT=!GLOBAL_ITEM_COUNT!+1
 rem ------------------------------------------------------
 rem === CREAR VALOR PRINCIPAL (Item N)
 rem ------------------------------------------------------
-set "REG_VALUE=Item !LOCAL_COUNT!"
-set "REG_DATA=[F00000000][T01DC3E24ECBDAAB0][O00000000]*%FULL_PATH%"
+set "REG_VALUE=Item 1"
+set "REG_DATA=[F00000000][T01ED6D7E58D00000][O00000000]*%FULL_PATH%"
 
 if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Escribiendo %REG_VALUE% en "%PPT_MRU_PATH%"
 reg add "%PPT_MRU_PATH%" /v "!REG_VALUE!" /t REG_SZ /d "!REG_DATA!" /f >nul 2>&1
@@ -100,7 +115,7 @@ rem ------------------------------------------------------
 rem Obtener nombre base sin extensión
 for %%N in ("%FILE_NAME%") do set "BASENAME=%%~nN"
 
-set "META_VALUE=Item Metadata !LOCAL_COUNT!"
+set "META_VALUE=Item Metadata 1"
 set "META_DATA=<Metadata><AppSpecific><id>%FULL_PATH%</id><nm>%BASENAME%</nm><du>%FULL_PATH%</du></AppSpecific></Metadata>"
 
 if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Escribiendo %META_VALUE% en "%PPT_MRU_PATH%"
@@ -126,5 +141,3 @@ if /I "%LOCAL_LOGGING%"=="true" (
 rem --- Exportar el nuevo valor del contador global ---
 endlocal & set /a GLOBAL_ITEM_COUNT=%LOCAL_COUNT%
 exit /b
-
-
