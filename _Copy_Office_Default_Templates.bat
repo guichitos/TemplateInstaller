@@ -54,7 +54,7 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [OK] Environment verification and Office app closure completed. >> "%LogFilePath%"
 ) else (
     call "%EnvironmentLibraryPath%" :CheckEnvironment >nul 2>&1
-    call :CloseOfficeApps "" >nul 2>&1
+    call :CloseOfficeApps >nul 2>&1
 )
 
 
@@ -127,6 +127,7 @@ goto :EndOfScript
 rem Args: LOG_FILE, MESSAGE
 set "LOG_FILE=%~1"
 shift
+if not defined LOG_FILE exit /b
 echo [%DATE% %TIME%] %* >> "%LOG_FILE%"
 exit /b
 
