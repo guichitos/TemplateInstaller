@@ -32,7 +32,6 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 
 rem === Library references ===============================
-set "CoreLibraryPath=%LibraryDirectoryPath%\core.bat"
 set "InstallerLibraryPath=%LibraryDirectoryPath%\installer_apps.bat"
 set "CopyLibraryPath=%LibraryDirectoryPath%\copy_templates.bat"
 set "RegistryLibraryPath=%LibraryDirectoryPath%\registry_tools.bat"
@@ -50,12 +49,12 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo.
     echo [INFO] Verifying environment and closing Office applications...
     call "%EnvironmentLibraryPath%" :CheckEnvironment "%LogFilePath%"
-    call "%CoreLibraryPath%" :CloseOfficeApps "%LogFilePath%"
+    call :CloseOfficeApps "%LogFilePath%"
     echo [OK] Environment verification and Office app closure completed.
     echo [OK] Environment verification and Office app closure completed. >> "%LogFilePath%"
 ) else (
     call "%EnvironmentLibraryPath%" :CheckEnvironment >nul 2>&1
-    call "%CoreLibraryPath%" :CloseOfficeApps >nul 2>&1
+    call :CloseOfficeApps >nul 2>&1
 )
 
 
@@ -122,5 +121,25 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 Echo Successfully executed.
 pause
+goto :EndOfScript
+
+:Log
+rem Args: LOG_FILE, MESSAGE
+set "LOG_FILE=%~1"
+shift
+if not defined LOG_FILE exit /b
+echo [%DATE% %TIME%] %* >> "%LOG_FILE%"
+exit /b
+
+:CloseOfficeApps
+rem Args: LOG_FILE
+set "LOG_FILE=%~1"
+call :Log "%LOG_FILE%" Closing Office apps...
+taskkill /IM WINWORD.EXE /F >nul 2>&1
+taskkill /IM POWERPNT.EXE /F >nul 2>&1
+taskkill /IM EXCEL.EXE /F >nul 2>&1
+exit /b
+
+:EndOfScript
 endlocal
 exit /b
