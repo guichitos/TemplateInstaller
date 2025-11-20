@@ -138,12 +138,33 @@ call :ProcessFile "Excel Book (.xltm)" "%ExcelBookMacroFile%" "%ExcelBookMacroBa
 call :ProcessFile "Excel Sheet (.xltx)" "%ExcelSheetFile%" "%ExcelSheetBackup%" "%LogFilePath%"
 call :ProcessFile "Excel Sheet (.xltm)" "%ExcelSheetMacroFile%" "%ExcelSheetMacroBackup%" "%LogFilePath%"
 
+set "THEME_PAYLOAD_TRACK="
 if defined THEME_PATH (
     for %%F in ("%BaseDirectoryPath%*.thmx") do (
         if exist "%%~fF" (
             set "CurrentThemeFile=!THEME_PATH!\%%~nxF"
             set "CurrentThemeBackup=!THEME_PATH!\%%~nF_backup%%~xF"
             call :ProcessFile "Office Theme (%%~nxF)" "!CurrentThemeFile!" "!CurrentThemeBackup!" "%LogFilePath%"
+            set "THEME_PAYLOAD_TRACK=!THEME_PAYLOAD_TRACK!;%%~nxF;"
+        )
+    )
+)
+
+rem Clean any remaining .thmx themes even if no payload exists
+if defined THEME_PATH if exist "!THEME_PATH!" (
+    for /f "delims=" %%T in ('dir /A-D /B "!THEME_PATH!\*.thmx" 2^>nul') do (
+        set "THEME_ALREADY_PROCESSED=0"
+        if defined THEME_PAYLOAD_TRACK (
+            echo !THEME_PAYLOAD_TRACK! | find /I ";%%~nT%%~xT;" >nul && set "THEME_ALREADY_PROCESSED=1"
+        )
+
+        if "!THEME_ALREADY_PROCESSED!"=="0" (
+            del /F /Q "!THEME_PATH!\%%~nxT" >nul 2>&1
+            if exist "!THEME_PATH!\%%~nxT" (
+                if /I "%IsDesignModeEnabled%"=="true" call :DebugTrace "        [ERROR] Could not delete Office Theme (%%~nxT)."
+            ) else (
+                if /I "%IsDesignModeEnabled%"=="true" call :DebugTrace "        [OK] Deleted Office Theme (%%~nxT) with no installer match."
+            )
         )
     )
 )
