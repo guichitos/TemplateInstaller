@@ -801,7 +801,6 @@ set "IsDesignModeEnabled=%~3"
 
 if not defined BASE_DIR set "BASE_DIR=%~dp0"
 if not "%BASE_DIR:~-1%"=="\\" set "BASE_DIR=%BASE_DIR%\\"
-echo [INFO] Copy routine BASE_DIR: %BASE_DIR%
 
 set /a TOTAL_FILES=0
 set /a TOTAL_ERRORS=0
