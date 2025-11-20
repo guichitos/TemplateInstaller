@@ -52,8 +52,8 @@ if not exist "%FILE%" (
 )
 
 echo Ejecutando:
-echo    "%FILE%"
-call "%FILE%"
+echo    "%FILE%" "%ScriptDir%"
+call "%FILE%" "%ScriptDir%"
 pause
 endlocal
 exit /b 0

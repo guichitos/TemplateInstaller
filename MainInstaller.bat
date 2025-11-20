@@ -11,7 +11,9 @@ rem =========================================================
 set "IsDesignModeEnabled=false"
 
 set "ScriptDirectory=%~dp0"
-call :ResolveBaseDirectory "%ScriptDirectory%" BaseDirectoryPath
+set "BaseHint=%~1"
+if not defined BaseHint set "BaseHint=%ScriptDirectory%"
+call :ResolveBaseDirectory "%BaseHint%" BaseDirectoryPath
 if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Base directory resolved to: %BaseDirectoryPath%
 
 set "OfficeTemplateLib=%ScriptDirectory%1-2. AuthContainerTools.bat"
