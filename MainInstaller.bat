@@ -1,4 +1,5 @@
 @echo off
+echo Starting Template Installer...
 setlocal enabledelayedexpansion
 
 chcp 65001 >nul
@@ -653,7 +654,6 @@ if /I "!OPEN_WORD_FLAG!"=="1" (
     set "ANY_LAUNCH=1"
     call :LaunchSingleOfficeApp "winword.exe" "Microsoft Word" "!LAUNCH_DESIGN_MODE!"
 ) else (
-    echo entra a else
     if /I "!LAUNCH_DESIGN_MODE!"=="true" (
         echo [INFO] Microsoft Word will remain closed no new templates applied.
     )

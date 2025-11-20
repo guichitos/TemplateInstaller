@@ -1,7 +1,8 @@
 @echo off
 
-
 set "MRUTools=%BaseDirectoryPath%1-2. MRU-PathResolver.bat"
+echo Initializing MRU System...
+
 rem ============================================================
 rem ===             InitMruSystem (archivo externo)           ===
 rem ============================================================
