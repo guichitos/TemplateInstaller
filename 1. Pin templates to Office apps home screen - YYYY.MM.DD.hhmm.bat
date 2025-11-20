@@ -53,6 +53,7 @@ if not exist "%FILE%" (
 
 echo Ejecutando:
 echo    "%FILE%" "%ScriptDir%"
+set "PIN_LAUNCHER_DIR=%ScriptDir%"
 call "%FILE%" "%ScriptDir%"
 pause
 endlocal

@@ -12,7 +12,17 @@ set "IsDesignModeEnabled=false"
 
 set "ScriptDirectory=%~dp0"
 set "BaseHint=%~1"
+
+if not defined BaseHint if defined PIN_LAUNCHER_DIR set "BaseHint=%PIN_LAUNCHER_DIR%"
 if not defined BaseHint set "BaseHint=%ScriptDirectory%"
+
+rem Si el instalador se ejecuta directamente desde %APPDATA% sin pista de carpeta,
+rem advierte y sale para evitar usar una ruta sin plantillas.
+if /I "%BaseHint%"=="%ScriptDirectory%" if /I "%ScriptDirectory:~0,12%"=="%APPDATA%\\" (
+    echo [ERROR] No se recibio la ruta de las plantillas. Ejecute el instalador desde "1. Pin templates..." para que se le pase la carpeta correcta.
+    exit /b 1
+)
+
 call :ResolveBaseDirectory "%BaseHint%" BaseDirectoryPath
 if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Base directory resolved to: %BaseDirectoryPath%
 
