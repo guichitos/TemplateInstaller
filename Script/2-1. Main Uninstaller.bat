@@ -593,12 +593,12 @@ rem === Step 1: Always delete current template (factory reset) ===
 if exist "%TargetFile%" (
     del /F /Q "%TargetFile%" >nul 2>&1
     if exist "%TargetFile%" (
-        set "Message=[ERROR] Could not delete %TargetFile%. File may be locked."
+        set "Message=[%AppName%] [ERROR] Could not delete %TargetFile%. File may be locked."
     ) else (
-        set "Message=[OK] Deleted %TargetFile%"
+        set "Message=[%AppName%] [OK] Deleted %TargetFile%"
     )
 ) else (
-    set "Message=[INFO] %TargetFile% not found."
+    set "Message=[%AppName%] [INFO] %TargetFile% not found."
 )
 
 rem === Step 2: Restore from backup if available ===
@@ -607,21 +607,27 @@ if exist "%BackupFile%" (
     if exist "%TargetFile%" (
         del /F /Q "%BackupFile%" >nul 2>&1
         if exist "%BackupFile%" (
-            set "Message=[WARN] Restored %TargetFile% but could not delete backup."
+            set "Message=[%AppName%] [WARN] Restored %TargetFile% but could not delete backup."
         ) else (
-            set "Message=[OK] Restored %TargetFile% and deleted backup."
+            set "Message=[%AppName%] [OK] Restored %TargetFile% and deleted backup."
         )
     ) else (
-        set "Message=[ERROR] Backup copy failed for %AppName%."
+        set "Message=[%AppName%] [ERROR] Backup copy failed for %AppName%."
     )
 ) else (
     rem === No backup found, ensure no template remains ===
     if exist "%TargetFile%" del /F /Q "%TargetFile%" >nul 2>&1
     if not exist "%TargetFile%" (
-        set "Message=[OK] No backup found; folder left clean for %AppName%."
+        set "Message=[%AppName%] [OK] No backup found; folder left clean for %AppName%."
     ) else (
-        set "Message=[ERROR] Could not clean template for %AppName%."
+        set "Message=[%AppName%] [ERROR] Could not clean template for %AppName%."
     )
+)
+
+rem === Step 3: Emit verbose trace if enabled ===
+if /I "%IsDesignModeEnabled%"=="true" (
+    call :DebugTrace "        !Message!"
+    if defined LogFile (>>"%LogFile%" echo [%DATE% %TIME%] !Message!)
 )
 
 endlocal
