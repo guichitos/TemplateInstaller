@@ -10,12 +10,26 @@ rem =========================================================
 
 set "IsDesignModeEnabled=false"
 
-set "BaseDirectoryPath=%~dp0"
+set "ScriptDirectory=%~dp0"
+set "BaseHint=%~1"
 
-set "OfficeTemplateLib=%BaseDirectoryPath%1-2. AuthContainerTools.bat"
-set "MRUTools=%BaseDirectoryPath%1-2. MRU-PathResolver.bat"
-set "ResolveAppProps=%BaseDirectoryPath%1-2. ResolveAppProperties.bat"
-set "MRUInit=%BaseDirectoryPath%1-2. InitializeMRUSystem.bat"
+if not defined BaseHint if defined PIN_LAUNCHER_DIR set "BaseHint=%PIN_LAUNCHER_DIR%"
+if not defined BaseHint set "BaseHint=%ScriptDirectory%"
+
+rem Si el instalador se ejecuta directamente desde %APPDATA% sin pista de carpeta,
+rem advierte y sale para evitar usar una ruta sin plantillas.
+if /I "%BaseHint%"=="%ScriptDirectory%" if /I "%ScriptDirectory:~0,12%"=="%APPDATA%\\" (
+    echo [ERROR] No se recibio la ruta de las plantillas. Ejecute el instalador desde "1. Pin templates..." para que se le pase la carpeta correcta.
+    exit /b 1
+)
+
+call :ResolveBaseDirectory "%BaseHint%" BaseDirectoryPath
+if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Base directory resolved to: %BaseDirectoryPath%
+
+set "OfficeTemplateLib=%ScriptDirectory%1-2. AuthContainerTools.bat"
+set "MRUTools=%ScriptDirectory%1-2. MRU-PathResolver.bat"
+set "ResolveAppProps=%ScriptDirectory%1-2. ResolveAppProperties.bat"
+set "MRUInit=%ScriptDirectory%1-2. InitializeMRUSystem.bat"
 
 if not exist "%OfficeTemplateLib%" (
     echo [ERROR] Shared library not found: "%OfficeTemplateLib%"
@@ -361,6 +375,27 @@ endlocal & (
 
 
 exit /b %CTA_FinalError%
+
+:ResolveBaseDirectory
+setlocal
+set "RBD_INPUT=%~1"
+set "RBD_OUTPUT_VAR=%~2"
+
+if "%RBD_INPUT:~-1%" NEQ "\\" set "RBD_INPUT=%RBD_INPUT%\\"
+
+set "RBD_FOUND="
+for %%D in ("%RBD_INPUT%" "%RBD_INPUT%payload\\" "%RBD_INPUT%templates\\" "%RBD_INPUT%extracted\\"") do (
+    for %%F in ("%%~D*.dot*" "%%~D*.pot*" "%%~D*.xlt*" "%%~D*.thmx") do (
+        if exist "%%~fF" set "RBD_FOUND=%%~D"
+    )
+    if defined RBD_FOUND goto :ResolveBaseDirectoryFound
+)
+
+:ResolveBaseDirectoryFound
+if not defined RBD_FOUND set "RBD_FOUND=%RBD_INPUT%"
+
+endlocal & set "%RBD_OUTPUT_VAR%=%RBD_FOUND%"
+exit /b 0
 
 :InstallApp
 setlocal EnableDelayedExpansion
@@ -763,6 +798,10 @@ setlocal enabledelayedexpansion
 set "LOG_FILE=%~1"
 set "BASE_DIR=%~2"
 set "IsDesignModeEnabled=%~3"
+
+if not defined BASE_DIR set "BASE_DIR=%~dp0"
+if not "%BASE_DIR:~-1%"=="\\" set "BASE_DIR=%BASE_DIR%\\"
+echo [INFO] Copy routine BASE_DIR: %BASE_DIR%
 
 set /a TOTAL_FILES=0
 set /a TOTAL_ERRORS=0
