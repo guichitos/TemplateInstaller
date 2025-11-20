@@ -125,21 +125,6 @@ set "ExcelSheetBackup=%EXCEL_PATH%\Sheet_backup.xltx"
 set "ExcelSheetMacroFile=%EXCEL_PATH%\Sheet.xltm"
 set "ExcelSheetMacroBackup=%EXCEL_PATH%\Sheet_backup.xltm"
 
-rem === Folder existence check ================================
-for %%D in ("%WORD_PATH%" "%PPT_PATH%" "%EXCEL_PATH%") do (
-    if not exist "%%~D" (
-        call :Log "%LogFilePath%" "[WARN] Missing folder: %%~D"
-    )
-)
-
-if defined THEME_PATH (
-    if not exist "!THEME_PATH!" (
-        call :Log "%LogFilePath%" "[WARN] Missing folder: !THEME_PATH!"
-    )
-) else (
-    call :Log "%LogFilePath%" "[WARN] Document Themes folder could not be resolved."
-)
-
 rem === Helper routine: delete & restore =======================
 call :ProcessFile "Word (.dotx)" "%WordFile%" "%WordBackup%" "%LogFilePath%"
 call :ProcessFile "Word (.dotm)" "%WordMacroFile%" "%WordMacroBackup%" "%LogFilePath%"
@@ -258,15 +243,6 @@ call :CleanPath WORD_CUSTOM_TEMPLATE_PATH
 call :CleanPath PPT_CUSTOM_TEMPLATE_PATH
 call :CleanPath EXCEL_CUSTOM_TEMPLATE_PATH
 
-if /I "!DCTP_DESIGN_MODE!"=="true" (
-    if "!DEFAULT_CUSTOM_DIR_STATUS!"=="created" call :Log "%DCTP_LOG_FILE%" "[INFO] Created default \"Custom Templates\" folder at: !DEFAULT_CUSTOM_TEMPLATE_DIR!"
-    if "!DEFAULT_CUSTOM_DIR_STATUS!"=="exists" call :Log "%DCTP_LOG_FILE%" "[DEBUG] Default \"Custom Templates\" folder already exists at: !DEFAULT_CUSTOM_TEMPLATE_DIR!"
-    if "!DEFAULT_CUSTOM_DIR_STATUS!"=="create_failed" call :Log "%DCTP_LOG_FILE%" "[WARNING] Failed to create default \"Custom Templates\" folder at: !DEFAULT_CUSTOM_TEMPLATE_DIR!"
-    if defined WORD_CUSTOM_TEMPLATE_PATH call :Log "%DCTP_LOG_FILE%" "[INFO] Custom Word templates folder resolved as: !WORD_CUSTOM_TEMPLATE_PATH!" else call :Log "%DCTP_LOG_FILE%" "[WARNING] No Word custom templates folder detected."
-    if defined PPT_CUSTOM_TEMPLATE_PATH call :Log "%DCTP_LOG_FILE%" "[INFO] Custom PowerPoint templates folder resolved as: !PPT_CUSTOM_TEMPLATE_PATH!" else call :Log "%DCTP_LOG_FILE%" "[WARNING] No PowerPoint custom templates folder detected."
-    if defined EXCEL_CUSTOM_TEMPLATE_PATH call :Log "%DCTP_LOG_FILE%" "[INFO] Custom Excel templates folder resolved as: !EXCEL_CUSTOM_TEMPLATE_PATH!" else call :Log "%DCTP_LOG_FILE%" "[WARNING] No Excel custom templates folder detected."
-)
-
 exit /b 0
 
 :CleanPath
@@ -286,12 +262,7 @@ if not defined BASE_DIR exit /b 0
 if "!BASE_DIR:~-1!" NEQ "\" set "BASE_DIR=!BASE_DIR!\"
 
 if /I "!DESIGN_MODE!"=="true" (
-    call :Log "%LOG_FILE%" "[DEBUG] RemoveCustomTemplates invoked with:"
-    call :Log "%LOG_FILE%" "        Base dir: !BASE_DIR!"
-    call :Log "%LOG_FILE%" "        Word dir: !WORD_DIR!"
-    call :Log "%LOG_FILE%" "        PPT dir: !PPT_DIR!"
-    call :Log "%LOG_FILE%" "        Excel dir: !EXCEL_DIR!"
-    call :DebugTrace "[DEBUG] RemoveCustomTemplates invoked with:"
+    call :DebugTrace "        [DEBUG] RemoveCustomTemplates invoked with:"
     call :DebugTrace "        Base dir: !BASE_DIR!"
     call :DebugTrace "        Word dir: !WORD_DIR!"
     call :DebugTrace "        PPT dir: !PPT_DIR!"
@@ -309,10 +280,7 @@ call :CleanCustomTemplateFiles "!PPT_DIR!" ".potx .potm" "!BASE_DIR!" "%LOG_FILE
 call :CleanCustomTemplateFiles "!EXCEL_DIR!" ".xltx .xltm" "!BASE_DIR!" "%LOG_FILE%" "!DESIGN_MODE!" "Excel custom templates"
 
 if /I "!DESIGN_MODE!"=="true" (
-    call :Log "%LOG_FILE%" "[INFO] Custom template cleanup summary: Removed !CUSTOM_REMOVED_COUNT!, skipped !CUSTOM_SKIP_COUNT!, errors !CUSTOM_ERROR_COUNT!."
-    call :Log "%LOG_FILE%" "[DEBUG] Total candidates inspected: !CUSTOM_TOTAL_CANDIDATES!"
     call :DebugTrace "[INFO] Custom template cleanup summary: Removed !CUSTOM_REMOVED_COUNT!, skipped !CUSTOM_SKIP_COUNT!, errors !CUSTOM_ERROR_COUNT!."
-    call :DebugTrace "[DEBUG] Total candidates inspected: !CUSTOM_TOTAL_CANDIDATES!"
 )
 
 endlocal
@@ -329,20 +297,8 @@ set "CCF_LABEL=%~6"
 if not defined CCF_TARGET_DIR exit /b 0
 if "!CCF_TARGET_DIR!"=="" exit /b 0
 if not exist "!CCF_TARGET_DIR!" (
-    if /I "!CCF_DESIGN_MODE!"=="true" call :Log "%CCF_LOG_FILE%" "[INFO] !CCF_LABEL! not found at '!CCF_TARGET_DIR!' - skipping."
     if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[INFO] !CCF_LABEL! not found at '!CCF_TARGET_DIR!' - skipping."
     exit /b 0
-)
-
-if /I "!CCF_DESIGN_MODE!"=="true" (
-    call :Log "%CCF_LOG_FILE%" "[INFO] Inspecting !CCF_LABEL! at '!CCF_TARGET_DIR!'"
-    call :DebugTrace "[INFO] Inspecting !CCF_LABEL! at '!CCF_TARGET_DIR!'"
-)
-
-if /I "!CCF_DESIGN_MODE!"=="true" (
-    call :DebugTrace "[DEBUG] !CCF_LABEL! extension filters: !CCF_EXT_LIST!"
-    call :DebugTrace "[DEBUG] !CCF_LABEL! base dir context: !CCF_BASE_DIR!"
-    call :DebugTrace "[DEBUG] !CCF_LABEL! generic skip list: !CUSTOM_GENERIC_SKIP_LIST!"
 )
 
 set "CCF_TOP_LEVEL_COUNT=0"
@@ -350,11 +306,6 @@ set "CCF_RECURSIVE_COUNT=0"
 
 for /f %%C in ('dir /A /B "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set "CCF_TOP_LEVEL_COUNT=%%C"
 for /f %%C in ('dir /A /B /S "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set "CCF_RECURSIVE_COUNT=%%C"
-
-if /I "!CCF_DESIGN_MODE!"=="true" (
-    call :DebugTrace "[DEBUG] !CCF_LABEL! entries (top-level): !CCF_TOP_LEVEL_COUNT!"
-    call :DebugTrace "[DEBUG] !CCF_LABEL! entries (recursive): !CCF_RECURSIVE_COUNT!"
-)
 
     set "CCF_DIR_FILE_COUNT=0"
     set "CCF_DIR_REMOVED=0"
@@ -367,18 +318,12 @@ if /I "!CCF_DESIGN_MODE!"=="true" (
         set "CCF_EXT_SKIPPED=0"
         set "CCF_EXT_ERRORS=0"
         for /f %%C in ('dir /A-D /B /S "!CCF_TARGET_DIR!\*%%~E" 2^>nul ^| find /C /V ""') do set "CCF_EXT_COUNT=%%C"
-        if /I "!CCF_DESIGN_MODE!"=="true" (
-            call :DebugTrace "[DEBUG] !CCF_LABEL! matches for *%%~E: !CCF_EXT_COUNT!"
-            if "!CCF_EXT_COUNT!"=="0" call :DebugTrace "[TRACE] No candidates found for pattern *%%~E in !CCF_LABEL!."
-        )
 
         for /f "delims=" %%F in ('dir /A-D /B /S "!CCF_TARGET_DIR!\*%%~E" 2^>nul') do (
             if exist "%%~fF" (
                 set "CCF_FILE=%%~nxF"
                 set /a CUSTOM_TOTAL_CANDIDATES+=1
                 set /a CCF_DIR_FILE_COUNT+=1
-                if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[TRACE] Checking !CCF_LABEL!: %%~fF"
-
                 set "CCF_SKIP_GENERIC=0"
                 for %%G in (!CUSTOM_GENERIC_SKIP_LIST!) do (
                     if /I "!CCF_FILE!"=="%%~G" set "CCF_SKIP_GENERIC=1"
@@ -388,7 +333,6 @@ if /I "!CCF_DESIGN_MODE!"=="true" (
                     set /a CUSTOM_SKIP_COUNT+=1
                     set /a CCF_DIR_SKIPPED+=1
                     set /a CCF_EXT_SKIPPED+=1
-                    if /I "!CCF_DESIGN_MODE!"=="true" call :Log "%CCF_LOG_FILE%" "[SKIP] Preserved generic template !CCF_FILE! in !CCF_LABEL!."
                     if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[SKIP] Preserved generic template !CCF_FILE! in !CCF_LABEL!."
                 ) else (
                     set "CCF_INSTALLER_FILE=!CCF_BASE_DIR!!CCF_FILE!"
@@ -396,21 +340,17 @@ if /I "!CCF_DESIGN_MODE!"=="true" (
                         set /a CUSTOM_SKIP_COUNT+=1
                         set /a CCF_DIR_SKIPPED+=1
                         set /a CCF_EXT_SKIPPED+=1
-                        if /I "!CCF_DESIGN_MODE!"=="true" call :Log "%CCF_LOG_FILE%" "[SKIP] !CCF_FILE! not found in installer payload; preserved in !CCF_LABEL!."
-                        if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[SKIP] !CCF_FILE! not found in installer payload; preserved in !CCF_LABEL!."
                     ) else (
                     del /F /Q "%%~fF" >nul 2>&1
                     if exist "%%~fF" (
                         set /a CUSTOM_ERROR_COUNT+=1
                         set /a CCF_DIR_ERRORS+=1
                         set /a CCF_EXT_ERRORS+=1
-                        if /I "!CCF_DESIGN_MODE!"=="true" call :Log "%CCF_LOG_FILE%" "[ERROR] Could not delete !CCF_FILE! from !CCF_LABEL!."
                         if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[ERROR] Could not delete !CCF_FILE! from !CCF_LABEL!."
                     ) else (
                         set /a CUSTOM_REMOVED_COUNT+=1
                         set /a CCF_DIR_REMOVED+=1
                         set /a CCF_EXT_REMOVED+=1
-                        if /I "!CCF_DESIGN_MODE!"=="true" call :Log "%CCF_LOG_FILE%" "[OK] Deleted !CCF_FILE! from !CCF_LABEL!."
                         if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[OK] Deleted !CCF_FILE! from !CCF_LABEL!."
                     )
                     )
@@ -419,19 +359,8 @@ if /I "!CCF_DESIGN_MODE!"=="true" (
                 if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[WARN] Candidate vanished before delete: %%~fF"
             )
         )
-
-        if /I "!CCF_DESIGN_MODE!"=="true" (
-            call :DebugTrace "[INFO] !CCF_LABEL! results for *%%~E -> removed: !CCF_EXT_REMOVED!, skipped: !CCF_EXT_SKIPPED!, errors: !CCF_EXT_ERRORS!."
-        )
     )
 
-    if /I "!CCF_DESIGN_MODE!"=="true" (
-        call :Log "%CCF_LOG_FILE%" "[DEBUG] !CCF_LABEL! files evaluated: !CCF_DIR_FILE_COUNT!"
-        call :DebugTrace "[DEBUG] !CCF_LABEL! files evaluated: !CCF_DIR_FILE_COUNT!"
-        call :DebugTrace "[INFO] !CCF_LABEL! cumulative results -> removed: !CCF_DIR_REMOVED!, skipped: !CCF_DIR_SKIPPED!, errors: !CCF_DIR_ERRORS!."
-    )
-
-    rem Attempt to remove empty folders left behind after recursive cleanup
     set "CCF_REMOVED_DIRS=0"
     for /f "delims=" %%D in ('dir /AD /B /S "!CCF_TARGET_DIR!" ^| sort /R') do (
         rd "%%~fD" 2>nul && set /a CCF_REMOVED_DIRS+=1
@@ -468,50 +397,18 @@ if not defined ROML_DESIGN_MODE set "ROML_DESIGN_MODE=%IsDesignModeEnabled%"
 
 set "ROML_OFFICE_APPS=Word PowerPoint Excel"
 
-if /I "!ROML_DESIGN_MODE!"=="true" (
-    call :Log "!ROML_LOG_FILE!" "[INFO] Starting template MRU cleanup."
-)
-
 for %%A in (!ROML_OFFICE_APPS!) do (
     set "ROML_TARGETS="
     call :GetAppMruTargets ROML_TARGETS "%%~A"
 
-    rem === Log cuando no se detectan claves MRU ===
-    if not defined ROML_TARGETS (
-        if /I "!ROML_DESIGN_MODE!"=="true" (
-            call :Log "!ROML_LOG_FILE!" "[INFO] No template MRU entries detected for %%~A."
-        )
-    ) else (
-        rem === Mostrar claves encontradas para la app ===
-        if /I "!ROML_DESIGN_MODE!"=="true" (
-            call :Log "!ROML_LOG_FILE!" "[INFO] Cleaning %%~A template MRU entries..."
-            call :Log "!ROML_LOG_FILE!" "[DEBUG] MRU target paths for %%~A: !ROML_TARGETS!"
-        )
-
-        rem === Procesar cada ruta MRU encontrada ===
+    if defined ROML_TARGETS (
         for %%T in (!ROML_TARGETS!) do (
             set "ROML_CURRENT=%%~T"
-
-            rem Saltar claves vacías o inválidas
-            if "!ROML_CURRENT!"=="" (
-                if /I "!ROML_DESIGN_MODE!"=="true" (
-                    call :Log "!ROML_LOG_FILE!" "[WARN] Skipping empty MRU key for %%~A."
-                )
-            ) else (
-                rem Mostrar la clave antes de intentar limpiarla
-                if /I "!ROML_DESIGN_MODE!"=="true" (
-                    call :Log "!ROML_LOG_FILE!" "[DEBUG] Calling ClearMruKey for %%~A: !ROML_CURRENT!"
-                )
-
+            if not "!ROML_CURRENT!"=="" (
                 call :ClearMruKey "!ROML_CURRENT!" "%%~A template MRU" "!ROML_LOG_FILE!" "!ROML_DESIGN_MODE!"
             )
         )
     )
-)
-
-
-if /I "!ROML_DESIGN_MODE!"=="true" (
-    call :Log "!ROML_LOG_FILE!" "[INFO] Template MRU cleanup completed."
 )
 
 endlocal
@@ -575,7 +472,6 @@ for %%# in (1) do (
 exit /b 0
 
 :DetectAdalContainer
-echo [DEBUG] Calling DetectAdalContainer with args: %* >&2
 call "%OfficeTemplateLib%" :DetectAdalContainer %*
 exit /b %errorlevel%
 
@@ -633,7 +529,6 @@ if "%CMK_KEY%"=="" (
 
 reg query "%CMK_KEY%" >nul 2>&1
 if errorlevel 1 (
-    if /I "%CMK_DESIGN_MODE%"=="true" call :Log "%CMK_LOG_FILE%" "[INFO] %CMK_LABEL% not found at %CMK_KEY%."
     endlocal
     exit /b 0
 )
@@ -652,9 +547,9 @@ powershell -NoLogo -NoProfile -Command ^
     "}" >nul 2>&1
 
 if errorlevel 1 (
-    if /I "%CMK_DESIGN_MODE%"=="true" call :Log "%CMK_LOG_FILE%" "[ERROR] Failed to clean %CMK_LABEL% at %CMK_KEY%."
+    rem Failed to clean – no logging
 ) else (
-    if /I "%CMK_DESIGN_MODE%"=="true" call :Log "%CMK_LOG_FILE%" "[OK] Cleared %CMK_LABEL% at %CMK_KEY%."
+    rem Cleaned successfully – no logging
 )
 
 endlocal
@@ -671,22 +566,16 @@ set "TargetFile=%~2"
 set "BackupFile=%~3"
 set "LogFile=%~4"
 
-call :Log "%LogFile%" ""
-call :Log "%LogFile%" "[INFO] Processing %AppName%..."
-
 rem === Step 1: Always delete current template (factory reset) ===
 if exist "%TargetFile%" (
     del /F /Q "%TargetFile%" >nul 2>&1
     if exist "%TargetFile%" (
         set "Message=[ERROR] Could not delete %TargetFile%. File may be locked."
-        call :Log "%LogFile%" "!Message!"
     ) else (
         set "Message=[OK] Deleted %TargetFile%"
-        call :Log "%LogFile%" "!Message!"
     )
 ) else (
     set "Message=[INFO] %TargetFile% not found."
-    call :Log "%LogFile%" "!Message!"
 )
 
 rem === Step 2: Restore from backup if available ===
@@ -696,24 +585,19 @@ if exist "%BackupFile%" (
         del /F /Q "%BackupFile%" >nul 2>&1
         if exist "%BackupFile%" (
             set "Message=[WARN] Restored %TargetFile% but could not delete backup."
-            call :Log "%LogFile%" "!Message!"
         ) else (
             set "Message=[OK] Restored %TargetFile% and deleted backup."
-            call :Log "%LogFile%" "!Message!"
         )
     ) else (
         set "Message=[ERROR] Backup copy failed for %AppName%."
-        call :Log "%LogFile%" "!Message!"
     )
 ) else (
     rem === No backup found, ensure no template remains ===
     if exist "%TargetFile%" del /F /Q "%TargetFile%" >nul 2>&1
     if not exist "%TargetFile%" (
         set "Message=[OK] No backup found; folder left clean for %AppName%."
-        call :Log "%LogFile%" "!Message!"
     ) else (
         set "Message=[ERROR] Could not clean template for %AppName%."
-        call :Log "%LogFile%" "!Message!"
     )
 )
 
@@ -730,15 +614,6 @@ if /I not "%IsDesignModeEnabled%"=="true" (
 set "ResolvedLogPath=%~1"
 
 >>"%~1" echo [%DATE% %TIME%] --- UNINSTALL COMPLETED ---
-call :Log "%~1" ""
-call :Log "%~1" "[FINAL] Uninstallation process finished successfully."
-call :Log "%~1" "Log saved at: \"!ResolvedLogPath!\""
-call :Log "%~1" "--------------------------------------------------------"
-
-if /I "%IsDesignModeEnabled%"=="true" (
-    echo Presiona una tecla para cerrar esta ventana...
-    pause
-)
 
 endlocal
 exit /b 0
