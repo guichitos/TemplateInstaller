@@ -150,7 +150,7 @@ if defined THEME_PATH (
     )
 )
 
-rem Clean any remaining .thmx themes even if no payload exists
+rem Clean any remaining .thmx themes by comparing against installer payloads
 if defined THEME_PATH if exist "!THEME_PATH!" (
     for /f "delims=" %%T in ('dir /A-D /B "!THEME_PATH!\*.thmx" 2^>nul') do (
         set "THEME_ALREADY_PROCESSED=0"
@@ -159,12 +159,7 @@ if defined THEME_PATH if exist "!THEME_PATH!" (
         )
 
         if "!THEME_ALREADY_PROCESSED!"=="0" (
-            del /F /Q "!THEME_PATH!\%%~nxT" >nul 2>&1
-            if exist "!THEME_PATH!\%%~nxT" (
-                if /I "%IsDesignModeEnabled%"=="true" call :DebugTrace "        [ERROR] Could not delete Office Theme (%%~nxT)."
-            ) else (
-                if /I "%IsDesignModeEnabled%"=="true" call :DebugTrace "        [OK] Deleted Office Theme (%%~nxT) with no installer match."
-            )
+            if /I "%IsDesignModeEnabled%"=="true" call :DebugTrace "        [SKIP] Preserved Office Theme (%%~nxT) with no installer match."
         )
     )
 )
