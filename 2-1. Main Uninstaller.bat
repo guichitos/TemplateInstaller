@@ -20,11 +20,12 @@ set "IsDesignModeEnabled=true"
 
 call :DebugTrace "[FLAG] Script initialization started."
 
-set "BaseDirectoryPath=%~dp0"
-set "LibraryDirectoryPath=%BaseDirectoryPath%lib"
-set "LogsDirectoryPath=%BaseDirectoryPath%logs"
+set "ScriptDirectory=%~dp0"
+call :ResolveBaseDirectory "%ScriptDirectory%" BaseDirectoryPath
+set "LibraryDirectoryPath=%ScriptDirectory%lib"
+set "LogsDirectoryPath=%ScriptDirectory%logs"
 set "LogFilePath=%LogsDirectoryPath%\uninstall_log.txt"
-set "OfficeTemplateLib=%BaseDirectoryPath%1-2. ResolveAppProperties.bat"
+set "OfficeTemplateLib=%ScriptDirectory%1-2. ResolveAppProperties.bat"
 
 if not exist "%OfficeTemplateLib%" (
     echo [ERROR] Shared library not found: "%OfficeTemplateLib%"
@@ -161,6 +162,29 @@ call :Finalize "%LogFilePath%"
 
 endlocal
 exit /b
+
+rem Base dir resolver keeps template source tied to the unpacked executable location
+:ResolveBaseDirectory
+setlocal
+set "RBD_INPUT=%~1"
+set "RBD_OUTPUT_VAR=%~2"
+
+if "%RBD_INPUT:~-1%" NEQ "\\" set "RBD_INPUT=%RBD_INPUT%\\"
+
+set "RBD_FOUND="
+for %%D in ("%RBD_INPUT%" "%RBD_INPUT%payload\\" "%RBD_INPUT%templates\\" "%RBD_INPUT%extracted\\") do (
+    for %%F in ("%%~D*.dot*" "%%~D*.pot*" "%%~D*.xlt*" "%%~D*.thmx") do (
+        if exist "%%~fF" set "RBD_FOUND=%%~D"
+    )
+    if defined RBD_FOUND goto :RBD_Found
+)
+
+:RBD_Found
+if not defined RBD_FOUND set "RBD_FOUND=%RBD_INPUT%"
+
+endlocal & set "%RBD_OUTPUT_VAR%=%RBD_FOUND%"
+exit /b 0
+
 
 
 :DetectCustomTemplatePaths
