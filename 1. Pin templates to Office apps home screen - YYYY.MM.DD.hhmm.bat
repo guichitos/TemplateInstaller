@@ -1,4 +1,4 @@
-::[Bat To Exe Converter]
+@[Bat To Exe Converter]
 ::
 ::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVm2vQ+r2vZVoaz/3hPPTLMqun2/FY7a8m1bqUN6Q==
 ::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVm2vQ+r2vRTZuv1XZNICnAid7R+0Anc9/2IqYYnX0=
@@ -39,15 +39,16 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set "FILE=%APPDATA%\MainInstaller.bat"
+set "ScriptDir=%~dp0"
+set "FILE=%ScriptDir%MainInstaller.bat"
 
+echo Ejecutando desde: "%ScriptDir%"
 if not exist "%FILE%" (
-    echo No se encontro el archivo en la carpeta.
+    echo No se encontro el archivo en la carpeta del ejecutable.
     echo Ruta esperada:
     echo    %FILE%
     pause
     exit /b 1
-
 )
 
 echo Ejecutando:
