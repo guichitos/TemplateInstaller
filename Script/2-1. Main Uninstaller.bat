@@ -141,24 +141,23 @@ call :ProcessFile "Excel Sheet (.xltm)" "%ExcelSheetMacroFile%" "%ExcelSheetMacr
 set "THEME_PAYLOAD_TRACK="
 if defined THEME_PATH (
     for %%F in ("%BaseDirectoryPath%*.thmx") do (
-        if exist "%%~fF" (
-            set "CurrentThemeFile=!THEME_PATH!\%%~nxF"
-            set "CurrentThemeBackup=!THEME_PATH!\%%~nF_backup%%~xF"
-            call :ProcessFile "Office Theme (%%~nxF)" "!CurrentThemeFile!" "!CurrentThemeBackup!" "%LogFilePath%"
-            set "THEME_PAYLOAD_TRACK=!THEME_PAYLOAD_TRACK!;%%~nxF;"
-        )
+        if exist "%%~fF" set "THEME_PAYLOAD_TRACK=!THEME_PAYLOAD_TRACK!;%%~nxF;"
     )
 )
 
-rem Clean any remaining .thmx themes by comparing against installer payloads
+rem Clean Document Themes by comparing against installer payloads and only delete matches
 if defined THEME_PATH if exist "!THEME_PATH!" (
     for /f "delims=" %%T in ('dir /A-D /B "!THEME_PATH!\*.thmx" 2^>nul') do (
-        set "THEME_ALREADY_PROCESSED=0"
+        set "THEME_HAS_PAYLOAD=0"
         if defined THEME_PAYLOAD_TRACK (
-            echo !THEME_PAYLOAD_TRACK! | find /I ";%%~nT%%~xT;" >nul && set "THEME_ALREADY_PROCESSED=1"
+            echo !THEME_PAYLOAD_TRACK! | find /I ";%%~nT%%~xT;" >nul && set "THEME_HAS_PAYLOAD=1"
         )
 
-        if "!THEME_ALREADY_PROCESSED!"=="0" (
+        if "!THEME_HAS_PAYLOAD!"=="1" (
+            set "CurrentThemeFile=!THEME_PATH!\%%~nxT"
+            set "CurrentThemeBackup=!THEME_PATH!\%%~nT_backup%%~xT"
+            call :ProcessFile "Office Theme (%%~nxT)" "!CurrentThemeFile!" "!CurrentThemeBackup!" "%LogFilePath%"
+        ) else (
             if /I "%IsDesignModeEnabled%"=="true" call :DebugTrace "        [SKIP] Preserved Office Theme (%%~nxT) with no installer match."
         )
     )
