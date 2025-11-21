@@ -138,12 +138,27 @@ call :ProcessFile "Excel Book (.xltm)" "%ExcelBookMacroFile%" "%ExcelBookMacroBa
 call :ProcessFile "Excel Sheet (.xltx)" "%ExcelSheetFile%" "%ExcelSheetBackup%" "%LogFilePath%"
 call :ProcessFile "Excel Sheet (.xltm)" "%ExcelSheetMacroFile%" "%ExcelSheetMacroBackup%" "%LogFilePath%"
 
+set "THEME_PAYLOAD_TRACK="
 if defined THEME_PATH (
     for %%F in ("%BaseDirectoryPath%*.thmx") do (
-        if exist "%%~fF" (
-            set "CurrentThemeFile=!THEME_PATH!\%%~nxF"
-            set "CurrentThemeBackup=!THEME_PATH!\%%~nF_backup%%~xF"
-            call :ProcessFile "Office Theme (%%~nxF)" "!CurrentThemeFile!" "!CurrentThemeBackup!" "%LogFilePath%"
+        if exist "%%~fF" set "THEME_PAYLOAD_TRACK=!THEME_PAYLOAD_TRACK!;%%~nxF;"
+    )
+)
+
+rem Clean Document Themes by comparing against installer payloads and only delete matches
+if defined THEME_PATH if exist "!THEME_PATH!" (
+    for /f "delims=" %%T in ('dir /A-D /B "!THEME_PATH!\*.thmx" 2^>nul') do (
+        set "THEME_HAS_PAYLOAD=0"
+        if defined THEME_PAYLOAD_TRACK (
+            echo !THEME_PAYLOAD_TRACK! | find /I ";%%~nT%%~xT;" >nul && set "THEME_HAS_PAYLOAD=1"
+        )
+
+        if "!THEME_HAS_PAYLOAD!"=="1" (
+            set "CurrentThemeFile=!THEME_PATH!\%%~nxT"
+            set "CurrentThemeBackup=!THEME_PATH!\%%~nT_backup%%~xT"
+            call :ProcessFile "Office Theme (%%~nxT)" "!CurrentThemeFile!" "!CurrentThemeBackup!" "%LogFilePath%"
+        ) else (
+            if /I "%IsDesignModeEnabled%"=="true" call :DebugTrace "        [SKIP] Preserved Office Theme (%%~nxT) with no installer match."
         )
     )
 )
@@ -360,11 +375,9 @@ for /f %%C in ('dir /A /B /S "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set
                     if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[SKIP] Preserved generic template !CCF_FILE! in !CCF_LABEL!."
                 ) else (
                     set "CCF_INSTALLER_FILE=!CCF_BASE_DIR!!CCF_FILE!"
-                    if not exist "!CCF_INSTALLER_FILE!" (
-                        set /a CUSTOM_SKIP_COUNT+=1
-                        set /a CCF_DIR_SKIPPED+=1
-                        set /a CCF_EXT_SKIPPED+=1
-                    ) else (
+                    set "CCF_DELETE_REASON=matches installer payload"
+                    if not exist "!CCF_INSTALLER_FILE!" set "CCF_DELETE_REASON=no installer match found"
+
                     del /F /Q "%%~fF" >nul 2>&1
                     if exist "%%~fF" (
                         set /a CUSTOM_ERROR_COUNT+=1
@@ -375,8 +388,7 @@ for /f %%C in ('dir /A /B /S "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set
                         set /a CUSTOM_REMOVED_COUNT+=1
                         set /a CCF_DIR_REMOVED+=1
                         set /a CCF_EXT_REMOVED+=1
-                        if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[OK] Deleted !CCF_FILE! from !CCF_LABEL!."
-                    )
+                        if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[OK] Deleted !CCF_FILE! from !CCF_LABEL! (!CCF_DELETE_REASON!)."
                     )
                 )
             ) else (
@@ -593,12 +605,12 @@ rem === Step 1: Always delete current template (factory reset) ===
 if exist "%TargetFile%" (
     del /F /Q "%TargetFile%" >nul 2>&1
     if exist "%TargetFile%" (
-        set "Message=[ERROR] Could not delete %TargetFile%. File may be locked."
+        set "Message=[%AppName%] [ERROR] Could not delete %TargetFile%. File may be locked."
     ) else (
-        set "Message=[OK] Deleted %TargetFile%"
+        set "Message=[%AppName%] [OK] Deleted %TargetFile%"
     )
 ) else (
-    set "Message=[INFO] %TargetFile% not found."
+    set "Message=[%AppName%] [INFO] %TargetFile% not found."
 )
 
 rem === Step 2: Restore from backup if available ===
@@ -607,21 +619,27 @@ if exist "%BackupFile%" (
     if exist "%TargetFile%" (
         del /F /Q "%BackupFile%" >nul 2>&1
         if exist "%BackupFile%" (
-            set "Message=[WARN] Restored %TargetFile% but could not delete backup."
+            set "Message=[%AppName%] [WARN] Restored %TargetFile% but could not delete backup."
         ) else (
-            set "Message=[OK] Restored %TargetFile% and deleted backup."
+            set "Message=[%AppName%] [OK] Restored %TargetFile% and deleted backup."
         )
     ) else (
-        set "Message=[ERROR] Backup copy failed for %AppName%."
+        set "Message=[%AppName%] [ERROR] Backup copy failed for %AppName%."
     )
 ) else (
     rem === No backup found, ensure no template remains ===
     if exist "%TargetFile%" del /F /Q "%TargetFile%" >nul 2>&1
     if not exist "%TargetFile%" (
-        set "Message=[OK] No backup found; folder left clean for %AppName%."
+        set "Message=[%AppName%] [OK] No backup found; folder left clean for %AppName%."
     ) else (
-        set "Message=[ERROR] Could not clean template for %AppName%."
+        set "Message=[%AppName%] [ERROR] Could not clean template for %AppName%."
     )
+)
+
+rem === Step 3: Emit verbose trace if enabled ===
+if /I "%IsDesignModeEnabled%"=="true" (
+    call :DebugTrace "        !Message!"
+    if defined LogFile (>>"%LogFile%" echo [%DATE% %TIME%] !Message!)
 )
 
 endlocal
