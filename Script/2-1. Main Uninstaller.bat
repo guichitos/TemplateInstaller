@@ -21,7 +21,17 @@ set "IsDesignModeEnabled=true"
 call :DebugTrace "[FLAG] Script initialization started."
 
 set "ScriptDirectory=%~dp0"
+set "UserLaunchDirectory=%CD%"
 call :ResolveBaseDirectory "%ScriptDirectory%" BaseDirectoryPath
+call :ResolveBaseDirectory "%UserLaunchDirectory%" LaunchDirectoryPath
+set "BaseHasPayload=0"
+set "LaunchHasPayload=0"
+call :HasTemplatePayload "%BaseDirectoryPath%" BaseHasPayload
+if /I not "%LaunchDirectoryPath%"=="%BaseDirectoryPath%" call :HasTemplatePayload "%LaunchDirectoryPath%" LaunchHasPayload
+if "!BaseHasPayload!"=="0" if "!LaunchHasPayload!"=="1" (
+    set "BaseDirectoryPath=!LaunchDirectoryPath!"
+    if /I "%IsDesignModeEnabled%"=="true" call :DebugTrace "[INFO] No payload found at extracted path; using launch directory payload location instead."
+)
 set "LibraryDirectoryPath=%ScriptDirectory%lib"
 set "LogsDirectoryPath=%ScriptDirectory%logs"
 set "LogFilePath=%LogsDirectoryPath%\uninstall_log.txt"
@@ -198,6 +208,24 @@ for %%D in ("%RBD_INPUT%" "%RBD_INPUT%payload\\" "%RBD_INPUT%templates\\" "%RBD_
 if not defined RBD_FOUND set "RBD_FOUND=%RBD_INPUT%"
 
 endlocal & set "%RBD_OUTPUT_VAR%=%RBD_FOUND%"
+exit /b 0
+
+:HasTemplatePayload
+setlocal enabledelayedexpansion
+set "HP_PATH=%~1"
+set "HP_OUT=%~2"
+set "HP_FOUND=0"
+
+if not defined HP_PATH goto :HasTemplatePayloadEnd
+if "!HP_PATH:~-1!" NEQ "\\" set "HP_PATH=!HP_PATH!\\"
+
+for %%F in ("!HP_PATH!*.dot*" "!HP_PATH!*.pot*" "!HP_PATH!*.xlt*" "!HP_PATH!*.thmx") do (
+    if exist "%%~fF" set "HP_FOUND=1"
+)
+
+:HasTemplatePayloadEnd
+set "HP_RESULT=!HP_FOUND!"
+endlocal & if not "%HP_OUT%"=="" set "%HP_OUT%=%HP_RESULT%"
 exit /b 0
 
 
