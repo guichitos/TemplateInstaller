@@ -193,6 +193,7 @@ call :DebugTrace "[FLAG] Starting custom template cleanup."
 
 call :RemoveCustomTemplates "%BaseDirectoryPath%" "%LogFilePath%" "%IsDesignModeEnabled%" "!WORD_CUSTOM_TEMPLATE_PATH!" "!PPT_CUSTOM_TEMPLATE_PATH!" "!EXCEL_CUSTOM_TEMPLATE_PATH!"
 
+echo.
 call :DebugTrace "[FLAG] Clearing template MRU entries."
 
 call :ResetOfficeTemplateMruLists "%LogFilePath%" "%IsDesignModeEnabled%"
@@ -518,6 +519,10 @@ set "APP_NAME=%GAM_APP%"
 set "MRU_TARGET_PATHS="
 
 call :ResolveAppProperties "!APP_NAME!"
+echo [DEBUG] Entering GetAppMruTargets with parameters %*
+echo .
+echo [DEBUG] Resolved properties for !APP_NAME!: PROP_REG_NAME=!PROP_REG_NAME!
+echo.
 if defined PROP_REG_NAME (
     set "MRU_VAR=!PROP_MRU_VAR!"
     set "MRU_PATH="
@@ -602,7 +607,9 @@ call "%OfficeTemplateLib%" :DetectMRUPath %*
 exit /b %errorlevel%
 
 :ResolveAppProperties
+echo [DEBUG] Going ResolveAppProperties en other file with parameters %*
 call "%OfficeTemplateLib%" :ResolveAppProperties %*
+echo [DEBUG] Returning ResolveAppProperties en other file with PROP_REG_NAME=%PROP_REG_NAME%
 exit /b %errorlevel%
 
 :ClearMruKey
