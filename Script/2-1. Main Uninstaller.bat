@@ -375,20 +375,26 @@ for /f %%C in ('dir /A /B /S "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set
                     if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[SKIP] Preserved generic template !CCF_FILE! in !CCF_LABEL!."
                 ) else (
                     set "CCF_INSTALLER_FILE=!CCF_BASE_DIR!!CCF_FILE!"
-                    set "CCF_DELETE_REASON=matches installer payload"
-                    if not exist "!CCF_INSTALLER_FILE!" set "CCF_DELETE_REASON=no installer match found"
 
-                    del /F /Q "%%~fF" >nul 2>&1
-                    if exist "%%~fF" (
-                        set /a CUSTOM_ERROR_COUNT+=1
-                        set /a CCF_DIR_ERRORS+=1
-                        set /a CCF_EXT_ERRORS+=1
-                        if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[ERROR] Could not delete !CCF_FILE! from !CCF_LABEL!."
+                    if exist "!CCF_INSTALLER_FILE!" (
+                        set "CCF_DELETE_REASON=matches installer payload"
+                        del /F /Q "%%~fF" >nul 2>&1
+                        if exist "%%~fF" (
+                            set /a CUSTOM_ERROR_COUNT+=1
+                            set /a CCF_DIR_ERRORS+=1
+                            set /a CCF_EXT_ERRORS+=1
+                            if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[ERROR] Could not delete !CCF_FILE! from !CCF_LABEL!."
+                        ) else (
+                            set /a CUSTOM_REMOVED_COUNT+=1
+                            set /a CCF_DIR_REMOVED+=1
+                            set /a CCF_EXT_REMOVED+=1
+                            if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[OK] Deleted !CCF_FILE! from !CCF_LABEL! (!CCF_DELETE_REASON!)."
+                        )
                     ) else (
-                        set /a CUSTOM_REMOVED_COUNT+=1
-                        set /a CCF_DIR_REMOVED+=1
-                        set /a CCF_EXT_REMOVED+=1
-                        if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[OK] Deleted !CCF_FILE! from !CCF_LABEL! (!CCF_DELETE_REASON!)."
+                        set /a CUSTOM_SKIP_COUNT+=1
+                        set /a CCF_DIR_SKIPPED+=1
+                        set /a CCF_EXT_SKIPPED+=1
+                        if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[SKIP] Preserved !CCF_FILE! in !CCF_LABEL! (no installer match)."
                     )
                 )
             ) else (
