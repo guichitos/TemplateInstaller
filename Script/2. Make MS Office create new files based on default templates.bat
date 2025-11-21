@@ -35,21 +35,35 @@
 ::
 ::978f952a14a936cc963da21a135fa983
 @echo off
-setlocal enabledelayedexpansion
+setlocal EnableExtensions EnableDelayedExpansion
 
-set "FILE=%APPDATA%\2-1. Main Uninstaller.bat"
+rem ------------------------------------------------------------
+rem  OFFICE TEMPLATE INSTALLER - UNINSTALLER WRAPPER
+rem  Purpose:
+rem    Ensures the real uninstaller receives the TRUE launcher
+rem    directory (%~dp0) instead of the temporary EXE extraction.
+rem ------------------------------------------------------------
 
-if not exist "%FILE%" (
-    echo No se encontro el archivo en la carpeta.
+rem === Determine real launcher directory (where THIS file lives)
+set "LauncherDir=%~dp0"
+rem echo [INFO - make ms] Real launcher directory resolved to: %LauncherDir%
+rem === Location of the internal uninstaller placed by the installer
+set "InternalUninstaller=%APPDATA%\2-1. Main Uninstaller.bat"
+
+rem === Validate presence
+if not exist "%InternalUninstaller%" (
+    echo.
+    echo [ERROR] No se encontro el desinstalador interno.
     echo Ruta esperada:
-    echo    %FILE%
+    echo     %InternalUninstaller%
+    echo Asegurese de que el instalador inicial se ejecuto correctamente.
+    echo.
     exit /b 1
-    pause
 )
 
-rem echo Ejecutando:
-rem echo    "%FILE%"
-call "%FILE%"
+rem === Execute internal uninstaller, passing the real launcher dir
+call "%InternalUninstaller%" "%LauncherDir%"
 
 endlocal
 exit /b 0
+

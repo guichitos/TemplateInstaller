@@ -4,34 +4,49 @@ chcp 65001 >nul
 
 rem ===========================================================
 rem === UNIVERSAL OFFICE TEMPLATE UNINSTALLER (v1.2) ==========
-rem -----------------------------------------------------------
-rem Uses the same hardcoded base paths as main_installer.bat
-rem to remove the default XML-based templates (.dotx/.potx/.xltx)
-rem and their macro-enabled counterparts (.dotm/.potm/.xltm),
-rem along with any custom Office themes (.thmx) installed alongside them,
-rem restoring backups if available.
 rem ===========================================================
 
+rem If wrapper passed the launcher directory (payload), use it.
+if not "%~1"=="" (
+    set "LauncherDirectory=%~1"
+) else (
+    rem Fallback: assume current directory is the launcher/payload location
+    set "LauncherDirectory=%CD%"
+)
+
+rem ScriptDirectory = real location of this uninstaller (in AppData)
+set "ScriptDirectory=%~dp0"
+
+if /I "%IsDesignModeEnabled%"=="true" (
+    call :DebugTrace "[INFO] Script directory (uninstaller) resolved to: %ScriptDirectory%"
+    call :DebugTrace "[INFO] Launcher/payload directory resolved to: %LauncherDirectory%"
+)
+
 rem === Mode and logging configuration ========================
-rem Toggle this flag to control diagnostic output for this script only.
 rem true  = verbose mode with console messages, logging, and final pause.
 rem false = silent mode (no console output or pause).
 set "IsDesignModeEnabled=true"
 
 call :DebugTrace "[FLAG] Script initialization started."
 
-set "ScriptDirectory=%~dp0"
 set "UserLaunchDirectory=%CD%"
-call :ResolveBaseDirectory "%ScriptDirectory%" BaseDirectoryPath
+
+rem Usamos la carpeta del launcher para resolver la payload real
+call :ResolveBaseDirectory "%LauncherDirectory%" BaseDirectoryPath
 call :ResolveBaseDirectory "%UserLaunchDirectory%" LaunchDirectoryPath
+
 set "BaseHasPayload=0"
 set "LaunchHasPayload=0"
+
 call :HasTemplatePayload "%BaseDirectoryPath%" BaseHasPayload
 if /I not "%LaunchDirectoryPath%"=="%BaseDirectoryPath%" call :HasTemplatePayload "%LaunchDirectoryPath%" LaunchHasPayload
+
 if "!BaseHasPayload!"=="0" if "!LaunchHasPayload!"=="1" (
     set "BaseDirectoryPath=!LaunchDirectoryPath!"
-    if /I "%IsDesignModeEnabled%"=="true" call :DebugTrace "[INFO] No payload found at extracted path; using launch directory payload location instead."
+    if /I "%IsDesignModeEnabled%"=="true" call :DebugTrace "[INFO] No payload found at primary path; using launch directory payload location instead."
 )
+
+rem OJO: aquí ya volvemos a usar ScriptDirectory (AppData) para libs y logs
 set "LibraryDirectoryPath=%ScriptDirectory%lib"
 set "LogsDirectoryPath=%ScriptDirectory%logs"
 set "LogFilePath=%LogsDirectoryPath%\uninstall_log.txt"
@@ -46,10 +61,11 @@ if /I "%IsDesignModeEnabled%"=="true" (
     if not exist "%LogsDirectoryPath%" mkdir "%LogsDirectoryPath%"
     echo [%DATE% %TIME%] --- START UNINSTALL --- > "%LogFilePath%"
     title OFFICE TEMPLATE UNINSTALLER - DEBUG MODE
-    echo [DEBUG] Running from: %BaseDirectoryPath%
+    echo [DEBUG] Running from payload base: %BaseDirectoryPath%
 )
 
 call :DebugTrace "[FLAG] Target paths and logging configured."
+
 
 rem === Define base template paths (same as main_installer.bat) ===
 set "WORD_PATH=%APPDATA%\Microsoft\Templates"
@@ -354,9 +370,11 @@ endlocal
 exit /b 0
 
 :CleanCustomTemplateFiles
+echo [FLAG] CleanCustomTemplateFiles invoked with parameters %*
 set "CCF_TARGET_DIR=%~1"
 set "CCF_EXT_LIST=%~2"
 set "CCF_BASE_DIR=%~3"
+call :NormalizePath CCF_BASE_DIR
 set "CCF_LOG_FILE=%~4"
 set "CCF_DESIGN_MODE=%~5"
 set "CCF_LABEL=%~6"
@@ -397,6 +415,7 @@ for /f %%C in ('dir /A /B /S "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set
                 )
 
                 if "!CCF_SKIP_GENERIC!"=="1" (
+                    rem === Preserve generic system templates ===
                     set /a CUSTOM_SKIP_COUNT+=1
                     set /a CCF_DIR_SKIPPED+=1
                     set /a CCF_EXT_SKIPPED+=1
@@ -404,13 +423,9 @@ for /f %%C in ('dir /A /B /S "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set
                 ) else (
                     set "CCF_INSTALLER_FILE=!CCF_BASE_DIR!!CCF_FILE!"
 
+                    rem === Files that ARE part of installer payload MUST be deleted ===
                     if exist "!CCF_INSTALLER_FILE!" (
-                        set /a CUSTOM_SKIP_COUNT+=1
-                        set /a CCF_DIR_SKIPPED+=1
-                        set /a CCF_EXT_SKIPPED+=1
-                        if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[SKIP] Preserved !CCF_FILE! in !CCF_LABEL! (installer match)."
-                    ) else (
-                        set "CCF_DELETE_REASON=no installer match"
+                        set "CCF_DELETE_REASON=installer payload match"
                         del /F /Q "%%~fF" >nul 2>&1
                         if exist "%%~fF" (
                             set /a CUSTOM_ERROR_COUNT+=1
@@ -423,8 +438,15 @@ for /f %%C in ('dir /A /B /S "!CCF_TARGET_DIR!" 2^>nul ^| find /C /V ""') do set
                             set /a CCF_EXT_REMOVED+=1
                             if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[OK] Deleted !CCF_FILE! from !CCF_LABEL! (!CCF_DELETE_REASON!)."
                         )
+                    ) else (
+                        rem === Files NOT in installer payload MUST be PRESERVED ===
+                        set /a CUSTOM_SKIP_COUNT+=1
+                        set /a CCF_DIR_SKIPPED+=1
+                        set /a CCF_EXT_SKIPPED+=1
+                        if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[SKIP] Preserved !CCF_FILE! in !CCF_LABEL! (user/custom file)."
                     )
                 )
+
             ) else (
                 if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[WARN] Candidate vanished before delete: %%~fF"
             )
@@ -459,6 +481,8 @@ set "CCF_EXT_ERRORS="
 set "CCF_REMOVED_DIRS="
 exit /b 0
 
+
+rem --- ResetOfficeTemplateMruLists ==============================
 :ResetOfficeTemplateMruLists
 setlocal enabledelayedexpansion
 set "ROML_LOG_FILE=%~1"
@@ -708,3 +732,22 @@ exit /b 0
 :Log
 call "%OfficeTemplateLib%" :Log %*
 exit /b %errorlevel%
+
+:NormalizePath
+setlocal
+set "NP_VAR=%~1"
+set "NP_VAL=!%NP_VAR%!"
+
+rem Remove trailing backslashes
+:NP_LOOP
+if "!NP_VAL!"=="\" goto NP_END
+if "!NP_VAL:~-1!"=="\" (
+    set "NP_VAL=!NP_VAL:~0,-1!"
+    goto NP_LOOP
+)
+
+:NP_END
+rem Add exactly one backslash
+set "NP_VAL=!NP_VAL!\"
+endlocal & set "%~1=%NP_VAL%"
+exit /b 0
