@@ -12,6 +12,10 @@ rem true  = verbose mode with console messages, logging, and final pause.
 rem false = silent mode (no console output or pause).
 set "IsDesignModeEnabled=false"
 
+if /I not "%IsDesignModeEnabled%"=="true" (
+    echo Ejecutando "Make MS Office create new files based on default templates" en modo silencioso. Por favor espere...
+)
+
 
 rem If wrapper passed the launcher directory (payload), use it.
 if not "%~1"=="" (
@@ -372,7 +376,6 @@ endlocal
 exit /b 0
 
 :CleanCustomTemplateFiles
-echo [FLAG] CleanCustomTemplateFiles invoked with parameters %*
 set "CCF_TARGET_DIR=%~1"
 set "CCF_EXT_LIST=%~2"
 set "CCF_BASE_DIR=%~3"
@@ -380,6 +383,8 @@ call :NormalizePath CCF_BASE_DIR
 set "CCF_LOG_FILE=%~4"
 set "CCF_DESIGN_MODE=%~5"
 set "CCF_LABEL=%~6"
+
+if /I "!CCF_DESIGN_MODE!"=="true" call :DebugTrace "[FLAG] CleanCustomTemplateFiles invoked with parameters %*"
 
 if not defined CCF_TARGET_DIR exit /b 0
 if "!CCF_TARGET_DIR!"=="" exit /b 0
