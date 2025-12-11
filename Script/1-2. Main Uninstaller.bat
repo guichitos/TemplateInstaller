@@ -6,6 +6,13 @@ rem ===========================================================
 rem === UNIVERSAL OFFICE TEMPLATE UNINSTALLER (v1.2) ==========
 rem ===========================================================
 
+
+rem === Mode and logging configuration ========================
+rem true  = verbose mode with console messages, logging, and final pause.
+rem false = silent mode (no console output or pause).
+set "IsDesignModeEnabled=false"
+
+
 rem If wrapper passed the launcher directory (payload), use it.
 if not "%~1"=="" (
     set "LauncherDirectory=%~1"
@@ -21,12 +28,6 @@ if /I "%IsDesignModeEnabled%"=="true" (
     call :DebugTrace "[INFO] Script directory (uninstaller) resolved to: %ScriptDirectory%"
     call :DebugTrace "[INFO] Launcher/payload directory resolved to: %LauncherDirectory%"
 )
-
-rem === Mode and logging configuration ========================
-rem true  = verbose mode with console messages, logging, and final pause.
-rem false = silent mode (no console output or pause).
-set "IsDesignModeEnabled=true"
-
 call :DebugTrace "[FLAG] Script initialization started."
 
 set "UserLaunchDirectory=%CD%"
@@ -196,7 +197,7 @@ call :RemoveCustomTemplates "%BaseDirectoryPath%" "%LogFilePath%" "%IsDesignMode
 echo.
 call :DebugTrace "[FLAG] Repairing template MRU entries via helper script."
 
-call "%ScriptDirectory%2-2. Repair Office template MRU.bat"
+call "%ScriptDirectory%1-2. Repair Office template MRU.bat"
 
 call :DebugTrace "[FLAG] Finalizing uninstaller."
 

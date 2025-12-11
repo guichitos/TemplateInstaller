@@ -1,38 +1,71 @@
 @echo off
 setlocal EnableDelayedExpansion
 
-echo ==========================================================
-echo   RESET OFFICE TEMPLATE MRU LISTS
-echo ==========================================================
-echo.
+rem =======================================================
+rem == FLAG PARA MODO DISEÑO (VER SALIDA DE CONSOLA) ======
+rem =======================================================
+rem   true  = imprime todo
+rem   false = consola completamente silenciosa
+set "IsDesignModeEnabled=false"
 
-echo Targeting template MRU keys for Word, PowerPoint, and Excel...
-echo.
+
+:: --------------------------------------------------------
+:: ENCABEZADO
+:: --------------------------------------------------------
+if /I "%IsDesignModeEnabled%"=="true" (
+    echo ==========================================================
+    echo   RESET OFFICE TEMPLATE MRU LISTS
+    echo ==========================================================
+    echo.
+    echo Targeting template MRU keys for Word, PowerPoint, and Excel...
+    echo.
+)
+
 
 set "OFFICE_APPS=Word PowerPoint Excel"
 
 for %%A in (%OFFICE_APPS%) do (
-    echo ----------------------------------------------------------
-    echo Borrando llaves de %%A...
+
+    if /I "%IsDesignModeEnabled%"=="true" (
+        echo ----------------------------------------------------------
+        echo Borrando llaves de %%A...
+    )
+
     set "MRU_TARGETS="
     call :GetAppMruTargets MRU_TARGETS "%%A"
+
     if not defined MRU_TARGETS (
-        echo     No se encontraron listas MRU para %%A.
+
+        if /I "%IsDesignModeEnabled%"=="true" (
+            echo     No se encontraron listas MRU para %%A.
+        )
+
     ) else (
+
         for %%T in (!MRU_TARGETS!) do (
             set "CURRENT_TARGET=%%~T"
             if not "!CURRENT_TARGET!"=="" (
                 call :ClearMruKey "!CURRENT_TARGET!" "%%A MRU list"
             )
         )
+
     )
 )
 
-echo ----------------------------------------------------------
-echo Finalizado.
-echo ----------------------------------------------------------
-pause
+
+if /I "%IsDesignModeEnabled%"=="true" (
+    echo ----------------------------------------------------------
+    echo Finalizado.
+    echo ----------------------------------------------------------
+    pause
+)
+
 exit /b 0
+
+
+:: ==========================================================
+:: SUBRUTINAS
+:: ==========================================================
 
 :GetAppMruTargets
 rem Args: OUT_VAR APP_NAME
@@ -90,6 +123,8 @@ for %%# in (1) do (
 
 exit /b 0
 
+
+
 :DetectAdalContainer
 rem Args: OUT_ID_VAR OUT_PATH_VAR [APP_REG_NAME]
 set "TARGET_ID=%~1"
@@ -120,6 +155,8 @@ for %%# in (1) do (
     exit /b 1
 )
 
+
+
 :BuildAuthContainerCache
 rem Args: APP_FILTER
 set "DAC_REQUESTED_APP=%~1"
@@ -142,6 +179,8 @@ set "DAC_REQUESTED_APP="
 
 exit /b 0
 
+
+
 :ResetAuthContainerCache
 for /f "tokens=1 delims==" %%R in ('set __DAC_ 2^>nul') do set "%%R="
 set "__DAC_COUNT=0"
@@ -149,6 +188,8 @@ set "__DAC_PRIMARY_ID="
 set "__DAC_PRIMARY_PATH="
 set "__DAC_PRIMARY_APP="
 exit /b 0
+
+
 
 :ScanRecentTemplateKey
 rem Args: APP_NAME APP_VERSION
@@ -169,6 +210,8 @@ for /f "skip=2 tokens=*" %%S in ('2^>nul reg query "%__DAC_CURRENT_KEY%"') do (
 
 exit /b 0
 
+
+
 :HandleRecentTemplateSubkey
 rem Args: APP_NAME SUBKEY_NAME SUBKEY_PATH
 set "__DAC_APP=%~1"
@@ -179,12 +222,16 @@ if not defined __DAC_ID exit /b 0
 set "__DAC_PREFIX5=!__DAC_ID:~0,5!"
 set "__DAC_PREFIX7=!__DAC_ID:~0,7!"
 set "__DAC_IS_TARGET="
+
 if /I "!__DAC_PREFIX5!"=="ADAL_" set "__DAC_IS_TARGET=1"
 if not defined __DAC_IS_TARGET if /I "!__DAC_PREFIX7!"=="LIVEID_" set "__DAC_IS_TARGET=1"
+
 if not defined __DAC_IS_TARGET exit /b 0
 
 call :RegisterAuthContainer "!__DAC_APP!" "!__DAC_ID!" "!__DAC_PATH!"
 exit /b 0
+
+
 
 :RegisterAuthContainer
 rem Args: APP_NAME CONTAINER_ID CONTAINER_PATH
@@ -218,6 +265,8 @@ if not defined __DAC_PRIMARY_PATH (
 set /a __DAC_COUNT+=1
 exit /b 0
 
+
+
 :CollectAuthContainerPaths
 rem Args: OUT_VAR APP_NAME
 set "__CAP_TARGET_VAR=%~1"
@@ -225,7 +274,6 @@ set "__CAP_APP_FILTER=%~2"
 if "%__CAP_TARGET_VAR%"=="" exit /b 0
 
 setlocal EnableDelayedExpansion
-
 set "__CAP_RESULT="
 
 call :BuildAuthContainerCache "!__CAP_APP_FILTER!"
@@ -254,20 +302,25 @@ for %%# in (1) do (
 
 exit /b 0
 
+
+
 :AppendUniquePath
 rem Args: VAR_NAME NEW_PATH
 set "VAR_NAME=%~1"
 set "NEW_PATH=%~2"
 if "%VAR_NAME%"=="" exit /b 0
 if "%NEW_PATH%"=="" exit /b 0
+
 setlocal EnableDelayedExpansion
 set "CURRENT=!%VAR_NAME%!"
 set "NEED=1"
+
 if defined CURRENT (
     for %%P in (!CURRENT!) do (
         if /I "%%~P"=="%~2" set "NEED=0"
     )
 )
+
 if "!NEED!"=="1" (
     if defined CURRENT (
         set "CURRENT=!CURRENT! ""%~2"""
@@ -275,12 +328,17 @@ if "!NEED!"=="1" (
         set "CURRENT=""%~2"""
     )
 )
+
 set "UPDATED=!CURRENT!"
+
 for %%# in (1) do (
     endlocal
     set "%VAR_NAME%=%UPDATED%"
 )
+
 exit /b 0
+
+
 
 :DetectMRUPath
 rem Args: APP_NAME
@@ -316,6 +374,8 @@ if not defined MRU_PATH (
 endlocal & set "%MRU_VAR%=%MRU_PATH%"
 exit /b
 
+
+
 :ResolveAppProperties
 rem Internal helper. Args: APP_NAME
 set "APP_UP=%~1"
@@ -338,6 +398,8 @@ if /I "%APP_UP%"=="WORD" (
 )
 exit /b
 
+
+
 :ClearMruKey
 rem Args: KEY_PATH, LABEL
 setlocal DisableDelayedExpansion
@@ -354,8 +416,9 @@ if "%CMK_KEY%"=="" (
 
 powershell -NoLogo -NoProfile -Command ^
     "if (Test-Path 'Registry::%CMK_KEY%') { exit 0 } else { exit 1 }"
+
 if errorlevel 1 (
-    echo     %CMK_LABEL% no presente.
+    if /I "%IsDesignModeEnabled%"=="true" echo     %CMK_LABEL% no presente.
     endlocal & exit /b 0
 )
 
@@ -373,8 +436,9 @@ powershell -NoLogo -NoProfile -Command ^
     "}"
 
 if errorlevel 1 (
-    echo     Error al limpiar %CMK_LABEL%.
+    if /I "%IsDesignModeEnabled%"=="true" echo     Error al limpiar %CMK_LABEL%.
 ) else (
-    echo     %CMK_LABEL% limpiada.
+    if /I "%IsDesignModeEnabled%"=="true" echo     %CMK_LABEL% limpiada.
 )
+
 endlocal & exit /b 0

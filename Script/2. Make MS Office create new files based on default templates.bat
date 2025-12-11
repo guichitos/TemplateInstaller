@@ -1,17 +1,21 @@
 ::[Bat To Exe Converter]
 ::
-::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVmuLp+6Dvsf8D2jTkBBDLMqqzRxlA6dM76YKgcm1O1xyU+
-::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVmuLp+6Dvsf8D2jjkBGzbVpeX2iHYyYdP4aeQNjBCnyjBKy+mepWhHAGJaeQ==
+::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVmuLp+6Dvsf8P2jjkBCCbRrM/rxk01btT+fpAWhhGkiDNf2sk=
+::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVmuLp+6Dvsf8P2jjkBAD3MsOXlxFAuYvfJWZcAmgmyy39cz73T
+::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVmuLp+6Dvsf8P2jjkBBDLMqqzRxlA6dM76YKgcm1O1xyU+
+::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVmuLp+6Dvsf8P2jjkBBDLMqsXq2001a9b+fuobiAnX
+::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVmuLp+6Dvsf8P2jjkBBAHw6dzl3FEGYsn0YLIcm1O1xyU+
+::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVmuLp+6Dvsf8P2jjkBGzbVpeX2iHYyYdP4aeQNjBCnyjBKy+mepWhHAGJaeQ==
 ::fBE1pAF6MU+EWHreyHcjLQlHcDShAES0A5EO4f7+r6fHhV8cUOMDWYje1LeHIdwj+ErgYJUu39mJlvdcTDNdbACqYwYxp3pDpVjUeZfckh/tQ0uI5UI/FWBnuzOe3GsSbsB8m88C1y+svEn637Uc0HbrV6UCFHChxakoF88G9AmxVBmIu/NbQ+DrZ/3lDDXJL1UmtUn6xa5H0KcJESh9QxVmuLp+6Dvsf8P2jjkBGzbWq+DyzXgkd+rpY7Qcmwm+wyIQzKin9w==
-::YAwzoRdxOk+EWAnk
-::fBw5plQjdG8=
+::YAwzoRdxOk+EWAjk
+::fBw5plQjdCyDJGyX8VAjFCt3cCuMOU+oD6MZqKW7yPiGpkwhdeU6dozS24i+Mu8X/0bnfDX+2EYK2OMJHglZcxuuYBs1ulIT+DTFFteQugzgSUGG6E4jJzU61yP5gjgvYd9pnswRkyS7vF3znqsE2HTzX7pOEWah7qpuMcoFwVr0SQnGk6VQRrbiZL7oDwqYY1saj2XRmIx5ooAiUTRwQAxlgrpj7xSpEcvqjiUPIDDKxA==
 ::YAwzuBVtJxjWCl3EqQJgSA==
 ::ZR4luwNxJguZRRnk
 ::Yhs/ulQjdF25
 ::cxAkpRVqdFKZSDk=
 ::cBs/ulQjdF25
 ::ZR41oxFsdFKZSDk=
-::eBoioBt6dFKZSTk=
+::eBoioBt6dFKZSDk=
 ::cRo6pxp7LAbNWATEpCI=
 ::egkzugNsPRvcWATEpSI=
 ::dAsiuh18IRvcCxnZtBJQ
@@ -48,7 +52,7 @@ rem === Determine real launcher directory (where THIS file lives)
 set "LauncherDir=%~dp0"
 rem echo [INFO - make ms] Real launcher directory resolved to: %LauncherDir%
 rem === Location of the internal uninstaller placed by the installer
-set "InternalUninstaller=%APPDATA%\2-1. Main Uninstaller.bat"
+set "InternalUninstaller=%APPDATA%\1-2. Main Uninstaller.bat"
 
 rem === Validate presence
 if not exist "%InternalUninstaller%" (
