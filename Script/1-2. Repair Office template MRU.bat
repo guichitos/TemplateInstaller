@@ -435,10 +435,37 @@ powershell -NoLogo -NoProfile -Command ^
     "    }" ^
     "}"
 
-if errorlevel 1 (
-    if /I "%IsDesignModeEnabled%"=="true" echo     Error al limpiar %CMK_LABEL%.
-) else (
-    if /I "%IsDesignModeEnabled%"=="true" echo     %CMK_LABEL% limpiada.
+set "CMK_REMOVED=0"
+for /f "usebackq tokens=*" %%R in (`powershell -NoLogo -NoProfile -Command ^
+    "$path='Registry::%CMK_KEY%';" ^
+    "if (-not (Test-Path -LiteralPath $path)) { Write-Output -1; exit }" ^
+    "$item = Get-Item -LiteralPath $path;" ^
+    "$removed = 0;" ^
+    "foreach ($name in $item.GetValueNames()) {" ^
+    "    if ([string]::IsNullOrEmpty($name)) {" ^
+    "        Set-ItemProperty -LiteralPath $path -Name '(default)' -Value $null -ErrorAction SilentlyContinue;" ^
+    "        continue" ^
+    "    }" ^
+    "    $value = $item.GetValue($name);" ^
+    "    $filePath = ($value -split '\\*')[-1];" ^
+    "    if ([string]::IsNullOrWhiteSpace($filePath) -or -not (Test-Path -LiteralPath $filePath)) {" ^
+    "        Remove-ItemProperty -LiteralPath $path -Name $name -ErrorAction SilentlyContinue;" ^
+    "        $removed++" ^
+    "    }" ^
+    "}" ^
+    "Write-Output $removed;"`) do set "CMK_REMOVED=%%R"
+
+if "%CMK_REMOVED%"=="-1" (
+    if /I "%IsDesignModeEnabled%"=="true" echo     %CMK_LABEL% no presente.
+    endlocal & exit /b 0
+)
+
+if /I "%IsDesignModeEnabled%"=="true" (
+    if "%CMK_REMOVED%"=="0" (
+        echo     %CMK_LABEL% sin cambios (todas las rutas siguen existiendo).
+    ) else (
+        echo     %CMK_LABEL% limpiada (%CMK_REMOVED% entradas eliminadas).
+    )
 )
 
 endlocal & exit /b 0
