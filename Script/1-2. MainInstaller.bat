@@ -27,6 +27,7 @@ if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Base directory resolved to: %
 
 set "OfficeTemplateLib=%ScriptDirectory%1-2. AuthContainerTools.bat"
 set "MRUTools=%ScriptDirectory%1-2. MRU-PathResolver.bat"
+set "RepairTemplateMRUScript=%ScriptDirectory%1-2. Repair Office template MRU.bat"
 set "ResolveAppProps=%ScriptDirectory%1-2. ResolveAppProperties.bat"
 set "MRUInit=%ScriptDirectory%1-2. InitializeMRUSystem.bat"
 
@@ -37,6 +38,11 @@ if not exist "%OfficeTemplateLib%" (
 
 if not exist "%MRUTools%" (
     echo [ERROR] MRU library not found: "%MRUTools%"
+    exit /b 1
+)
+
+if not exist "%RepairTemplateMRUScript%" (
+    echo [ERROR] MRU repair script not found: "%RepairTemplateMRUScript%"
     exit /b 1
 )
 
@@ -74,6 +80,14 @@ if /I "%IsDesignModeEnabled%"=="true" (
 ) else (
     call :CheckEnvironment "" >nul 2>&1
     call :CloseOfficeApps "" >nul 2>&1
+)
+
+if /I "%IsDesignModeEnabled%"=="true" (
+    echo.
+    echo [INFO] Cleaning template MRU entries before installation...
+    call "%RepairTemplateMRUScript%"
+) else (
+    call "%RepairTemplateMRUScript%" >nul 2>&1
 )
 
 set "FORCE_OPEN_WORD=0"
