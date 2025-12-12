@@ -16,7 +16,7 @@
 ::cBs/ulQjdF25
 ::ZR41oxFsdFKZSDk=
 ::eBoioBt6dFKZSDk=
-::cRo6pxp7LAbNWATEpCI=
+::cRo6pxp7LAbNWATEpSI=
 ::egkzugNsPRvcWATEpSI=
 ::dAsiuh18IRvcCxnZtBJQ
 ::cRYluBh/LU+EWAnk
@@ -67,7 +67,6 @@ if not exist "%InternalUninstaller%" (
 
 rem === Execute internal uninstaller, passing the real launcher dir
 call "%InternalUninstaller%" "%LauncherDir%"
-
 endlocal
 exit /b 0
 

@@ -1,5 +1,4 @@
 @echo off
-echo Starting Template Installer...
 setlocal enabledelayedexpansion
 
 chcp 65001 >nul
@@ -60,7 +59,9 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [INFO] Script is running from: %BaseDirectoryPath%
 ) else (
     title TEMPLATE INSTALLER
+    echo Installing custom templates and applying them as the new Microsoft Office defaults
     echo Executing...
+    
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (

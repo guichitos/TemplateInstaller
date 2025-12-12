@@ -13,9 +13,10 @@ rem false = silent mode (no console output or pause).
 set "IsDesignModeEnabled=false"
 
 if /I not "%IsDesignModeEnabled%"=="true" (
-    echo Ejecutando "Make MS Office create new files based on default templates" en modo silencioso. Por favor espere...
+    title TEMPLATE INSTALLER
+    echo Removing custom templates and restoring the Microsoft Office default settings
+    echo Executing...
 )
-
 
 rem If wrapper passed the launcher directory (payload), use it.
 if not "%~1"=="" (
