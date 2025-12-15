@@ -7,7 +7,7 @@ rem Acá puede aditarse la lista de autores permitidos
 set "DEFAULT_ALLOWED_TEMPLATE_AUTHORS=www.grada.cc;www.gradaz.com"
 rem =========================================================
 
-set "IsDesignModeEnabled=false"
+set "IsDesignModeEnabled=true"
 
 set "ScriptDirectory=%~dp0"
 set "BaseHint=%~1"
@@ -467,6 +467,9 @@ exit /b
 
 
 :BackupExistingTemplate
+if /I "%IsDesignModeEnabled%"=="true" (
+echo .
+echo "[DEBUG] BackupExistingTemplate called with args: %*")
 rem ===========================================================
 rem Args: DestinationDirectory, DestinationFileName, DesignMode, OutputFlagVar, OutputPathVar
 rem ===========================================================
@@ -505,6 +508,10 @@ endlocal & (
     if not "%BET_OutputFlagVar%"=="" set "%BET_OutputFlagVar%=%BET_BackupCreated%"
     if not "%BET_OutputPathVar%"=="" set "%BET_OutputPathVar%=%BET_BackupPath%"
 )
+if /I "%IsDesignModeEnabled%"=="true" (
+echo [DEBUG] BackupExistingTemplate completed.
+echo .
+pause)
 exit /b 0
 
 
@@ -1429,6 +1436,7 @@ exit /b 0
 :EndOfScript
 if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Entering EndOfScript finalizer...
+    pause
 )
 echo Ready
 endlocal

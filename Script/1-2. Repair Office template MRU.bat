@@ -1,12 +1,11 @@
 @echo off
 setlocal EnableDelayedExpansion
-
 rem =======================================================
 rem == FLAG PARA MODO DISEÑO (VER SALIDA DE CONSOLA) ======
 rem =======================================================
 rem   true  = imprime todo
 rem   false = consola completamente silenciosa
-set "IsDesignModeEnabled=false"
+set "IsDesignModeEnabled=true"
 
 
 :: --------------------------------------------------------
@@ -30,18 +29,14 @@ for %%A in (%OFFICE_APPS%) do (
         echo ----------------------------------------------------------
         echo Borrando llaves de %%A...
     )
-
     set "MRU_TARGETS="
     call :GetAppMruTargets MRU_TARGETS "%%A"
-
     if not defined MRU_TARGETS (
 
         if /I "%IsDesignModeEnabled%"=="true" (
             echo     No se encontraron listas MRU para %%A.
         )
-
     ) else (
-
         for %%T in (!MRU_TARGETS!) do (
             set "CURRENT_TARGET=%%~T"
             if not "!CURRENT_TARGET!"=="" (
@@ -52,14 +47,11 @@ for %%A in (%OFFICE_APPS%) do (
     )
 )
 
-
 if /I "%IsDesignModeEnabled%"=="true" (
     echo ----------------------------------------------------------
     echo Finalizado.
     echo ----------------------------------------------------------
-    pause
 )
-
 exit /b 0
 
 
@@ -405,7 +397,6 @@ rem Args: KEY_PATH, LABEL
 setlocal DisableDelayedExpansion
 set "CMK_KEY=%~1"
 set "CMK_LABEL=%~2"
-
 :: Limpiar comillas y saltos de línea
 set "CMK_KEY=%CMK_KEY:"=%"
 for /f "tokens=* delims=" %%A in ('echo %CMK_KEY%') do set "CMK_KEY=%%A"
@@ -413,7 +404,6 @@ for /f "tokens=* delims=" %%A in ('echo %CMK_KEY%') do set "CMK_KEY=%%A"
 if "%CMK_KEY%"=="" (
     endlocal & exit /b 0
 )
-
 powershell -NoLogo -NoProfile -Command ^
     "if (Test-Path 'Registry::%CMK_KEY%') { exit 0 } else { exit 1 }"
 
@@ -421,7 +411,6 @@ if errorlevel 1 (
     if /I "%IsDesignModeEnabled%"=="true" echo     %CMK_LABEL% no presente.
     endlocal & exit /b 0
 )
-
 powershell -NoLogo -NoProfile -Command ^
     "$path='Registry::%CMK_KEY%';" ^
     "if (Test-Path -LiteralPath $path) {" ^
@@ -434,7 +423,6 @@ powershell -NoLogo -NoProfile -Command ^
     "        }" ^
     "    }" ^
     "}"
-
 set "CMK_REMOVED=0"
 for /f "usebackq tokens=*" %%R in (`powershell -NoLogo -NoProfile -Command ^
     "$path='Registry::%CMK_KEY%';" ^
@@ -454,18 +442,15 @@ for /f "usebackq tokens=*" %%R in (`powershell -NoLogo -NoProfile -Command ^
     "    }" ^
     "}" ^
     "Write-Output $removed;"`) do set "CMK_REMOVED=%%R"
-
 if "%CMK_REMOVED%"=="-1" (
     if /I "%IsDesignModeEnabled%"=="true" echo     %CMK_LABEL% no presente.
     endlocal & exit /b 0
 )
-
 if /I "%IsDesignModeEnabled%"=="true" (
     if "%CMK_REMOVED%"=="0" (
-        echo     %CMK_LABEL% sin cambios (todas las rutas siguen existiendo).
+        echo     %CMK_LABEL% sin cambios - todas las rutas siguen existiendo.
     ) else (
-        echo     %CMK_LABEL% limpiada (%CMK_REMOVED% entradas eliminadas).
+        echo     %CMK_LABEL% limpiada - %CMK_REMOVED% entradas eliminadas.
     )
 )
-
 endlocal & exit /b 0
