@@ -421,10 +421,17 @@ set "DestinationFileName=%~4"
 set "SourceDirectory=%~6"
 set "DesignMode=%~7"
 
+if not "%SourceDirectory:~-1%"=="\\" set "SourceDirectory=%SourceDirectory%\\"
+
 set "SourceFilePath=%SourceDirectory%%SourceFileName%"
 set "DestinationFilePath=%DestinationDirectory%\%DestinationFileName%"
 set "INSTALL_SUCCESS=0"
 set "INSTALLED_PATH="
+
+if /I "%DesignMode%"=="true" (
+    echo [DEBUG] Source path resolved: "%SourceFilePath%"
+    echo [DEBUG] Destination path resolved: "%DestinationFilePath%"
+)
 
 if not exist "%SourceFilePath%" (
     if /I "%DesignMode%"=="true" echo.
@@ -484,24 +491,59 @@ set "BET_BackupCreated=0"
 set "BET_BackupPath="
 set "BET_TargetFile=%BET_DestinationDirectory%\%BET_DestinationFileName%"
 
+if /I "%IsDesignModeEnabled%"=="true" (
+    echo [DEBUG] BET_DestinationDirectory="%BET_DestinationDirectory%"
+    echo [DEBUG] BET_DestinationFileName="%BET_DestinationFileName%"
+    echo [DEBUG] BET_TargetFile="%BET_TargetFile%"
+)
+
 if exist "%BET_TargetFile%" (
-    set "BET_BackupDir=%BET_DestinationDirectory%\Backups"
-    if not exist "%BET_BackupDir%" mkdir "%BET_BackupDir%" >nul 2>&1
+    set "BET_BackupDir=%BET_DestinationDirectory%\Backup"
+    if /I "%BET_DesignMode%"=="true" echo [DEBUG] Preparing backup directory at "!BET_BackupDir!"
+
+    if not exist "!BET_BackupDir!" (
+        mkdir "!BET_BackupDir!" >nul 2>&1
+        if /I "%BET_DesignMode%"=="true" echo [DEBUG] mkdir result for "!BET_BackupDir!": !errorlevel!
+    )
+
+    if not exist "!BET_BackupDir!" (
+        if /I "%BET_DesignMode%"=="true" echo [WARN] Could not create backup directory: "!BET_BackupDir!"
+        goto :BET_End
+    )
 
     for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyy.MM.dd.HHmm"') do set "BET_Timestamp=%%T"
     if not defined BET_Timestamp set "BET_Timestamp=%DATE%_%TIME%"
 
-    set "BET_BackupPath=%BET_BackupDir%\%BET_Timestamp%.%BET_DestinationFileName%"
-    copy /Y "%BET_TargetFile%" "%BET_BackupPath%" >nul 2>&1
+    set "BET_BackupPath=!BET_BackupDir!\!BET_Timestamp!_%BET_DestinationFileName%"
 
-    if exist "%BET_BackupPath%" (
+    if /I "%BET_DesignMode%"=="true" (
+        echo [INFO] Preparing backup.
+        echo         Source : "!BET_TargetFile!"
+        echo         Backup : "!BET_BackupPath!"
+    )
+
+    if not exist "!BET_TargetFile!" (
+        if /I "%BET_DesignMode%"=="true" echo [ERROR] Backup source not found: "!BET_TargetFile!"
+        goto :BET_End
+    )
+
+    copy /Y "!BET_TargetFile!" "!BET_BackupPath!" >nul 2>&1
+
+    if exist "!BET_BackupPath!" (
         set "BET_BackupCreated=1"
-        if /I "%BET_DesignMode%"=="true" echo [BACKUP] Created for %BET_DestinationFileName% at "%BET_BackupPath%"
+        if /I "%BET_DesignMode%"=="true" echo [BACKUP] Created for %BET_DestinationFileName% at "!BET_BackupPath!"
     ) else (
-        if /I "%BET_DesignMode%"=="true" echo [WARN] Failed to create backup for %BET_DestinationFileName% at "%BET_BackupPath%"
+        if /I "%BET_DesignMode%"=="true" echo [WARN] Failed to create backup for %BET_DestinationFileName% at "!BET_BackupPath!"
     )
 ) else (
-    if /I "%BET_DesignMode%"=="true" echo [INFO] No existing file to backup for %BET_DestinationFileName%.
+    if /I "%BET_DesignMode%"=="true" echo [INFO] No existing file to backup for %BET_DestinationFileName% at "!BET_TargetFile!".
+)
+
+:BET_End
+
+if /I "%IsDesignModeEnabled%"=="true" (
+    echo [DEBUG] BET_BackupCreated="!BET_BackupCreated!"
+    echo [DEBUG] BET_BackupPath="!BET_BackupPath!"
 )
 
 endlocal & (
