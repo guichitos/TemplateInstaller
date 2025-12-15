@@ -491,6 +491,12 @@ set "BET_BackupCreated=0"
 set "BET_BackupPath="
 set "BET_TargetFile=%BET_DestinationDirectory%\%BET_DestinationFileName%"
 
+if /I "%IsDesignModeEnabled%"=="true" (
+    echo [DEBUG] BET_DestinationDirectory="%BET_DestinationDirectory%"
+    echo [DEBUG] BET_DestinationFileName="%BET_DestinationFileName%"
+    echo [DEBUG] BET_TargetFile="%BET_TargetFile%"
+)
+
 if exist "%BET_TargetFile%" (
     set "BET_BackupDir=%BET_DestinationDirectory%\Backup"
     if not exist "%BET_BackupDir%" (
@@ -527,7 +533,14 @@ if exist "%BET_TargetFile%" (
         if /I "%BET_DesignMode%"=="true" echo [WARN] Failed to create backup for %BET_DestinationFileName% at "%BET_BackupPath%"
     )
 ) else (
-    if /I "%BET_DesignMode%"=="true" echo [INFO] No existing file to backup for %BET_DestinationFileName%.
+    if /I "%BET_DesignMode%"=="true" echo [INFO] No existing file to backup for %BET_DestinationFileName% at "%BET_TargetFile%".
+)
+
+:BET_End
+
+if /I "%IsDesignModeEnabled%"=="true" (
+    echo [DEBUG] BET_BackupCreated="%BET_BackupCreated%"
+    echo [DEBUG] BET_BackupPath="%BET_BackupPath%"
 )
 
 :BET_End
