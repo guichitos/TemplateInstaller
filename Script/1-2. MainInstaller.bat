@@ -485,7 +485,7 @@ if exist "%BET_TargetFile%" (
     set "BET_BackupDir=%BET_DestinationDirectory%\Backups"
     if not exist "%BET_BackupDir%" mkdir "%BET_BackupDir%" >nul 2>&1
 
-    for /f "usebackq delims=" %%T in (`powershell -NoProfile -Command "Get-Date -Format 'yyyy.MM.dd.HHmm'"`) do set "BET_Timestamp=%%T"
+    for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyy.MM.dd.HHmm"') do set "BET_Timestamp=%%T"
     if not defined BET_Timestamp set "BET_Timestamp=%DATE%_%TIME%"
 
     set "BET_BackupPath=%BET_BackupDir%\%BET_Timestamp%.%BET_DestinationFileName%"
