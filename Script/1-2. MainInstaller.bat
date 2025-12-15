@@ -423,7 +423,6 @@ set "DesignMode=%~7"
 
 set "SourceFilePath=%SourceDirectory%%SourceFileName%"
 set "DestinationFilePath=%DestinationDirectory%\%DestinationFileName%"
-set "BackupFilePath=%DestinationDirectory%\%~n4_backup%~x4"
 set "INSTALL_SUCCESS=0"
 set "INSTALLED_PATH="
 
@@ -447,12 +446,7 @@ if /I "!AUTHOR_RESULT!"=="FALSE" (
 
 if not exist "%DestinationDirectory%" mkdir "%DestinationDirectory%" 2>nul
 
-if exist "%DestinationFilePath%" (
-    copy /Y "%DestinationFilePath%" "%BackupFilePath%" >nul 2>&1
-    if /I "%DesignMode%"=="true" (
-        echo [BACKUP] Created for %AppName% template at "%BackupFilePath%"
-    )
-)
+call :BackupExistingTemplate "%DestinationDirectory%" "%DestinationFileName%" "%DesignMode%" LAST_BACKUP_CREATED LAST_BACKUP_PATH
 
 copy /Y "%SourceFilePath%" "%DestinationFilePath%" >nul 2>&1
 
@@ -470,6 +464,48 @@ if exist "%DestinationFilePath%" (
 
 endlocal & set "LAST_INSTALL_STATUS=%INSTALL_SUCCESS%" & set "LAST_INSTALLED_PATH=%INSTALLED_PATH%"
 exit /b
+
+
+:BackupExistingTemplate
+rem ===========================================================
+rem Args: DestinationDirectory, DestinationFileName, DesignMode, OutputFlagVar, OutputPathVar
+rem ===========================================================
+setlocal EnableDelayedExpansion
+set "BET_DestinationDirectory=%~1"
+set "BET_DestinationFileName=%~2"
+set "BET_DesignMode=%~3"
+set "BET_OutputFlagVar=%~4"
+set "BET_OutputPathVar=%~5"
+
+set "BET_BackupCreated=0"
+set "BET_BackupPath="
+set "BET_TargetFile=%BET_DestinationDirectory%\%BET_DestinationFileName%"
+
+if exist "%BET_TargetFile%" (
+    set "BET_BackupDir=%BET_DestinationDirectory%\Backups"
+    if not exist "%BET_BackupDir%" mkdir "%BET_BackupDir%" >nul 2>&1
+
+    for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyy.MM.dd.HHmm"') do set "BET_Timestamp=%%T"
+    if not defined BET_Timestamp set "BET_Timestamp=%DATE%_%TIME%"
+
+    set "BET_BackupPath=%BET_BackupDir%\%BET_Timestamp%.%BET_DestinationFileName%"
+    copy /Y "%BET_TargetFile%" "%BET_BackupPath%" >nul 2>&1
+
+    if exist "%BET_BackupPath%" (
+        set "BET_BackupCreated=1"
+        if /I "%BET_DesignMode%"=="true" echo [BACKUP] Created for %BET_DestinationFileName% at "%BET_BackupPath%"
+    ) else (
+        if /I "%BET_DesignMode%"=="true" echo [WARN] Failed to create backup for %BET_DestinationFileName% at "%BET_BackupPath%"
+    )
+) else (
+    if /I "%BET_DesignMode%"=="true" echo [INFO] No existing file to backup for %BET_DestinationFileName%.
+)
+
+endlocal & (
+    if not "%BET_OutputFlagVar%"=="" set "%BET_OutputFlagVar%=%BET_BackupCreated%"
+    if not "%BET_OutputPathVar%"=="" set "%BET_OutputPathVar%=%BET_BackupPath%"
+)
+exit /b 0
 
 
 :CheckEnvironment
