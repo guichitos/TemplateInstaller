@@ -546,6 +546,15 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] BET_BackupPath="!BET_BackupPath!"
 )
 
+:BET_End
+
+if /I "%IsDesignModeEnabled%"=="true" (
+    echo [DEBUG] BET_BackupCreated="%BET_BackupCreated%"
+    echo [DEBUG] BET_BackupPath="%BET_BackupPath%"
+)
+
+:BET_End
+
 endlocal & (
     if not "%BET_OutputFlagVar%"=="" set "%BET_OutputFlagVar%=%BET_BackupCreated%"
     if not "%BET_OutputPathVar%"=="" set "%BET_OutputPathVar%=%BET_BackupPath%"
