@@ -5,7 +5,7 @@ rem == FLAG PARA MODO DISEÑO (VER SALIDA DE CONSOLA) ======
 rem =======================================================
 rem   true  = imprime todo
 rem   false = consola completamente silenciosa
-set "IsDesignModeEnabled=true"
+set "IsDesignModeEnabled=false"
 
 
 :: --------------------------------------------------------

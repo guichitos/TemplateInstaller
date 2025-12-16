@@ -816,8 +816,9 @@ if /I "!OPEN_EXCEL_FLAG!"=="1" (
 ) else if /I "!LAUNCH_DESIGN_MODE!"=="true" (
     echo [INFO] Microsoft Excel will remain closed no new templates applied.
 )
-
-if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
+if /I "%DESIGN_MODE%"=="true" (
+    if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
+)
 
 endlocal
 exit /b

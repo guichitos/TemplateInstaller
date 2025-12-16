@@ -10,7 +10,7 @@ rem ===========================================================
 rem === Mode and logging configuration ========================
 rem true  = verbose mode with console messages, logging, and final pause.
 rem false = silent mode (no console output or pause).
-set "IsDesignModeEnabled=true"
+set "IsDesignModeEnabled=false"
 
 if /I not "%IsDesignModeEnabled%"=="true" (
     title TEMPLATE INSTALLER
@@ -583,31 +583,40 @@ if /I "!LAUNCH_DESIGN_MODE!"=="true" (
     call :DebugTrace "[TRACE] Launch flags -> Word: !OPEN_WORD_FLAG!, PowerPoint: !OPEN_PPT_FLAG!, Excel: !OPEN_EXCEL_FLAG!"
 )
 
-echo [DEBUG] Evaluating relaunch needs - Word=!OPEN_WORD_FLAG!, PowerPoint=!OPEN_PPT_FLAG!, Excel=!OPEN_EXCEL_FLAG!
+if /I "!DESIGN_MODE!"=="true" (
+    echo [DEBUG] Evaluating relaunch needs - Word=!OPEN_WORD_FLAG!, PowerPoint=!OPEN_PPT_FLAG!, Excel=!OPEN_EXCEL_FLAG!
+)
 
 if /I "!OPEN_WORD_FLAG!"=="1" (
     set "ANY_LAUNCH=1"
     call :LaunchSingleOfficeApp "winword.exe" "Microsoft Word" "!LAUNCH_DESIGN_MODE!"
 ) else (
+    if /I "!DESIGN_MODE!"=="true" (
     echo [DEBUG] Microsoft Word not requested for relaunch - flag=!OPEN_WORD_FLAG!.
+    )
 )
 
 if /I "!OPEN_PPT_FLAG!"=="1" (
     set "ANY_LAUNCH=1"
     call :LaunchSingleOfficeApp "powerpnt.exe" "Microsoft PowerPoint" "!LAUNCH_DESIGN_MODE!"
 ) else (
+    if /I "!DESIGN_MODE!"=="true" (
     echo [DEBUG] Microsoft PowerPoint not requested for relaunch - flag=!OPEN_PPT_FLAG!.
+    )
 )
 
 if /I "!OPEN_EXCEL_FLAG!"=="1" (
     set "ANY_LAUNCH=1"
     call :LaunchSingleOfficeApp "excel.exe" "Microsoft Excel" "!LAUNCH_DESIGN_MODE!"
 ) else (
-    echo [DEBUG] Microsoft Excel not requested for relaunch - flag=!OPEN_EXCEL_FLAG!.
+    if /I "!DESIGN_MODE!"=="true" (
+        echo [DEBUG] Microsoft Excel not requested for relaunch - flag=!OPEN_EXCEL_FLAG!.
+    )
 )
 
-if "!ANY_LAUNCH!"=="0" echo [DEBUG] No Office applications need to be relaunched.
-
+if /I "!DESIGN_MODE!"=="true" (
+    if "!ANY_LAUNCH!"=="0" echo [DEBUG] No Office applications need to be relaunched.
+)
 endlocal
 exit /b
 
@@ -619,21 +628,28 @@ set "APP_DESIGN_MODE=%~3"
 set "APP_PATH="
 set "APP_FOUND_LABEL="
 
-if /I "!APP_DESIGN_MODE!"=="true" call :DebugTrace "[TRACE] Searching for !APP_FRIENDLY! executable (!APP_EXECUTABLE!)."
-echo [DEBUG] Resolving executable for !APP_FRIENDLY! - target !APP_EXECUTABLE!
+if /I "!APP_DESIGN_MODE!"=="true" (
+    call :DebugTrace "[TRACE] Searching for !APP_FRIENDLY! executable (!APP_EXECUTABLE!)."
+    echo [DEBUG] Resolving executable for !APP_FRIENDLY! - target !APP_EXECUTABLE!
+)
 
 for /f "delims=" %%A in ('where /R "%ProgramFiles%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
 if not defined APP_PATH for /f "delims=" %%A in ('where /R "%ProgramFiles(x86)%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
 
 if defined APP_PATH (
     set "APP_FOUND_LABEL=path"
-    echo [DEBUG] Launching !APP_FRIENDLY! from detected path: !APP_PATH!
-    if /I "!APP_DESIGN_MODE!"=="true" call :DebugTrace "[ACTION] Launching !APP_FRIENDLY! from detected path: !APP_PATH!"
+    if /I "!APP_DESIGN_MODE!"=="true" (
+        echo [DEBUG] Launching !APP_FRIENDLY! from detected path: !APP_PATH!
+        call :DebugTrace "[ACTION] Launching !APP_FRIENDLY! from detected path: !APP_PATH!"
+    )
     start "" "!APP_PATH!" >nul 2>&1
 ) else (
     set "APP_FOUND_LABEL=pathless"
-    echo [WARN] No explicit path found for !APP_FRIENDLY!. Trying PATH lookup for !APP_EXECUTABLE!.
-    if /I "!APP_DESIGN_MODE!"=="true" call :DebugTrace "[WARN] No explicit path found for !APP_FRIENDLY!. Trying PATH lookup."
+    
+    if /I "!APP_DESIGN_MODE!"=="true" (
+        echo [WARN] No explicit path found for !APP_FRIENDLY!. Trying PATH lookup for !APP_EXECUTABLE!.
+        call :DebugTrace "[WARN] No explicit path found for !APP_FRIENDLY!. Trying PATH lookup."
+    )
     start "" "!APP_EXECUTABLE!" >nul 2>&1
 )
 
@@ -648,11 +664,17 @@ if /I "!APP_DESIGN_MODE!"=="true" (
 )
 
 if /I "!APP_FOUND_LABEL!"=="path" (
-    echo [DEBUG] Launch request issued for !APP_FRIENDLY! using resolved path.
+    if /I "!DESIGN_MODE!"=="true" (
+        echo [DEBUG] Launch request issued for !APP_FRIENDLY! using resolved path.
+    )
 ) else if /I "!APP_FOUND_LABEL!"=="pathless" (
-    echo [DEBUG] Launch request issued for !APP_FRIENDLY! using PATH fallback.
+    if /I "!DESIGN_MODE!"=="true" (
+        echo [DEBUG] Launch request issued for !APP_FRIENDLY! using PATH fallback.
+    )
 ) else (
-    echo [ERROR] Could not locate !APP_FRIENDLY! executable - missing !APP_EXECUTABLE!.
+    if /I "!DESIGN_MODE!"=="true" (
+        echo [ERROR] Could not locate !APP_FRIENDLY! executable - missing !APP_EXECUTABLE!.
+    )
 )
 
 endlocal
@@ -728,8 +750,9 @@ if /I "!OPEN_EXCEL_FLAG!"=="1" (
     echo [DEBUG] Microsoft Excel not requested for relaunch (flag=!OPEN_EXCEL_FLAG!).
 )
 
-if "!ANY_LAUNCH!"=="0" echo [DEBUG] No Office applications need to be relaunched.
-
+if /I "!DESIGN_MODE!"=="true" (
+    if "!ANY_LAUNCH!"=="0" echo [DEBUG] No Office applications need to be relaunched.
+)
 endlocal
 exit /b
 
@@ -846,7 +869,9 @@ if /I "!OPEN_EXCEL_FLAG!"=="1" (
     echo [INFO] Microsoft Excel will remain closed no new templates applied.
 )
 
-if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
+if /I "!DESIGN_MODE!"=="true" (
+    if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
+)
 
 endlocal
 exit /b
@@ -941,8 +966,9 @@ if /I "!OPEN_EXCEL_FLAG!"=="1" (
     echo [INFO] Microsoft Excel will remain closed no new templates applied.
 )
 
-if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
-
+if /I "!DESIGN_MODE!"=="true" (
+    if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
+)
 endlocal
 exit /b
 
@@ -1040,8 +1066,9 @@ if /I "!OPEN_EXCEL_FLAG!"=="1" (
     echo [INFO] Microsoft Excel will remain closed no new templates applied.
 )
 
-if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
-
+if /I "!DESIGN_MODE!"=="true" (
+    if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
+)
 endlocal
 exit /b
 
@@ -1115,7 +1142,6 @@ exit /b 0
 setlocal enabledelayedexpansion
 if /I not "%IsDesignModeEnabled%"=="true" (
     endlocal
-    pause
     exit /b 0
 )
 
