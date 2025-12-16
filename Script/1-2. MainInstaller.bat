@@ -7,7 +7,7 @@ rem Acá puede aditarse la lista de autores permitidos
 set "DEFAULT_ALLOWED_TEMPLATE_AUTHORS=www.grada.cc;www.gradaz.com"
 rem =========================================================
 
-set "IsDesignModeEnabled=true"
+set "IsDesignModeEnabled=false"
 
 set "ScriptDirectory=%~dp0"
 set "BaseHint=%~1"
@@ -562,7 +562,7 @@ endlocal & (
 if /I "%IsDesignModeEnabled%"=="true" (
 echo [DEBUG] BackupExistingTemplate completed.
 echo .
-pause)
+)
 exit /b 0
 
 

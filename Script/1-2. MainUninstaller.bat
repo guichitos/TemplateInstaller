@@ -513,6 +513,7 @@ exit /b 0
 setlocal enabledelayedexpansion
 if /I not "%IsDesignModeEnabled%"=="true" (
     endlocal
+    pause
     exit /b 0
 )
 
