@@ -77,6 +77,10 @@ rem === Define base template paths (same as main_installer.bat) ===
 set "WORD_PATH=%APPDATA%\Microsoft\Templates"
 set "PPT_PATH=%APPDATA%\Microsoft\Templates"
 set "EXCEL_PATH=%APPDATA%\Microsoft\Excel\XLSTART"
+set "OPEN_WORD_FLAG=0"
+set "OPEN_PPT_FLAG=0"
+set "OPEN_EXCEL_FLAG=0"
+set "OPENED_TEMPLATE_FOLDERS=;"
 
 rem Detect the Document Themes folder using the same logic as the installer
 set "APPDATA_EXPANDED="
@@ -149,15 +153,25 @@ set "ExcelSheetFile=%EXCEL_PATH%\Sheet.xltx"
 set "ExcelSheetMacroFile=%EXCEL_PATH%\Sheet.xltm"
 
 rem === Helper routine: delete templates =======================
+if exist "%WordFile%" set "OPEN_WORD_FLAG=1"
 call :ProcessFile "Word (.dotx)" "%WordFile%" "%LogFilePath%"
+if exist "%WordMacroFile%" set "OPEN_WORD_FLAG=1"
 call :ProcessFile "Word (.dotm)" "%WordMacroFile%" "%LogFilePath%"
+if exist "%WordEmailFile%" set "OPEN_WORD_FLAG=1"
 call :ProcessFile "Word Email (.dotx)" "%WordEmailFile%" "%LogFilePath%"
+if exist "%WordEmailMacroFile%" set "OPEN_WORD_FLAG=1"
 call :ProcessFile "Word Email (.dotm)" "%WordEmailMacroFile%" "%LogFilePath%"
+if exist "%PptFile%" set "OPEN_PPT_FLAG=1"
 call :ProcessFile "PowerPoint (.potx)" "%PptFile%" "%LogFilePath%"
+if exist "%PptMacroFile%" set "OPEN_PPT_FLAG=1"
 call :ProcessFile "PowerPoint (.potm)" "%PptMacroFile%" "%LogFilePath%"
+if exist "%ExcelBookFile%" set "OPEN_EXCEL_FLAG=1"
 call :ProcessFile "Excel Book (.xltx)" "%ExcelBookFile%" "%LogFilePath%"
+if exist "%ExcelBookMacroFile%" set "OPEN_EXCEL_FLAG=1"
 call :ProcessFile "Excel Book (.xltm)" "%ExcelBookMacroFile%" "%LogFilePath%"
+if exist "%ExcelSheetFile%" set "OPEN_EXCEL_FLAG=1"
 call :ProcessFile "Excel Sheet (.xltx)" "%ExcelSheetFile%" "%LogFilePath%"
+if exist "%ExcelSheetMacroFile%" set "OPEN_EXCEL_FLAG=1"
 call :ProcessFile "Excel Sheet (.xltm)" "%ExcelSheetMacroFile%" "%LogFilePath%"
 
 set "THEME_PAYLOAD_TRACK="
@@ -192,6 +206,17 @@ echo.
 call :DebugTrace "[FLAG] Repairing template MRU entries via helper script."
 
 call "%ScriptDirectory%1-2. Repair Office template MRU.bat"
+
+call :DebugTrace "[FLAG] Opening affected folders and relaunching Office apps."
+call :OpenTemplateFolder "%WORD_PATH%" "%IsDesignModeEnabled%" "Word template folder" ""
+call :OpenTemplateFolder "%PPT_PATH%" "%IsDesignModeEnabled%" "PowerPoint template folder" ""
+call :OpenTemplateFolder "%EXCEL_PATH%" "%IsDesignModeEnabled%" "Excel template folder" ""
+if defined THEME_PATH call :OpenTemplateFolder "!THEME_PATH!" "%IsDesignModeEnabled%" "Document Themes folder" ""
+if defined WORD_CUSTOM_TEMPLATE_PATH call :OpenTemplateFolder "!WORD_CUSTOM_TEMPLATE_PATH!" "%IsDesignModeEnabled%" "Custom Word templates" ""
+if defined PPT_CUSTOM_TEMPLATE_PATH call :OpenTemplateFolder "!PPT_CUSTOM_TEMPLATE_PATH!" "%IsDesignModeEnabled%" "Custom PowerPoint templates" ""
+if defined EXCEL_CUSTOM_TEMPLATE_PATH call :OpenTemplateFolder "!EXCEL_CUSTOM_TEMPLATE_PATH!" "%IsDesignModeEnabled%" "Custom Excel templates" ""
+
+call :LaunchOfficeApps "!OPEN_WORD_FLAG!" "!OPEN_PPT_FLAG!" "!OPEN_EXCEL_FLAG!" "%IsDesignModeEnabled%"
 
 call :DebugTrace "[FLAG] Finalizing uninstaller."
 
@@ -478,6 +503,101 @@ set "CCF_EXT_ERRORS="
 set "CCF_REMOVED_DIRS="
 exit /b 0
 
+
+:OpenTemplateFolder
+set "TARGET_PATH=%~1"
+set "DESIGN_MODE=%~2"
+set "FOLDER_LABEL=%~3"
+set "SELECT_PATH=%~4"
+
+if "%TARGET_PATH%"=="" exit /b
+if not exist "%TARGET_PATH%" exit /b
+if "%FOLDER_LABEL%"=="" set "FOLDER_LABEL=template folder"
+if not defined OPENED_TEMPLATE_FOLDERS set "OPENED_TEMPLATE_FOLDERS=;"
+set "TOKEN=;%TARGET_PATH%;"
+if "!OPENED_TEMPLATE_FOLDERS:%TOKEN%=!"=="!OPENED_TEMPLATE_FOLDERS!" (
+    if /I "%DESIGN_MODE%"=="true" (
+        if defined SELECT_PATH (
+            echo [ACTION] Opening !FOLDER_LABEL! and selecting: !SELECT_PATH!
+        ) else (
+            echo [ACTION] Opening !FOLDER_LABEL!: !TARGET_PATH!
+        )
+    )
+    if defined SELECT_PATH (
+        if exist "%SELECT_PATH%" (
+            start "" explorer /select,"!SELECT_PATH!"
+        ) else (
+            start "" explorer "!TARGET_PATH!"
+        )
+    ) else (
+        start "" explorer "!TARGET_PATH!"
+    )
+    set "OPENED_TEMPLATE_FOLDERS=!OPENED_TEMPLATE_FOLDERS!!TOKEN!"
+)
+exit /b
+
+:LaunchOfficeApps
+setlocal EnableDelayedExpansion
+set "OPEN_WORD_FLAG=%~1"
+set "OPEN_PPT_FLAG=%~2"
+set "OPEN_EXCEL_FLAG=%~3"
+set "LAUNCH_DESIGN_MODE=%~4"
+set "ANY_LAUNCH=0"
+if not defined OPEN_WORD_FLAG set "OPEN_WORD_FLAG=0"
+if not defined OPEN_PPT_FLAG set "OPEN_PPT_FLAG=0"
+if not defined OPEN_EXCEL_FLAG set "OPEN_EXCEL_FLAG=0"
+
+if /I "!OPEN_WORD_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "winword.exe" "Microsoft Word" "!LAUNCH_DESIGN_MODE!"
+) else (
+    if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+        echo [INFO] Microsoft Word will remain closed no new templates applied.
+    )
+)
+
+if /I "!OPEN_PPT_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "powerpnt.exe" "Microsoft PowerPoint" "!LAUNCH_DESIGN_MODE!"
+) else if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+    echo [INFO] Microsoft PowerPoint will remain closed no new templates applied.
+)
+
+if /I "!OPEN_EXCEL_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "excel.exe" "Microsoft Excel" "!LAUNCH_DESIGN_MODE!"
+) else if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+    echo [INFO] Microsoft Excel will remain closed no new templates applied.
+)
+
+if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
+
+endlocal
+exit /b
+
+:LaunchSingleOfficeApp
+setlocal EnableDelayedExpansion
+set "APP_EXECUTABLE=%~1"
+set "APP_FRIENDLY=%~2"
+set "APP_DESIGN_MODE=%~3"
+set "APP_PATH="
+
+for /f "delims=" %%A in ('where /R "%ProgramFiles%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
+if not defined APP_PATH for /f "delims=" %%A in ('where /R "%ProgramFiles(x86)%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
+
+if defined APP_PATH (
+    if /I "!APP_DESIGN_MODE!"=="true" (
+        echo [ACTION] Launching !APP_FRIENDLY! from !APP_PATH!
+        start "" "!APP_PATH!"
+    ) else (
+        start "" "!APP_PATH!" >nul 2>&1
+    )
+) else if /I "!APP_DESIGN_MODE!"=="true" (
+    echo [WARN] Could not locate !APP_FRIENDLY! executable (!APP_EXECUTABLE!).
+)
+
+endlocal
+exit /b
 
 :ProcessFile
 rem ===========================================================
