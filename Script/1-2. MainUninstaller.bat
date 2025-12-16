@@ -658,6 +658,429 @@ if /I "!APP_FOUND_LABEL!"=="path" (
 endlocal
 exit /b
 
+:OpenTemplateFolder
+set "TARGET_PATH=%~1"
+set "DESIGN_MODE=%~2"
+set "FOLDER_LABEL=%~3"
+set "SELECT_PATH=%~4"
+
+if "%TARGET_PATH%"=="" exit /b
+if not exist "%TARGET_PATH%" exit /b
+if "%FOLDER_LABEL%"=="" set "FOLDER_LABEL=template folder"
+if not defined OPENED_TEMPLATE_FOLDERS set "OPENED_TEMPLATE_FOLDERS=;"
+set "TOKEN=;%TARGET_PATH%;"
+if "!OPENED_TEMPLATE_FOLDERS:%TOKEN%=!"=="!OPENED_TEMPLATE_FOLDERS!" (
+    if /I "%DESIGN_MODE%"=="true" (
+        if defined SELECT_PATH (
+            echo [ACTION] Opening !FOLDER_LABEL! and selecting: !SELECT_PATH!
+        ) else (
+            echo [ACTION] Opening !FOLDER_LABEL!: !TARGET_PATH!
+        )
+    )
+    if defined SELECT_PATH (
+        if exist "%SELECT_PATH%" (
+            start "" explorer /select,"!SELECT_PATH!"
+        ) else (
+            start "" explorer "!TARGET_PATH!"
+        )
+    ) else (
+        start "" explorer "!TARGET_PATH!"
+    )
+    set "OPENED_TEMPLATE_FOLDERS=!OPENED_TEMPLATE_FOLDERS!!TOKEN!"
+)
+exit /b
+
+:LaunchOfficeApps
+setlocal EnableDelayedExpansion
+set "OPEN_WORD_FLAG=%~1"
+set "OPEN_PPT_FLAG=%~2"
+set "OPEN_EXCEL_FLAG=%~3"
+set "LAUNCH_DESIGN_MODE=%~4"
+set "ANY_LAUNCH=0"
+if not defined OPEN_WORD_FLAG set "OPEN_WORD_FLAG=0"
+if not defined OPEN_PPT_FLAG set "OPEN_PPT_FLAG=0"
+if not defined OPEN_EXCEL_FLAG set "OPEN_EXCEL_FLAG=0"
+
+if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+    call :DebugTrace "[TRACE] Launch flags -> Word: !OPEN_WORD_FLAG!, PowerPoint: !OPEN_PPT_FLAG!, Excel: !OPEN_EXCEL_FLAG!"
+)
+
+echo [DEBUG] Evaluating relaunch needs (Word=!OPEN_WORD_FLAG!, PowerPoint=!OPEN_PPT_FLAG!, Excel=!OPEN_EXCEL_FLAG!)
+
+if /I "!OPEN_WORD_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "winword.exe" "Microsoft Word" "!LAUNCH_DESIGN_MODE!"
+) else (
+    echo [DEBUG] Microsoft Word not requested for relaunch (flag=!OPEN_WORD_FLAG!).
+)
+
+if /I "!OPEN_PPT_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "powerpnt.exe" "Microsoft PowerPoint" "!LAUNCH_DESIGN_MODE!"
+) else (
+    echo [DEBUG] Microsoft PowerPoint not requested for relaunch (flag=!OPEN_PPT_FLAG!).
+)
+
+if /I "!OPEN_EXCEL_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "excel.exe" "Microsoft Excel" "!LAUNCH_DESIGN_MODE!"
+) else (
+    echo [DEBUG] Microsoft Excel not requested for relaunch (flag=!OPEN_EXCEL_FLAG!).
+)
+
+if "!ANY_LAUNCH!"=="0" echo [DEBUG] No Office applications need to be relaunched.
+
+endlocal
+exit /b
+
+:LaunchSingleOfficeApp
+setlocal EnableDelayedExpansion
+set "APP_EXECUTABLE=%~1"
+set "APP_FRIENDLY=%~2"
+set "APP_DESIGN_MODE=%~3"
+set "APP_PATH="
+set "APP_FOUND_LABEL="
+
+if /I "!APP_DESIGN_MODE!"=="true" call :DebugTrace "[TRACE] Searching for !APP_FRIENDLY! executable (!APP_EXECUTABLE!)."
+echo [DEBUG] Resolving executable for !APP_FRIENDLY! (!APP_EXECUTABLE!)
+
+for /f "delims=" %%A in ('where /R "%ProgramFiles%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
+if not defined APP_PATH for /f "delims=" %%A in ('where /R "%ProgramFiles(x86)%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
+
+if defined APP_PATH (
+    set "APP_FOUND_LABEL=path"
+    echo [DEBUG] Launching !APP_FRIENDLY! from detected path: !APP_PATH!
+    if /I "!APP_DESIGN_MODE!"=="true" call :DebugTrace "[ACTION] Launching !APP_FRIENDLY! from detected path: !APP_PATH!"
+    start "" "!APP_PATH!" >nul 2>&1
+) else (
+    set "APP_FOUND_LABEL=pathless"
+    echo [WARN] No explicit path found for !APP_FRIENDLY!. Trying PATH lookup (!APP_EXECUTABLE!).
+    if /I "!APP_DESIGN_MODE!"=="true" call :DebugTrace "[WARN] No explicit path found for !APP_FRIENDLY!. Trying PATH lookup."
+    start "" "!APP_EXECUTABLE!" >nul 2>&1
+)
+
+if /I "!APP_DESIGN_MODE!"=="true" (
+    if /I "!APP_FOUND_LABEL!"=="path" (
+        call :DebugTrace "[INFO] Launch request issued for !APP_FRIENDLY! (path mode)."
+    ) else if /I "!APP_FOUND_LABEL!"=="pathless" (
+        call :DebugTrace "[INFO] Launch request issued for !APP_FRIENDLY! via PATH fallback."
+    ) else (
+        call :DebugTrace "[WARN] Could not locate !APP_FRIENDLY! executable (!APP_EXECUTABLE!)."
+    )
+)
+
+if /I "!APP_FOUND_LABEL!"=="path" (
+    echo [DEBUG] Launch request issued for !APP_FRIENDLY! using resolved path.
+) else if /I "!APP_FOUND_LABEL!"=="pathless" (
+    echo [DEBUG] Launch request issued for !APP_FRIENDLY! using PATH fallback.
+) else (
+    echo [ERROR] Could not locate !APP_FRIENDLY! executable (!APP_EXECUTABLE!).
+)
+
+endlocal
+exit /b
+
+:OpenTemplateFolder
+set "TARGET_PATH=%~1"
+set "DESIGN_MODE=%~2"
+set "FOLDER_LABEL=%~3"
+set "SELECT_PATH=%~4"
+
+if "%TARGET_PATH%"=="" exit /b
+if not exist "%TARGET_PATH%" exit /b
+if "%FOLDER_LABEL%"=="" set "FOLDER_LABEL=template folder"
+if not defined OPENED_TEMPLATE_FOLDERS set "OPENED_TEMPLATE_FOLDERS=;"
+set "TOKEN=;%TARGET_PATH%;"
+if "!OPENED_TEMPLATE_FOLDERS:%TOKEN%=!"=="!OPENED_TEMPLATE_FOLDERS!" (
+    if /I "%DESIGN_MODE%"=="true" (
+        if defined SELECT_PATH (
+            echo [ACTION] Opening !FOLDER_LABEL! and selecting: !SELECT_PATH!
+        ) else (
+            echo [ACTION] Opening !FOLDER_LABEL!: !TARGET_PATH!
+        )
+    )
+    if defined SELECT_PATH (
+        if exist "%SELECT_PATH%" (
+            start "" explorer /select,"!SELECT_PATH!"
+        ) else (
+            start "" explorer "!TARGET_PATH!"
+        )
+    ) else (
+        start "" explorer "!TARGET_PATH!"
+    )
+    set "OPENED_TEMPLATE_FOLDERS=!OPENED_TEMPLATE_FOLDERS!!TOKEN!"
+)
+exit /b
+
+:LaunchOfficeApps
+setlocal EnableDelayedExpansion
+set "OPEN_WORD_FLAG=%~1"
+set "OPEN_PPT_FLAG=%~2"
+set "OPEN_EXCEL_FLAG=%~3"
+set "LAUNCH_DESIGN_MODE=%~4"
+set "ANY_LAUNCH=0"
+if not defined OPEN_WORD_FLAG set "OPEN_WORD_FLAG=0"
+if not defined OPEN_PPT_FLAG set "OPEN_PPT_FLAG=0"
+if not defined OPEN_EXCEL_FLAG set "OPEN_EXCEL_FLAG=0"
+
+if /I "!OPEN_WORD_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "winword.exe" "Microsoft Word" "!LAUNCH_DESIGN_MODE!"
+) else (
+    if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+        echo [INFO] Microsoft Word will remain closed no new templates applied.
+    )
+)
+
+if /I "!OPEN_PPT_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "powerpnt.exe" "Microsoft PowerPoint" "!LAUNCH_DESIGN_MODE!"
+) else if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+    echo [INFO] Microsoft PowerPoint will remain closed no new templates applied.
+)
+
+if /I "!OPEN_EXCEL_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "excel.exe" "Microsoft Excel" "!LAUNCH_DESIGN_MODE!"
+) else if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+    echo [INFO] Microsoft Excel will remain closed no new templates applied.
+)
+
+if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
+
+endlocal
+exit /b
+
+:LaunchSingleOfficeApp
+setlocal EnableDelayedExpansion
+set "APP_EXECUTABLE=%~1"
+set "APP_FRIENDLY=%~2"
+set "APP_DESIGN_MODE=%~3"
+set "APP_PATH="
+
+for /f "delims=" %%A in ('where /R "%ProgramFiles%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
+if not defined APP_PATH for /f "delims=" %%A in ('where /R "%ProgramFiles(x86)%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
+
+if defined APP_PATH (
+    if /I "!APP_DESIGN_MODE!"=="true" (
+        echo [ACTION] Launching !APP_FRIENDLY! from !APP_PATH!
+        start "" "!APP_PATH!"
+    ) else (
+        start "" "!APP_PATH!" >nul 2>&1
+    )
+) else if /I "!APP_DESIGN_MODE!"=="true" (
+    echo [WARN] Could not locate !APP_FRIENDLY! executable (!APP_EXECUTABLE!).
+)
+
+endlocal
+exit /b
+
+:OpenTemplateFolder
+set "TARGET_PATH=%~1"
+set "DESIGN_MODE=%~2"
+set "FOLDER_LABEL=%~3"
+set "SELECT_PATH=%~4"
+
+if "%TARGET_PATH%"=="" exit /b
+if not exist "%TARGET_PATH%" exit /b
+if "%FOLDER_LABEL%"=="" set "FOLDER_LABEL=template folder"
+if not defined OPENED_TEMPLATE_FOLDERS set "OPENED_TEMPLATE_FOLDERS=;"
+set "TOKEN=;%TARGET_PATH%;"
+if "!OPENED_TEMPLATE_FOLDERS:%TOKEN%=!"=="!OPENED_TEMPLATE_FOLDERS!" (
+    if /I "%DESIGN_MODE%"=="true" (
+        if defined SELECT_PATH (
+            echo [ACTION] Opening !FOLDER_LABEL! and selecting: !SELECT_PATH!
+        ) else (
+            echo [ACTION] Opening !FOLDER_LABEL!: !TARGET_PATH!
+        )
+    )
+    if defined SELECT_PATH (
+        if exist "%SELECT_PATH%" (
+            start "" explorer /select,"!SELECT_PATH!"
+        ) else (
+            start "" explorer "!TARGET_PATH!"
+        )
+    ) else (
+        start "" explorer "!TARGET_PATH!"
+    )
+    set "OPENED_TEMPLATE_FOLDERS=!OPENED_TEMPLATE_FOLDERS!!TOKEN!"
+)
+exit /b
+
+:LaunchOfficeApps
+setlocal EnableDelayedExpansion
+set "OPEN_WORD_FLAG=%~1"
+set "OPEN_PPT_FLAG=%~2"
+set "OPEN_EXCEL_FLAG=%~3"
+set "LAUNCH_DESIGN_MODE=%~4"
+set "ANY_LAUNCH=0"
+if not defined OPEN_WORD_FLAG set "OPEN_WORD_FLAG=0"
+if not defined OPEN_PPT_FLAG set "OPEN_PPT_FLAG=0"
+if not defined OPEN_EXCEL_FLAG set "OPEN_EXCEL_FLAG=0"
+
+if /I "!OPEN_WORD_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "winword.exe" "Microsoft Word" "!LAUNCH_DESIGN_MODE!"
+) else (
+    if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+        echo [INFO] Microsoft Word will remain closed no new templates applied.
+    )
+)
+
+if /I "!OPEN_PPT_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "powerpnt.exe" "Microsoft PowerPoint" "!LAUNCH_DESIGN_MODE!"
+) else if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+    echo [INFO] Microsoft PowerPoint will remain closed no new templates applied.
+)
+
+if /I "!OPEN_EXCEL_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "excel.exe" "Microsoft Excel" "!LAUNCH_DESIGN_MODE!"
+) else if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+    echo [INFO] Microsoft Excel will remain closed no new templates applied.
+)
+
+if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
+
+endlocal
+exit /b
+
+:LaunchSingleOfficeApp
+setlocal EnableDelayedExpansion
+set "APP_EXECUTABLE=%~1"
+set "APP_FRIENDLY=%~2"
+set "APP_DESIGN_MODE=%~3"
+set "APP_PATH="
+
+for /f "delims=" %%A in ('where /R "%ProgramFiles%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
+if not defined APP_PATH for /f "delims=" %%A in ('where /R "%ProgramFiles(x86)%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
+
+if defined APP_PATH (
+    if /I "!APP_DESIGN_MODE!"=="true" (
+        echo [ACTION] Launching !APP_FRIENDLY! from !APP_PATH!
+        start "" "!APP_PATH!"
+    ) else (
+        start "" "!APP_PATH!" >nul 2>&1
+    )
+) else if /I "!APP_DESIGN_MODE!"=="true" (
+    echo [WARN] Could not locate !APP_FRIENDLY! executable (!APP_EXECUTABLE!).
+)
+
+endlocal
+exit /b
+
+:OpenTemplateFolder
+set "TARGET_PATH=%~1"
+set "DESIGN_MODE=%~2"
+set "FOLDER_LABEL=%~3"
+set "SELECT_PATH=%~4"
+
+if "%TARGET_PATH%"=="" exit /b
+if not exist "%TARGET_PATH%" exit /b
+if "%FOLDER_LABEL%"=="" set "FOLDER_LABEL=template folder"
+if not defined OPENED_TEMPLATE_FOLDERS set "OPENED_TEMPLATE_FOLDERS=;"
+set "TOKEN=;%TARGET_PATH%;"
+if "!OPENED_TEMPLATE_FOLDERS:%TOKEN%=!"=="!OPENED_TEMPLATE_FOLDERS!" (
+    if /I "%DESIGN_MODE%"=="true" (
+        if defined SELECT_PATH (
+            echo [ACTION] Opening !FOLDER_LABEL! and selecting: !SELECT_PATH!
+        ) else (
+            echo [ACTION] Opening !FOLDER_LABEL!: !TARGET_PATH!
+        )
+    )
+    if defined SELECT_PATH (
+        if exist "%SELECT_PATH%" (
+            start "" explorer /select,"!SELECT_PATH!"
+        ) else (
+            start "" explorer "!TARGET_PATH!"
+        )
+    ) else (
+        start "" explorer "!TARGET_PATH!"
+    )
+    set "OPENED_TEMPLATE_FOLDERS=!OPENED_TEMPLATE_FOLDERS!!TOKEN!"
+)
+exit /b
+
+:LaunchOfficeApps
+setlocal EnableDelayedExpansion
+set "OPEN_WORD_FLAG=%~1"
+set "OPEN_PPT_FLAG=%~2"
+set "OPEN_EXCEL_FLAG=%~3"
+set "LAUNCH_DESIGN_MODE=%~4"
+set "ANY_LAUNCH=0"
+if not defined OPEN_WORD_FLAG set "OPEN_WORD_FLAG=0"
+if not defined OPEN_PPT_FLAG set "OPEN_PPT_FLAG=0"
+if not defined OPEN_EXCEL_FLAG set "OPEN_EXCEL_FLAG=0"
+
+if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+    call :DebugTrace "[TRACE] Launch flags -> Word: !OPEN_WORD_FLAG!, PowerPoint: !OPEN_PPT_FLAG!, Excel: !OPEN_EXCEL_FLAG!"
+)
+
+if /I "!OPEN_WORD_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "winword.exe" "Microsoft Word" "!LAUNCH_DESIGN_MODE!"
+) else (
+    if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+        echo [INFO] Microsoft Word will remain closed no new templates applied.
+    )
+)
+
+if /I "!OPEN_PPT_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "powerpnt.exe" "Microsoft PowerPoint" "!LAUNCH_DESIGN_MODE!"
+) else if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+    echo [INFO] Microsoft PowerPoint will remain closed no new templates applied.
+)
+
+if /I "!OPEN_EXCEL_FLAG!"=="1" (
+    set "ANY_LAUNCH=1"
+    call :LaunchSingleOfficeApp "excel.exe" "Microsoft Excel" "!LAUNCH_DESIGN_MODE!"
+) else if /I "!LAUNCH_DESIGN_MODE!"=="true" (
+    echo [INFO] Microsoft Excel will remain closed no new templates applied.
+)
+
+if "!ANY_LAUNCH!"=="0" if /I "!LAUNCH_DESIGN_MODE!"=="true" echo [INFO] No Office applications need to be relaunched.
+
+endlocal
+exit /b
+
+:LaunchSingleOfficeApp
+setlocal EnableDelayedExpansion
+set "APP_EXECUTABLE=%~1"
+set "APP_FRIENDLY=%~2"
+set "APP_DESIGN_MODE=%~3"
+set "APP_PATH="
+set "APP_FOUND_LABEL="
+
+if /I "!APP_DESIGN_MODE!"=="true" call :DebugTrace "[TRACE] Searching for !APP_FRIENDLY! executable (!APP_EXECUTABLE!)."
+
+for /f "delims=" %%A in ('where /R "%ProgramFiles%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
+if not defined APP_PATH for /f "delims=" %%A in ('where /R "%ProgramFiles(x86)%" "%APP_EXECUTABLE%" 2^>nul ^| find /I "%APP_EXECUTABLE%"') do set "APP_PATH=%%A"
+
+if defined APP_PATH (
+    set "APP_FOUND_LABEL=path"
+    if /I "!APP_DESIGN_MODE!"=="true" call :DebugTrace "[ACTION] Launching !APP_FRIENDLY! from detected path: !APP_PATH!"
+    start "" "!APP_PATH!" >nul 2>&1
+) else (
+    set "APP_FOUND_LABEL=pathless"
+    if /I "!APP_DESIGN_MODE!"=="true" call :DebugTrace "[WARN] No explicit path found for !APP_FRIENDLY!. Trying PATH lookup."
+    start "" "!APP_EXECUTABLE!" >nul 2>&1
+)
+
+if /I "!APP_DESIGN_MODE!"=="true" (
+    if /I "!APP_FOUND_LABEL!"=="path" (
+        call :DebugTrace "[INFO] Launch request issued for !APP_FRIENDLY! (path mode)."
+    ) else if /I "!APP_FOUND_LABEL!"=="pathless" (
+        call :DebugTrace "[INFO] Launch request issued for !APP_FRIENDLY! via PATH fallback."
+    ) else (
+        call :DebugTrace "[WARN] Could not locate !APP_FRIENDLY! executable (!APP_EXECUTABLE!)."
+    )
+)
+
+endlocal
+exit /b
+
 :ProcessFile
 rem ===========================================================
 rem Args: AppName, TargetFile, LogFile
