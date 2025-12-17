@@ -171,7 +171,7 @@ for %%# in (1) do (
 )
 
 :dac_not_found
-echo flag 4 
+
 for %%# in (1) do (
     endlocal
     if not "%TARGET_ID%"=="" set "%TARGET_ID%="
