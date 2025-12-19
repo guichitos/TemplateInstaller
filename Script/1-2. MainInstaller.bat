@@ -706,6 +706,23 @@ taskkill /IM EXCEL.EXE /F >nul 2>&1
 echo [DEBUG] Exiting Closing Office applications...
 exit /b
 
+:HandleDocumentThemeFolderOpen
+set "DT_SHOULD_OPEN=%~1"
+set "DT_DESIGN_MODE=%~2"
+set "DT_TARGET=%~3"
+set "DT_SELECT=%~4"
+
+if /I "%DT_SHOULD_OPEN%"=="true" (
+    if defined DT_TARGET if exist "%DT_TARGET%" (
+        call :OpenTemplateFolder "%DT_TARGET%" "" "%DT_DESIGN_MODE%" "Document Themes folder" "%DT_SELECT%"
+    ) else if /I "%DT_DESIGN_MODE%"=="true" (
+        echo [DEBUG] Document Themes folder not opened because the path is unavailable.
+    )
+) else if /I "%DT_DESIGN_MODE%"=="true" (
+    echo [DEBUG] Document Themes folder open flag is false; skipping launch.
+)
+exit /b
+
 :OpenTemplateFolder
 set "TARGET_PATH=%~1"
 set "DESIGN_MODE=%~2"
@@ -1023,9 +1040,9 @@ if "!OPEN_EXCEL!"=="1" if exist "!EXCEL_PATH!" (
     call :OpenTemplateFolder "!EXCEL_PATH!" "" "%IsDesignModeEnabled%" "Excel template folder" "!EXCEL_SELECT!"
 )
 
-if "!OPEN_THEME!"=="1" if exist "!THEME_PATH!" (
-    call :OpenTemplateFolder "!THEME_PATH!" "" "%IsDesignModeEnabled%" "Document Themes folder" "!THEME_SELECT!"
-)
+set "OPEN_DOCUMENT_THEME_FLAG=false"
+if "!OPEN_THEME!"=="1" set "OPEN_DOCUMENT_THEME_FLAG=true"
+call :HandleDocumentThemeFolderOpen "!OPEN_DOCUMENT_THEME_FLAG!" "%IsDesignModeEnabled%" "!THEME_PATH!" "!THEME_SELECT!"
 
 if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Exiting CopyAll routine - pre-endlocal
