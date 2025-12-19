@@ -7,7 +7,10 @@ rem Acá puede aditarse la lista de autores permitidos
 set "DEFAULT_ALLOWED_TEMPLATE_AUTHORS=www.grada.cc;www.gradaz.com"
 rem =========================================================
 
-set "IsDesignModeEnabled=false"
+rem Delay (in seconds) between opening the Document Themes folder and launching apps
+set "DOCUMENT_THEME_OPEN_DELAY_SECONDS=15"
+
+set "IsDesignModeEnabled=true"
 
 set "ScriptDirectory=%~dp0"
 set "BaseHint=%~1"
@@ -99,6 +102,10 @@ set "GLOBAL_ITEM_COUNT_EXCEL=0"
 set "LAST_INSTALL_STATUS=0"
 set "LAST_INSTALLED_PATH="
 set "OPENED_TEMPLATE_FOLDERS=;"
+set "OPEN_DOCUMENT_THEME_FLAG=false"
+set "DOCUMENT_THEME_SELECT="
+set "OPEN_CUSTOM_TEMPLATE_FLAG=false"
+set "CUSTOM_OFFICE_TEMPLATE_PATH=C:\Users\PC\OneDrive\Documentos\Custom Office Templates"
 set "WORD_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "PPT_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "EXCEL_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Excel\XLSTART"
@@ -137,6 +144,13 @@ if /I "%IsDesignModeEnabled%"=="true" (
 
 if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Completed CopyAll invocation block (errorlevel=!CopyAllErrorLevel!)
+)
+
+call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_OFFICE_TEMPLATE_PATH%" "%OPEN_CUSTOM_TEMPLATE_FLAG%"
+
+if /I "%OPEN_DOCUMENT_THEME_FLAG%"=="true" (
+    if /I "%IsDesignModeEnabled%"=="true" echo [INFO] Waiting %DOCUMENT_THEME_OPEN_DELAY_SECONDS% seconds before launching Office apps.
+    timeout /t %DOCUMENT_THEME_OPEN_DELAY_SECONDS% /nobreak >nul 2>&1
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
@@ -706,6 +720,59 @@ taskkill /IM EXCEL.EXE /F >nul 2>&1
 echo [DEBUG] Exiting Closing Office applications...
 exit /b
 
+:HandleDocumentThemeFolderOpen
+set "DT_SHOULD_OPEN=%~1"
+set "DT_DESIGN_MODE=%~2"
+set "DT_TARGET=%~3"
+set "DT_SELECT=%~4"
+set "DT_CUSTOM_PATH=%~5"
+set "DT_CUSTOM_SHOULD_OPEN=%~6"
+call :NormalizePath "%DT_TARGET%" DT_TARGET_COMPARE
+call :NormalizePath "%DT_CUSTOM_PATH%" DT_CUSTOM_COMPARE
+set "DT_CUSTOM_OPEN_FLAG=%DT_SHOULD_OPEN%"
+if /I "%DT_CUSTOM_SHOULD_OPEN%"=="true" set "DT_CUSTOM_OPEN_FLAG=true"
+
+if /I "%DT_SHOULD_OPEN%"=="true" (
+    if defined DT_TARGET if exist "%DT_TARGET%" (
+        call :OpenTemplateFolder "%DT_TARGET%" "" "%DT_DESIGN_MODE%" "Document Themes folder" "%DT_SELECT%"
+    ) else if /I "%DT_DESIGN_MODE%"=="true" (
+        echo [DEBUG] Document Themes folder not opened because the path is unavailable.
+    )
+
+    set "DT_CUSTOM_OPEN_FLAG=true"
+)
+
+if /I "%DT_CUSTOM_OPEN_FLAG%"=="true" (
+    if defined DT_CUSTOM_PATH if exist "%DT_CUSTOM_PATH%" if /I not "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
+        call :OpenTemplateFolder "%DT_CUSTOM_PATH%" "" "%DT_DESIGN_MODE%" "Custom Office Templates folder" ""
+    ) else if /I "%DT_DESIGN_MODE%"=="true" (
+        if /I "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
+            echo [DEBUG] Skipping Custom Office Templates folder because it is already being opened as the Document Themes folder.
+        ) else (
+            echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
+        )
+    )
+) else if /I "%DT_DESIGN_MODE%"=="true" (
+    echo [DEBUG] Document Themes folder open flag is false; skipping launch.
+)
+exit /b
+
+:NormalizePath
+set "NP_INPUT=%~1"
+set "NP_OUTPUT_VAR=%~2"
+
+if "%NP_OUTPUT_VAR%"=="" exit /b
+
+setlocal EnableDelayedExpansion
+set "NP_WORK=!NP_INPUT!"
+
+:_TrimLoop
+if defined NP_WORK if "!NP_WORK:~-1!"==" " set "NP_WORK=!NP_WORK:~0,-1!" & goto _TrimLoop
+if defined NP_WORK if "!NP_WORK:~-1!"=="\\" set "NP_WORK=!NP_WORK:~0,-1!" & goto _TrimLoop
+
+endlocal & set "%NP_OUTPUT_VAR%=%NP_WORK%"
+exit /b
+
 :OpenTemplateFolder
 set "TARGET_PATH=%~1"
 set "DESIGN_MODE=%~2"
@@ -874,10 +941,13 @@ set "OPEN_WORD=0"
 set "OPEN_PPT=0"
 set "OPEN_EXCEL=0"
 set "OPEN_THEME=0"
+set "OPEN_CUSTOM_TEMPLATE_REQUEST=false"
 set "WORD_SELECT="
 set "PPT_SELECT="
 set "EXCEL_SELECT="
 set "THEME_SELECT="
+
+call :NormalizePath "%CUSTOM_OFFICE_TEMPLATE_PATH%" CUSTOM_OFFICE_TEMPLATE_COMPARE
 
 if defined FORCE_OPEN_WORD if "!FORCE_OPEN_WORD!"=="1" set "OPEN_WORD=1"
 if defined FORCE_OPEN_PPT if "!FORCE_OPEN_PPT!"=="1" set "OPEN_PPT=1"
@@ -1012,20 +1082,37 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 
 if "!OPEN_WORD!"=="1" if exist "!WORD_PATH!" (
-    call :OpenTemplateFolder "!WORD_PATH!" "" "%IsDesignModeEnabled%" "Word template folder" "!WORD_SELECT!"
+    call :NormalizePath "!WORD_PATH!" CURRENT_FOLDER_COMPARE
+    if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling (Word).
+    ) else (
+        call :OpenTemplateFolder "!WORD_PATH!" "" "%IsDesignModeEnabled%" "Word template folder" "!WORD_SELECT!"
+    )
 )
 
 if "!OPEN_PPT!"=="1" if exist "!PPT_PATH!" (
-    call :OpenTemplateFolder "!PPT_PATH!" "" "%IsDesignModeEnabled%" "PowerPoint template folder" "!PPT_SELECT!"
+    call :NormalizePath "!PPT_PATH!" CURRENT_FOLDER_COMPARE
+    if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling (PowerPoint).
+    ) else (
+        call :OpenTemplateFolder "!PPT_PATH!" "" "%IsDesignModeEnabled%" "PowerPoint template folder" "!PPT_SELECT!"
+    )
 )
 
 if "!OPEN_EXCEL!"=="1" if exist "!EXCEL_PATH!" (
-    call :OpenTemplateFolder "!EXCEL_PATH!" "" "%IsDesignModeEnabled%" "Excel template folder" "!EXCEL_SELECT!"
+    call :NormalizePath "!EXCEL_PATH!" CURRENT_FOLDER_COMPARE
+    if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling (Excel).
+    ) else (
+        call :OpenTemplateFolder "!EXCEL_PATH!" "" "%IsDesignModeEnabled%" "Excel template folder" "!EXCEL_SELECT!"
+    )
 )
 
-if "!OPEN_THEME!"=="1" if exist "!THEME_PATH!" (
-    call :OpenTemplateFolder "!THEME_PATH!" "" "%IsDesignModeEnabled%" "Document Themes folder" "!THEME_SELECT!"
-)
+set "OPEN_DOCUMENT_THEME_FLAG=false"
+if "!OPEN_THEME!"=="1" set "OPEN_DOCUMENT_THEME_FLAG=true"
 
 if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Exiting CopyAll routine - pre-endlocal
@@ -1044,6 +1131,9 @@ endlocal & (
     set "FORCE_OPEN_WORD=%OPEN_WORD%"
     set "FORCE_OPEN_PPT=%OPEN_PPT%"
     set "FORCE_OPEN_EXCEL=%OPEN_EXCEL%"
+    set "OPEN_DOCUMENT_THEME_FLAG=%OPEN_DOCUMENT_THEME_FLAG%"
+    set "DOCUMENT_THEME_SELECT=%THEME_SELECT%"
+    set "OPEN_CUSTOM_TEMPLATE_FLAG=%OPEN_CUSTOM_TEMPLATE_REQUEST%"
 )
 exit /b
 
