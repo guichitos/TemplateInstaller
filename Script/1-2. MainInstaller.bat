@@ -145,7 +145,14 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
-    echo [DEBUG] Completed CopyAll invocation block (errorlevel=!CopyAllErrorLevel!)
+    echo [DEBUG] Completed CopyAll invocation block - errorlevel !CopyAllErrorLevel!
+)
+
+call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_OFFICE_TEMPLATE_PATH%" "%OPEN_CUSTOM_TEMPLATE_FLAG%" "%ROAMING_TEMPLATE_PATH%" "%OPEN_ROAMING_TEMPLATE_FLAG%"
+
+if /I "%OPEN_DOCUMENT_THEME_FLAG%"=="true" (
+    if /I "%IsDesignModeEnabled%"=="true" echo [INFO] Waiting %DOCUMENT_THEME_OPEN_DELAY_SECONDS% seconds before launching Office apps.
+    timeout /t %DOCUMENT_THEME_OPEN_DELAY_SECONDS% /nobreak >nul 2>&1
 )
 
 call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_OFFICE_TEMPLATE_PATH%" "%OPEN_CUSTOM_TEMPLATE_FLAG%" "%ROAMING_TEMPLATE_PATH%" "%OPEN_ROAMING_TEMPLATE_FLAG%"
@@ -176,7 +183,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
     if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_FLAG=true"
-        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template (Normal.dotx).
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template Normal.dotx.
     ) else (
         call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
     )
@@ -186,7 +193,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
     if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_FLAG=true"
-        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template (Normal.dotm).
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template Normal.dotm.
     ) else (
         call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
     )
@@ -196,7 +203,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
     if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_FLAG=true"
-        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template (NormalEmail.dotx).
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template NormalEmail.dotx.
     ) else (
         call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
     )
@@ -206,7 +213,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
     if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_FLAG=true"
-        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template (NormalEmail.dotm).
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template NormalEmail.dotm.
     ) else (
         call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
     )
@@ -216,7 +223,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
     if /I "!IBT_PPT_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_FLAG=true"
-        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base PowerPoint template (Blank.potx).
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base PowerPoint template Blank.potx.
     ) else (
         call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
     )
@@ -226,7 +233,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
     if /I "!IBT_PPT_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_FLAG=true"
-        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base PowerPoint template (Blank.potm).
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base PowerPoint template Blank.potm.
     ) else (
         call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
     )
