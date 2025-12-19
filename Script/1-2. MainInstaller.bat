@@ -155,6 +155,13 @@ if /I "%OPEN_DOCUMENT_THEME_FLAG%"=="true" (
     timeout /t %DOCUMENT_THEME_OPEN_DELAY_SECONDS% /nobreak >nul 2>&1
 )
 
+call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_OFFICE_TEMPLATE_PATH%" "%OPEN_CUSTOM_TEMPLATE_FLAG%" "%ROAMING_TEMPLATE_PATH%" "%OPEN_ROAMING_TEMPLATE_FLAG%"
+
+if /I "%OPEN_DOCUMENT_THEME_FLAG%"=="true" (
+    if /I "%IsDesignModeEnabled%"=="true" echo [INFO] Waiting %DOCUMENT_THEME_OPEN_DELAY_SECONDS% seconds before launching Office apps.
+    timeout /t %DOCUMENT_THEME_OPEN_DELAY_SECONDS% /nobreak >nul 2>&1
+)
+
 if /I "%IsDesignModeEnabled%"=="true" (
     echo.
     echo [FINAL] Universal Office Template installation completed successfully.
