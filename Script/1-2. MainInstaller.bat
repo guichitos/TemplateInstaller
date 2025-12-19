@@ -725,6 +725,11 @@ set "DT_DESIGN_MODE=%~2"
 set "DT_TARGET=%~3"
 set "DT_SELECT=%~4"
 set "DT_CUSTOM_PATH=%~5"
+set "DT_TARGET_COMPARE=%DT_TARGET%"
+set "DT_CUSTOM_COMPARE=%DT_CUSTOM_PATH%"
+
+if defined DT_TARGET_COMPARE if "!DT_TARGET_COMPARE:~-1!"=="\\" set "DT_TARGET_COMPARE=!DT_TARGET_COMPARE:~0,-1!"
+if defined DT_CUSTOM_COMPARE if "!DT_CUSTOM_COMPARE:~-1!"=="\\" set "DT_CUSTOM_COMPARE=!DT_CUSTOM_COMPARE:~0,-1!"
 
 if /I "%DT_SHOULD_OPEN%"=="true" (
     if defined DT_TARGET if exist "%DT_TARGET%" (
@@ -733,10 +738,10 @@ if /I "%DT_SHOULD_OPEN%"=="true" (
         echo [DEBUG] Document Themes folder not opened because the path is unavailable.
     )
 
-    if defined DT_CUSTOM_PATH if exist "%DT_CUSTOM_PATH%" if /I not "%DT_CUSTOM_PATH%"=="%DT_TARGET%" (
+    if defined DT_CUSTOM_PATH if exist "%DT_CUSTOM_PATH%" if /I not "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
         call :OpenTemplateFolder "%DT_CUSTOM_PATH%" "" "%DT_DESIGN_MODE%" "Custom Office Templates folder" ""
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
-        if /I "%DT_CUSTOM_PATH%"=="%DT_TARGET%" (
+        if /I "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
             echo [DEBUG] Skipping Custom Office Templates folder because it is already being opened as the Document Themes folder.
         ) else (
             echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
