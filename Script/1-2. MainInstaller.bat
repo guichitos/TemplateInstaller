@@ -733,10 +733,14 @@ if /I "%DT_SHOULD_OPEN%"=="true" (
         echo [DEBUG] Document Themes folder not opened because the path is unavailable.
     )
 
-    if defined DT_CUSTOM_PATH if exist "%DT_CUSTOM_PATH%" (
+    if defined DT_CUSTOM_PATH if exist "%DT_CUSTOM_PATH%" if /I not "%DT_CUSTOM_PATH%"=="%DT_TARGET%" (
         call :OpenTemplateFolder "%DT_CUSTOM_PATH%" "" "%DT_DESIGN_MODE%" "Custom Office Templates folder" ""
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
-        echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
+        if /I "%DT_CUSTOM_PATH%"=="%DT_TARGET%" (
+            echo [DEBUG] Skipping Custom Office Templates folder because it is already being opened as the Document Themes folder.
+        ) else (
+            echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
+        )
     )
 ) else if /I "%DT_DESIGN_MODE%"=="true" (
     echo [DEBUG] Document Themes folder open flag is false; skipping launch.
