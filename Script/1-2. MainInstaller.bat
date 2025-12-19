@@ -7,6 +7,9 @@ rem Acá puede aditarse la lista de autores permitidos
 set "DEFAULT_ALLOWED_TEMPLATE_AUTHORS=www.grada.cc;www.gradaz.com"
 rem =========================================================
 
+rem Delay (in seconds) between opening the Document Themes folder and launching apps
+set "DOCUMENT_THEME_OPEN_DELAY_SECONDS=15"
+
 set "IsDesignModeEnabled=false"
 
 set "ScriptDirectory=%~dp0"
@@ -99,6 +102,8 @@ set "GLOBAL_ITEM_COUNT_EXCEL=0"
 set "LAST_INSTALL_STATUS=0"
 set "LAST_INSTALLED_PATH="
 set "OPENED_TEMPLATE_FOLDERS=;"
+set "OPEN_DOCUMENT_THEME_FLAG=false"
+set "DOCUMENT_THEME_SELECT="
 set "WORD_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "PPT_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "EXCEL_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Excel\XLSTART"
@@ -137,6 +142,13 @@ if /I "%IsDesignModeEnabled%"=="true" (
 
 if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Completed CopyAll invocation block (errorlevel=!CopyAllErrorLevel!)
+)
+
+call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%"
+
+if /I "%OPEN_DOCUMENT_THEME_FLAG%"=="true" (
+    if /I "%IsDesignModeEnabled%"=="true" echo [INFO] Waiting %DOCUMENT_THEME_OPEN_DELAY_SECONDS% seconds before launching Office apps.
+    timeout /t %DOCUMENT_THEME_OPEN_DELAY_SECONDS% /nobreak >nul 2>&1
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
@@ -1042,7 +1054,6 @@ if "!OPEN_EXCEL!"=="1" if exist "!EXCEL_PATH!" (
 
 set "OPEN_DOCUMENT_THEME_FLAG=false"
 if "!OPEN_THEME!"=="1" set "OPEN_DOCUMENT_THEME_FLAG=true"
-call :HandleDocumentThemeFolderOpen "!OPEN_DOCUMENT_THEME_FLAG!" "%IsDesignModeEnabled%" "!THEME_PATH!" "!THEME_SELECT!"
 
 if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Exiting CopyAll routine - pre-endlocal
@@ -1061,6 +1072,8 @@ endlocal & (
     set "FORCE_OPEN_WORD=%OPEN_WORD%"
     set "FORCE_OPEN_PPT=%OPEN_PPT%"
     set "FORCE_OPEN_EXCEL=%OPEN_EXCEL%"
+    set "OPEN_DOCUMENT_THEME_FLAG=%OPEN_DOCUMENT_THEME_FLAG%"
+    set "DOCUMENT_THEME_SELECT=%THEME_SELECT%"
 )
 exit /b
 
