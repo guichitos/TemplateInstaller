@@ -725,11 +725,8 @@ set "DT_DESIGN_MODE=%~2"
 set "DT_TARGET=%~3"
 set "DT_SELECT=%~4"
 set "DT_CUSTOM_PATH=%~5"
-set "DT_TARGET_COMPARE=%DT_TARGET%"
-set "DT_CUSTOM_COMPARE=%DT_CUSTOM_PATH%"
-
-if defined DT_TARGET_COMPARE if "!DT_TARGET_COMPARE:~-1!"=="\\" set "DT_TARGET_COMPARE=!DT_TARGET_COMPARE:~0,-1!"
-if defined DT_CUSTOM_COMPARE if "!DT_CUSTOM_COMPARE:~-1!"=="\\" set "DT_CUSTOM_COMPARE=!DT_CUSTOM_COMPARE:~0,-1!"
+call :NormalizePath "%DT_TARGET%" DT_TARGET_COMPARE
+call :NormalizePath "%DT_CUSTOM_PATH%" DT_CUSTOM_COMPARE
 
 if /I "%DT_SHOULD_OPEN%"=="true" (
     if defined DT_TARGET if exist "%DT_TARGET%" (
@@ -750,6 +747,22 @@ if /I "%DT_SHOULD_OPEN%"=="true" (
 ) else if /I "%DT_DESIGN_MODE%"=="true" (
     echo [DEBUG] Document Themes folder open flag is false; skipping launch.
 )
+exit /b
+
+:NormalizePath
+set "NP_INPUT=%~1"
+set "NP_OUTPUT_VAR=%~2"
+
+if "%NP_OUTPUT_VAR%"=="" exit /b
+
+setlocal EnableDelayedExpansion
+set "NP_WORK=!NP_INPUT!"
+
+:_TrimLoop
+if defined NP_WORK if "!NP_WORK:~-1!"==" " set "NP_WORK=!NP_WORK:~0,-1!" & goto _TrimLoop
+if defined NP_WORK if "!NP_WORK:~-1!"=="\\" set "NP_WORK=!NP_WORK:~0,-1!" & goto _TrimLoop
+
+endlocal & set "%NP_OUTPUT_VAR%=%NP_WORK%"
 exit /b
 
 :OpenTemplateFolder
