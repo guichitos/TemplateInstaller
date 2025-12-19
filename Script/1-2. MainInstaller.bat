@@ -737,7 +737,6 @@ call :NormalizePath "%DT_ROAMING_PATH%" DT_ROAMING_COMPARE
 set "DT_CUSTOM_OPEN_FLAG=%DT_SHOULD_OPEN%"
 if /I "%DT_CUSTOM_SHOULD_OPEN%"=="true" set "DT_CUSTOM_OPEN_FLAG=true"
 set "DT_ROAMING_OPEN_FLAG=%DT_ROAMING_SHOULD_OPEN%"
-if /I "%DT_SHOULD_OPEN%"=="true" set "DT_ROAMING_OPEN_FLAG=true"
 
 if /I "%DT_SHOULD_OPEN%"=="true" (
     if defined DT_TARGET if exist "%DT_TARGET%" (
