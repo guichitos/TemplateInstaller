@@ -7,7 +7,10 @@ rem Acá puede aditarse la lista de autores permitidos
 set "DEFAULT_ALLOWED_TEMPLATE_AUTHORS=www.grada.cc;www.gradaz.com"
 rem =========================================================
 
-set "IsDesignModeEnabled=false"
+rem Delay (in seconds) between opening the Document Themes folder and launching apps
+set "DOCUMENT_THEME_OPEN_DELAY_SECONDS=15"
+
+set "IsDesignModeEnabled=true"
 
 set "ScriptDirectory=%~dp0"
 set "BaseHint=%~1"
@@ -99,6 +102,17 @@ set "GLOBAL_ITEM_COUNT_EXCEL=0"
 set "LAST_INSTALL_STATUS=0"
 set "LAST_INSTALLED_PATH="
 set "OPENED_TEMPLATE_FOLDERS=;"
+set "OPEN_DOCUMENT_THEME_FLAG=false"
+set "DOCUMENT_THEME_SELECT="
+set "OPEN_CUSTOM_TEMPLATE_FLAG=false"
+set "CUSTOM_OFFICE_TEMPLATE_PATH=C:\Users\PC\OneDrive\Documentos\Custom Office Templates"
+set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=C:\Users\PC\OneDrive\Documentos\Plantillas personalizadas de Office"
+set "CUSTOM_TEMPLATE_OPEN_PATH=%CUSTOM_OFFICE_TEMPLATE_PATH%"
+set "OPEN_ROAMING_TEMPLATE_FLAG=false"
+set "ROAMING_TEMPLATE_PATH=%APPDATA%\Microsoft\Templates"
+set "OPEN_EXCEL_STARTUP_FLAG=false"
+set "EXCEL_STARTUP_PATH=%APPDATA%\Microsoft\Excel\XLSTART"
+set "EXCEL_STARTUP_SELECT="
 set "WORD_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "PPT_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "EXCEL_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Excel\XLSTART"
@@ -136,7 +150,14 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
-    echo [DEBUG] Completed CopyAll invocation block (errorlevel=!CopyAllErrorLevel!)
+    echo [DEBUG] Completed CopyAll invocation block - errorlevel !CopyAllErrorLevel!
+)
+
+call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_TEMPLATE_OPEN_PATH%" "%OPEN_CUSTOM_TEMPLATE_FLAG%" "%ROAMING_TEMPLATE_PATH%" "%OPEN_ROAMING_TEMPLATE_FLAG%" "%EXCEL_STARTUP_PATH%" "%OPEN_EXCEL_STARTUP_FLAG%" "%EXCEL_STARTUP_SELECT%"
+
+if /I "%OPEN_DOCUMENT_THEME_FLAG%"=="true" (
+    if /I "%IsDesignModeEnabled%"=="true" echo [INFO] Waiting %DOCUMENT_THEME_OPEN_DELAY_SECONDS% seconds before launching Office apps.
+    timeout /t %DOCUMENT_THEME_OPEN_DELAY_SECONDS% /nobreak >nul 2>&1
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
@@ -151,55 +172,115 @@ goto :EOF
 :InstallBaseTemplates
 set "IBT_DesignMode=%~1"
 
+call :NormalizePath "%WORD_BASE_TEMPLATE_DIR%" IBT_WORD_BASE_COMPARE
+call :NormalizePath "%PPT_BASE_TEMPLATE_DIR%" IBT_PPT_BASE_COMPARE
+call :NormalizePath "%EXCEL_BASE_TEMPLATE_DIR%" IBT_EXCEL_BASE_COMPARE
+call :NormalizePath "%ROAMING_TEMPLATE_PATH%" IBT_ROAMING_COMPARE
+call :NormalizePath "%EXCEL_STARTUP_PATH%" IBT_EXCEL_STARTUP_COMPARE
+
 call :InstallApp "WORD" "Normal.dotx" "%APPDATA%\Microsoft\Templates" "Normal.dotx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template Normal.dotx.
+    ) else (
+        call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "WORD" "Normal.dotm" "%APPDATA%\Microsoft\Templates" "Normal.dotm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template Normal.dotm.
+    ) else (
+        call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "WORD" "NormalEmail.dotx" "%APPDATA%\Microsoft\Templates" "NormalEmail.dotx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template NormalEmail.dotx.
+    ) else (
+        call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "WORD" "NormalEmail.dotm" "%APPDATA%\Microsoft\Templates" "NormalEmail.dotm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template NormalEmail.dotm.
+    ) else (
+        call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "POWERPOINT" "Blank.potx" "%APPDATA%\Microsoft\Templates" "Blank.potx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
-    call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_PPT_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base PowerPoint template Blank.potx.
+    ) else (
+        call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "POWERPOINT" "Blank.potm" "%APPDATA%\Microsoft\Templates" "Blank.potm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
-    call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_PPT_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base PowerPoint template Blank.potm.
+    ) else (
+        call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "EXCEL" "Book.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_EXCEL_BASE_COMPARE!"=="!IBT_EXCEL_STARTUP_COMPARE!" (
+        set "OPEN_EXCEL_STARTUP_FLAG=true"
+        if "!EXCEL_STARTUP_SELECT!"=="" set "EXCEL_STARTUP_SELECT=!LAST_INSTALLED_PATH!"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Excel startup folder open for centralized handling - base Excel template Book.xltx.
+    ) else (
+        call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "EXCEL" "Book.xltm" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_EXCEL_BASE_COMPARE!"=="!IBT_EXCEL_STARTUP_COMPARE!" (
+        set "OPEN_EXCEL_STARTUP_FLAG=true"
+        if "!EXCEL_STARTUP_SELECT!"=="" set "EXCEL_STARTUP_SELECT=!LAST_INSTALLED_PATH!"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Excel startup folder open for centralized handling - base Excel template Book.xltm.
+    ) else (
+        call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "EXCEL" "Sheet.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Sheet.xltx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_EXCEL_BASE_COMPARE!"=="!IBT_EXCEL_STARTUP_COMPARE!" (
+        set "OPEN_EXCEL_STARTUP_FLAG=true"
+        if "!EXCEL_STARTUP_SELECT!"=="" set "EXCEL_STARTUP_SELECT=!LAST_INSTALLED_PATH!"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Excel startup folder open for centralized handling - base Excel template Sheet.xltx.
+    ) else (
+        call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "EXCEL" "Sheet.xltm" "%APPDATA%\Microsoft\Excel\XLSTART" "Sheet.xltm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_EXCEL_BASE_COMPARE!"=="!IBT_EXCEL_STARTUP_COMPARE!" (
+        set "OPEN_EXCEL_STARTUP_FLAG=true"
+        if "!EXCEL_STARTUP_SELECT!"=="" set "EXCEL_STARTUP_SELECT=!LAST_INSTALLED_PATH!"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Excel startup folder open for centralized handling - base Excel template Sheet.xltm.
+    ) else (
+        call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 exit /b 0
 
@@ -706,6 +787,116 @@ taskkill /IM EXCEL.EXE /F >nul 2>&1
 echo [DEBUG] Exiting Closing Office applications...
 exit /b
 
+:HandleDocumentThemeFolderOpen
+set "DT_SHOULD_OPEN=%~1"
+set "DT_DESIGN_MODE=%~2"
+set "DT_TARGET=%~3"
+set "DT_SELECT=%~4"
+set "DT_CUSTOM_PATH=%~5"
+set "DT_CUSTOM_SHOULD_OPEN=%~6"
+set "DT_ROAMING_PATH=%~7"
+set "DT_ROAMING_SHOULD_OPEN=%~8"
+set "DT_EXCEL_STARTUP_PATH=%~9"
+set "DT_EXCEL_STARTUP_SHOULD_OPEN=%~10"
+set "DT_EXCEL_STARTUP_SELECT=%~11"
+call :NormalizePath "%DT_TARGET%" DT_TARGET_COMPARE
+call :NormalizePath "%DT_CUSTOM_PATH%" DT_CUSTOM_COMPARE
+call :NormalizePath "%DT_ROAMING_PATH%" DT_ROAMING_COMPARE
+call :NormalizePath "%DT_EXCEL_STARTUP_PATH%" DT_EXCEL_STARTUP_COMPARE
+set "DT_CUSTOM_OPEN_FLAG=%DT_SHOULD_OPEN%"
+if /I "%DT_CUSTOM_SHOULD_OPEN%"=="true" set "DT_CUSTOM_OPEN_FLAG=true"
+set "DT_ROAMING_OPEN_FLAG=%DT_ROAMING_SHOULD_OPEN%"
+set "DT_EXCEL_STARTUP_OPEN_FLAG=%DT_EXCEL_STARTUP_SHOULD_OPEN%"
+
+if defined DT_EXCEL_STARTUP_SELECT if /I not "%DT_EXCEL_STARTUP_OPEN_FLAG%"=="true" (
+    set "DT_EXCEL_STARTUP_OPEN_FLAG=true"
+    if /I "%DT_DESIGN_MODE%"=="true" echo [DEBUG] Excel startup open forced because a selection target was supplied.
+)
+
+if /I "%DT_SHOULD_OPEN%"=="true" (
+    if defined DT_TARGET if exist "%DT_TARGET%" (
+        call :OpenTemplateFolder "%DT_TARGET%" "" "%DT_DESIGN_MODE%" "Document Themes folder" "%DT_SELECT%"
+    ) else if /I "%DT_DESIGN_MODE%"=="true" (
+        echo [DEBUG] Document Themes folder not opened because the path is unavailable.
+    )
+
+    set "DT_CUSTOM_OPEN_FLAG=true"
+)
+
+if /I "%DT_CUSTOM_OPEN_FLAG%"=="true" (
+    if defined DT_CUSTOM_PATH if exist "%DT_CUSTOM_PATH%" if /I not "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
+        call :OpenTemplateFolder "%DT_CUSTOM_PATH%" "" "%DT_DESIGN_MODE%" "Custom Office Templates folder" ""
+    ) else if /I "%DT_DESIGN_MODE%"=="true" (
+        if /I "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
+            echo [DEBUG] Skipping Custom Office Templates folder because it is already being opened as the Document Themes folder.
+        ) else (
+            echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
+        )
+    )
+) else if /I "%DT_DESIGN_MODE%"=="true" (
+    echo [DEBUG] Document Themes folder open flag is false; skipping launch.
+)
+
+if /I "%DT_ROAMING_OPEN_FLAG%"=="true" (
+    if defined DT_ROAMING_PATH if exist "%DT_ROAMING_PATH%" if /I not "!DT_ROAMING_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_ROAMING_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
+        call :OpenTemplateFolder "%DT_ROAMING_PATH%" "" "%DT_DESIGN_MODE%" "Roaming Templates folder" ""
+    ) else if /I "%DT_DESIGN_MODE%"=="true" (
+        if /I "!DT_ROAMING_COMPARE!"=="!DT_TARGET_COMPARE!" (
+            echo [DEBUG] Skipping Roaming Templates folder because it is already being opened as the Document Themes folder.
+        ) else if /I "!DT_ROAMING_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
+            echo [DEBUG] Skipping Roaming Templates folder because it is already being opened as the Custom Office Templates folder.
+        ) else (
+            echo [DEBUG] Roaming Templates folder not opened because the path is unavailable.
+        )
+    )
+) else if /I "%DT_DESIGN_MODE%"=="true" (
+    echo [DEBUG] Roaming Templates folder open flag is false; skipping launch.
+)
+
+if /I "%DT_EXCEL_STARTUP_OPEN_FLAG%"=="true" (
+    if defined DT_EXCEL_STARTUP_PATH (
+        if not exist "%DT_EXCEL_STARTUP_PATH%" (
+            mkdir "%DT_EXCEL_STARTUP_PATH%" >nul 2>&1
+            if /I "%DT_DESIGN_MODE%"=="true" echo [DEBUG] Ensured Excel startup folder exists at "%DT_EXCEL_STARTUP_PATH%".
+        )
+
+        if exist "%DT_EXCEL_STARTUP_PATH%" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ROAMING_COMPARE!" (
+            call :OpenTemplateFolder "%DT_EXCEL_STARTUP_PATH%" "" "%DT_DESIGN_MODE%" "Excel startup folder" "%DT_EXCEL_STARTUP_SELECT%"
+        ) else if /I "%DT_DESIGN_MODE%"=="true" (
+            if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_TARGET_COMPARE!" (
+                echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Document Themes folder.
+            ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
+                echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Custom Office Templates folder.
+            ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ROAMING_COMPARE!" (
+                echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Roaming Templates folder.
+            ) else (
+                echo [DEBUG] Excel startup folder not opened because the path is unavailable.
+            )
+        )
+    ) else if /I "%DT_DESIGN_MODE%"=="true" (
+        echo [DEBUG] Excel startup folder not opened because the path is unavailable.
+    )
+) else if /I "%DT_DESIGN_MODE%"=="true" (
+    echo [DEBUG] Excel startup folder open flag is false; skipping launch.
+)
+exit /b
+
+:NormalizePath
+set "NP_INPUT=%~1"
+set "NP_OUTPUT_VAR=%~2"
+
+if "%NP_OUTPUT_VAR%"=="" exit /b
+
+setlocal EnableDelayedExpansion
+set "NP_WORK=!NP_INPUT!"
+
+:_TrimLoop
+if defined NP_WORK if "!NP_WORK:~-1!"==" " set "NP_WORK=!NP_WORK:~0,-1!" & goto _TrimLoop
+if defined NP_WORK if "!NP_WORK:~-1!"=="\\" set "NP_WORK=!NP_WORK:~0,-1!" & goto _TrimLoop
+
+endlocal & set "%NP_OUTPUT_VAR%=%NP_WORK%"
+exit /b
+
 :OpenTemplateFolder
 set "TARGET_PATH=%~1"
 set "DESIGN_MODE=%~2"
@@ -874,10 +1065,22 @@ set "OPEN_WORD=0"
 set "OPEN_PPT=0"
 set "OPEN_EXCEL=0"
 set "OPEN_THEME=0"
+set "OPEN_CUSTOM_TEMPLATE_REQUEST=false"
+set "OPEN_ROAMING_TEMPLATE_REQUEST=false"
+set "OPEN_EXCEL_STARTUP_REQUEST=false"
 set "WORD_SELECT="
 set "PPT_SELECT="
 set "EXCEL_SELECT="
 set "THEME_SELECT="
+set "EXCEL_STARTUP_SELECT_LOCAL="
+
+if /I "%OPEN_ROAMING_TEMPLATE_FLAG%"=="true" set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
+if /I "%OPEN_EXCEL_STARTUP_FLAG%"=="true" set "OPEN_EXCEL_STARTUP_REQUEST=true"
+
+call :NormalizePath "%CUSTOM_OFFICE_TEMPLATE_PATH%" CUSTOM_OFFICE_TEMPLATE_COMPARE
+call :NormalizePath "%CUSTOM_OFFICE_TEMPLATE_ALT_PATH%" CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE
+call :NormalizePath "%ROAMING_TEMPLATE_PATH%" ROAMING_TEMPLATE_COMPARE
+call :NormalizePath "%EXCEL_STARTUP_PATH%" EXCEL_STARTUP_COMPARE
 
 if defined FORCE_OPEN_WORD if "!FORCE_OPEN_WORD!"=="1" set "OPEN_WORD=1"
 if defined FORCE_OPEN_PPT if "!FORCE_OPEN_PPT!"=="1" set "OPEN_PPT=1"
@@ -1012,19 +1215,69 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 
 if "!OPEN_WORD!"=="1" if exist "!WORD_PATH!" (
-    call :OpenTemplateFolder "!WORD_PATH!" "" "%IsDesignModeEnabled%" "Word template folder" "!WORD_SELECT!"
+    call :NormalizePath "!WORD_PATH!" CURRENT_FOLDER_COMPARE
+    if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!WORD_PATH!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Word.
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!WORD_PATH!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Word (alternate path).
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - Word.
+    ) else (
+        call :OpenTemplateFolder "!WORD_PATH!" "" "%IsDesignModeEnabled%" "Word template folder" "!WORD_SELECT!"
+    )
 )
 
 if "!OPEN_PPT!"=="1" if exist "!PPT_PATH!" (
-    call :OpenTemplateFolder "!PPT_PATH!" "" "%IsDesignModeEnabled%" "PowerPoint template folder" "!PPT_SELECT!"
+    call :NormalizePath "!PPT_PATH!" CURRENT_FOLDER_COMPARE
+    if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!PPT_PATH!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - PowerPoint.
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!PPT_PATH!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - PowerPoint alternate path.
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - PowerPoint.
+    ) else (
+        call :OpenTemplateFolder "!PPT_PATH!" "" "%IsDesignModeEnabled%" "PowerPoint template folder" "!PPT_SELECT!"
+    )
 )
 
 if "!OPEN_EXCEL!"=="1" if exist "!EXCEL_PATH!" (
-    call :OpenTemplateFolder "!EXCEL_PATH!" "" "%IsDesignModeEnabled%" "Excel template folder" "!EXCEL_SELECT!"
+    call :NormalizePath "!EXCEL_PATH!" CURRENT_FOLDER_COMPARE
+    if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!EXCEL_PATH!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Excel.
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!EXCEL_PATH!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Excel alternate path.
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - Excel.
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!EXCEL_STARTUP_COMPARE!" (
+        set "OPEN_EXCEL_STARTUP_REQUEST=true"
+        if "!EXCEL_STARTUP_SELECT_LOCAL!"=="" set "EXCEL_STARTUP_SELECT_LOCAL=!EXCEL_SELECT!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Excel startup folder open for centralized handling - Excel.
+    ) else (
+        call :OpenTemplateFolder "!EXCEL_PATH!" "" "%IsDesignModeEnabled%" "Excel template folder" "!EXCEL_SELECT!"
+    )
 )
 
-if "!OPEN_THEME!"=="1" if exist "!THEME_PATH!" (
-    call :OpenTemplateFolder "!THEME_PATH!" "" "%IsDesignModeEnabled%" "Document Themes folder" "!THEME_SELECT!"
+set "OPEN_DOCUMENT_THEME_FLAG=false"
+if "!OPEN_THEME!"=="1" set "OPEN_DOCUMENT_THEME_FLAG=true"
+
+if /I "!OPEN_EXCEL_STARTUP_REQUEST!"=="false" if defined EXCEL_STARTUP_SELECT_LOCAL (
+    set "OPEN_EXCEL_STARTUP_REQUEST=true"
+    if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Excel startup open enabled because a selection target was captured.
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
@@ -1044,6 +1297,13 @@ endlocal & (
     set "FORCE_OPEN_WORD=%OPEN_WORD%"
     set "FORCE_OPEN_PPT=%OPEN_PPT%"
     set "FORCE_OPEN_EXCEL=%OPEN_EXCEL%"
+    set "OPEN_DOCUMENT_THEME_FLAG=%OPEN_DOCUMENT_THEME_FLAG%"
+    set "DOCUMENT_THEME_SELECT=%THEME_SELECT%"
+    set "OPEN_CUSTOM_TEMPLATE_FLAG=%OPEN_CUSTOM_TEMPLATE_REQUEST%"
+    set "CUSTOM_TEMPLATE_OPEN_PATH=%CUSTOM_TEMPLATE_OPEN_PATH%"
+    set "OPEN_ROAMING_TEMPLATE_FLAG=%OPEN_ROAMING_TEMPLATE_REQUEST%"
+    set "OPEN_EXCEL_STARTUP_FLAG=%OPEN_EXCEL_STARTUP_REQUEST%"
+    set "EXCEL_STARTUP_SELECT=%EXCEL_STARTUP_SELECT_LOCAL%"
 )
 exit /b
 
