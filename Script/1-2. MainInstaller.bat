@@ -806,6 +806,11 @@ if /I "%DT_CUSTOM_SHOULD_OPEN%"=="true" set "DT_CUSTOM_OPEN_FLAG=true"
 set "DT_ROAMING_OPEN_FLAG=%DT_ROAMING_SHOULD_OPEN%"
 set "DT_EXCEL_STARTUP_OPEN_FLAG=%DT_EXCEL_STARTUP_SHOULD_OPEN%"
 
+if defined DT_EXCEL_STARTUP_SELECT if /I not "%DT_EXCEL_STARTUP_OPEN_FLAG%"=="true" (
+    set "DT_EXCEL_STARTUP_OPEN_FLAG=true"
+    if /I "%DT_DESIGN_MODE%"=="true" echo [DEBUG] Excel startup open forced because a selection target was supplied.
+)
+
 if /I "%DT_SHOULD_OPEN%"=="true" (
     if defined DT_TARGET if exist "%DT_TARGET%" (
         call :OpenTemplateFolder "%DT_TARGET%" "" "%DT_DESIGN_MODE%" "Document Themes folder" "%DT_SELECT%"
@@ -1251,6 +1256,11 @@ if "!OPEN_EXCEL!"=="1" if exist "!EXCEL_PATH!" (
 
 set "OPEN_DOCUMENT_THEME_FLAG=false"
 if "!OPEN_THEME!"=="1" set "OPEN_DOCUMENT_THEME_FLAG=true"
+
+if /I "!OPEN_EXCEL_STARTUP_REQUEST!"=="false" if defined EXCEL_STARTUP_SELECT_LOCAL (
+    set "OPEN_EXCEL_STARTUP_REQUEST=true"
+    if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Excel startup open enabled because a selection target was captured.
+)
 
 if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Exiting CopyAll routine - pre-endlocal
