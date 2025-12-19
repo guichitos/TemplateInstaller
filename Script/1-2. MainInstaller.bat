@@ -108,6 +108,9 @@ set "OPEN_CUSTOM_TEMPLATE_FLAG=false"
 set "CUSTOM_OFFICE_TEMPLATE_PATH=C:\Users\PC\OneDrive\Documentos\Custom Office Templates"
 set "OPEN_ROAMING_TEMPLATE_FLAG=false"
 set "ROAMING_TEMPLATE_PATH=%APPDATA%\Microsoft\Templates"
+set "OPEN_EXCEL_STARTUP_FLAG=false"
+set "EXCEL_STARTUP_PATH=%APPDATA%\Microsoft\Excel\XLSTART"
+set "EXCEL_STARTUP_SELECT="
 set "WORD_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "PPT_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "EXCEL_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Excel\XLSTART"
@@ -148,14 +151,7 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Completed CopyAll invocation block - errorlevel !CopyAllErrorLevel!
 )
 
-call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_OFFICE_TEMPLATE_PATH%" "%OPEN_CUSTOM_TEMPLATE_FLAG%" "%ROAMING_TEMPLATE_PATH%" "%OPEN_ROAMING_TEMPLATE_FLAG%"
-
-if /I "%OPEN_DOCUMENT_THEME_FLAG%"=="true" (
-    if /I "%IsDesignModeEnabled%"=="true" echo [INFO] Waiting %DOCUMENT_THEME_OPEN_DELAY_SECONDS% seconds before launching Office apps.
-    timeout /t %DOCUMENT_THEME_OPEN_DELAY_SECONDS% /nobreak >nul 2>&1
-)
-
-call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_OFFICE_TEMPLATE_PATH%" "%OPEN_CUSTOM_TEMPLATE_FLAG%" "%ROAMING_TEMPLATE_PATH%" "%OPEN_ROAMING_TEMPLATE_FLAG%"
+call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_OFFICE_TEMPLATE_PATH%" "%OPEN_CUSTOM_TEMPLATE_FLAG%" "%ROAMING_TEMPLATE_PATH%" "%OPEN_ROAMING_TEMPLATE_FLAG%" "%EXCEL_STARTUP_PATH%" "%OPEN_EXCEL_STARTUP_FLAG%" "%EXCEL_STARTUP_SELECT%"
 
 if /I "%OPEN_DOCUMENT_THEME_FLAG%"=="true" (
     if /I "%IsDesignModeEnabled%"=="true" echo [INFO] Waiting %DOCUMENT_THEME_OPEN_DELAY_SECONDS% seconds before launching Office apps.
@@ -176,7 +172,9 @@ set "IBT_DesignMode=%~1"
 
 call :NormalizePath "%WORD_BASE_TEMPLATE_DIR%" IBT_WORD_BASE_COMPARE
 call :NormalizePath "%PPT_BASE_TEMPLATE_DIR%" IBT_PPT_BASE_COMPARE
+call :NormalizePath "%EXCEL_BASE_TEMPLATE_DIR%" IBT_EXCEL_BASE_COMPARE
 call :NormalizePath "%ROAMING_TEMPLATE_PATH%" IBT_ROAMING_COMPARE
+call :NormalizePath "%EXCEL_STARTUP_PATH%" IBT_EXCEL_STARTUP_COMPARE
 
 call :InstallApp "WORD" "Normal.dotx" "%APPDATA%\Microsoft\Templates" "Normal.dotx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
@@ -241,22 +239,46 @@ if "!LAST_INSTALL_STATUS!"=="1" (
 call :InstallApp "EXCEL" "Book.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_EXCEL_BASE_COMPARE!"=="!IBT_EXCEL_STARTUP_COMPARE!" (
+        set "OPEN_EXCEL_STARTUP_FLAG=true"
+        if "!EXCEL_STARTUP_SELECT!"=="" set "EXCEL_STARTUP_SELECT=!LAST_INSTALLED_PATH!"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Excel startup folder open for centralized handling - base Excel template Book.xltx.
+    ) else (
+        call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "EXCEL" "Book.xltm" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_EXCEL_BASE_COMPARE!"=="!IBT_EXCEL_STARTUP_COMPARE!" (
+        set "OPEN_EXCEL_STARTUP_FLAG=true"
+        if "!EXCEL_STARTUP_SELECT!"=="" set "EXCEL_STARTUP_SELECT=!LAST_INSTALLED_PATH!"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Excel startup folder open for centralized handling - base Excel template Book.xltm.
+    ) else (
+        call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "EXCEL" "Sheet.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Sheet.xltx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_EXCEL_BASE_COMPARE!"=="!IBT_EXCEL_STARTUP_COMPARE!" (
+        set "OPEN_EXCEL_STARTUP_FLAG=true"
+        if "!EXCEL_STARTUP_SELECT!"=="" set "EXCEL_STARTUP_SELECT=!LAST_INSTALLED_PATH!"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Excel startup folder open for centralized handling - base Excel template Sheet.xltx.
+    ) else (
+        call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "EXCEL" "Sheet.xltm" "%APPDATA%\Microsoft\Excel\XLSTART" "Sheet.xltm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
-    call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_EXCEL_BASE_COMPARE!"=="!IBT_EXCEL_STARTUP_COMPARE!" (
+        set "OPEN_EXCEL_STARTUP_FLAG=true"
+        if "!EXCEL_STARTUP_SELECT!"=="" set "EXCEL_STARTUP_SELECT=!LAST_INSTALLED_PATH!"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Excel startup folder open for centralized handling - base Excel template Sheet.xltm.
+    ) else (
+        call :OpenTemplateFolder "%EXCEL_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Excel template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 exit /b 0
 
@@ -772,12 +794,17 @@ set "DT_CUSTOM_PATH=%~5"
 set "DT_CUSTOM_SHOULD_OPEN=%~6"
 set "DT_ROAMING_PATH=%~7"
 set "DT_ROAMING_SHOULD_OPEN=%~8"
+set "DT_EXCEL_STARTUP_PATH=%~9"
+set "DT_EXCEL_STARTUP_SHOULD_OPEN=%~10"
+set "DT_EXCEL_STARTUP_SELECT=%~11"
 call :NormalizePath "%DT_TARGET%" DT_TARGET_COMPARE
 call :NormalizePath "%DT_CUSTOM_PATH%" DT_CUSTOM_COMPARE
 call :NormalizePath "%DT_ROAMING_PATH%" DT_ROAMING_COMPARE
+call :NormalizePath "%DT_EXCEL_STARTUP_PATH%" DT_EXCEL_STARTUP_COMPARE
 set "DT_CUSTOM_OPEN_FLAG=%DT_SHOULD_OPEN%"
 if /I "%DT_CUSTOM_SHOULD_OPEN%"=="true" set "DT_CUSTOM_OPEN_FLAG=true"
 set "DT_ROAMING_OPEN_FLAG=%DT_ROAMING_SHOULD_OPEN%"
+set "DT_EXCEL_STARTUP_OPEN_FLAG=%DT_EXCEL_STARTUP_SHOULD_OPEN%"
 
 if /I "%DT_SHOULD_OPEN%"=="true" (
     if defined DT_TARGET if exist "%DT_TARGET%" (
@@ -817,6 +844,24 @@ if /I "%DT_ROAMING_OPEN_FLAG%"=="true" (
     )
 ) else if /I "%DT_DESIGN_MODE%"=="true" (
     echo [DEBUG] Roaming Templates folder open flag is false; skipping launch.
+)
+
+if /I "%DT_EXCEL_STARTUP_OPEN_FLAG%"=="true" (
+    if defined DT_EXCEL_STARTUP_PATH if exist "%DT_EXCEL_STARTUP_PATH%" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ROAMING_COMPARE!" (
+        call :OpenTemplateFolder "%DT_EXCEL_STARTUP_PATH%" "" "%DT_DESIGN_MODE%" "Excel startup folder" "%DT_EXCEL_STARTUP_SELECT%"
+    ) else if /I "%DT_DESIGN_MODE%"=="true" (
+        if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_TARGET_COMPARE!" (
+            echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Document Themes folder.
+        ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
+            echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Custom Office Templates folder.
+        ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ROAMING_COMPARE!" (
+            echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Roaming Templates folder.
+        ) else (
+            echo [DEBUG] Excel startup folder not opened because the path is unavailable.
+        )
+    )
+) else if /I "%DT_DESIGN_MODE%"=="true" (
+    echo [DEBUG] Excel startup folder open flag is false; skipping launch.
 )
 exit /b
 
@@ -1006,10 +1051,19 @@ set "OPEN_EXCEL=0"
 set "OPEN_THEME=0"
 set "OPEN_CUSTOM_TEMPLATE_REQUEST=false"
 set "OPEN_ROAMING_TEMPLATE_REQUEST=false"
+set "OPEN_EXCEL_STARTUP_REQUEST=false"
 set "WORD_SELECT="
 set "PPT_SELECT="
 set "EXCEL_SELECT="
 set "THEME_SELECT="
+set "EXCEL_STARTUP_SELECT_LOCAL="
+
+if /I "%OPEN_ROAMING_TEMPLATE_FLAG%"=="true" set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
+if /I "%OPEN_EXCEL_STARTUP_FLAG%"=="true" set "OPEN_EXCEL_STARTUP_REQUEST=true"
+
+call :NormalizePath "%CUSTOM_OFFICE_TEMPLATE_PATH%" CUSTOM_OFFICE_TEMPLATE_COMPARE
+call :NormalizePath "%ROAMING_TEMPLATE_PATH%" ROAMING_TEMPLATE_COMPARE
+call :NormalizePath "%EXCEL_STARTUP_PATH%" EXCEL_STARTUP_COMPARE
 
 if /I "%OPEN_ROAMING_TEMPLATE_FLAG%"=="true" set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
 
@@ -1182,6 +1236,10 @@ if "!OPEN_EXCEL!"=="1" if exist "!EXCEL_PATH!" (
     ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - Excel.
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!EXCEL_STARTUP_COMPARE!" (
+        set "OPEN_EXCEL_STARTUP_REQUEST=true"
+        if "!EXCEL_STARTUP_SELECT_LOCAL!"=="" set "EXCEL_STARTUP_SELECT_LOCAL=!EXCEL_SELECT!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Excel startup folder open for centralized handling - Excel.
     ) else (
         call :OpenTemplateFolder "!EXCEL_PATH!" "" "%IsDesignModeEnabled%" "Excel template folder" "!EXCEL_SELECT!"
     )
@@ -1211,6 +1269,8 @@ endlocal & (
     set "DOCUMENT_THEME_SELECT=%THEME_SELECT%"
     set "OPEN_CUSTOM_TEMPLATE_FLAG=%OPEN_CUSTOM_TEMPLATE_REQUEST%"
     set "OPEN_ROAMING_TEMPLATE_FLAG=%OPEN_ROAMING_TEMPLATE_REQUEST%"
+    set "OPEN_EXCEL_STARTUP_FLAG=%OPEN_EXCEL_STARTUP_REQUEST%"
+    set "EXCEL_STARTUP_SELECT=%EXCEL_STARTUP_SELECT_LOCAL%"
 )
 exit /b
 
