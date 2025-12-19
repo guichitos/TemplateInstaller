@@ -106,6 +106,8 @@ set "OPEN_DOCUMENT_THEME_FLAG=false"
 set "DOCUMENT_THEME_SELECT="
 set "OPEN_CUSTOM_TEMPLATE_FLAG=false"
 set "CUSTOM_OFFICE_TEMPLATE_PATH=C:\Users\PC\OneDrive\Documentos\Custom Office Templates"
+set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=C:\Users\PC\OneDrive\Documentos\Plantillas personalizadas de Office"
+set "CUSTOM_TEMPLATE_OPEN_PATH=%CUSTOM_OFFICE_TEMPLATE_PATH%"
 set "OPEN_ROAMING_TEMPLATE_FLAG=false"
 set "ROAMING_TEMPLATE_PATH=%APPDATA%\Microsoft\Templates"
 set "OPEN_EXCEL_STARTUP_FLAG=false"
@@ -151,7 +153,7 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Completed CopyAll invocation block - errorlevel !CopyAllErrorLevel!
 )
 
-call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_OFFICE_TEMPLATE_PATH%" "%OPEN_CUSTOM_TEMPLATE_FLAG%" "%ROAMING_TEMPLATE_PATH%" "%OPEN_ROAMING_TEMPLATE_FLAG%" "%EXCEL_STARTUP_PATH%" "%OPEN_EXCEL_STARTUP_FLAG%" "%EXCEL_STARTUP_SELECT%"
+call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_TEMPLATE_OPEN_PATH%" "%OPEN_CUSTOM_TEMPLATE_FLAG%" "%ROAMING_TEMPLATE_PATH%" "%OPEN_ROAMING_TEMPLATE_FLAG%" "%EXCEL_STARTUP_PATH%" "%OPEN_EXCEL_STARTUP_FLAG%" "%EXCEL_STARTUP_SELECT%"
 
 if /I "%OPEN_DOCUMENT_THEME_FLAG%"=="true" (
     if /I "%IsDesignModeEnabled%"=="true" echo [INFO] Waiting %DOCUMENT_THEME_OPEN_DELAY_SECONDS% seconds before launching Office apps.
@@ -1076,6 +1078,7 @@ if /I "%OPEN_ROAMING_TEMPLATE_FLAG%"=="true" set "OPEN_ROAMING_TEMPLATE_REQUEST=
 if /I "%OPEN_EXCEL_STARTUP_FLAG%"=="true" set "OPEN_EXCEL_STARTUP_REQUEST=true"
 
 call :NormalizePath "%CUSTOM_OFFICE_TEMPLATE_PATH%" CUSTOM_OFFICE_TEMPLATE_COMPARE
+call :NormalizePath "%CUSTOM_OFFICE_TEMPLATE_ALT_PATH%" CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE
 call :NormalizePath "%ROAMING_TEMPLATE_PATH%" ROAMING_TEMPLATE_COMPARE
 call :NormalizePath "%EXCEL_STARTUP_PATH%" EXCEL_STARTUP_COMPARE
 
@@ -1215,7 +1218,12 @@ if "!OPEN_WORD!"=="1" if exist "!WORD_PATH!" (
     call :NormalizePath "!WORD_PATH!" CURRENT_FOLDER_COMPARE
     if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_COMPARE!" (
         set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!WORD_PATH!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Word.
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!WORD_PATH!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Word (alternate path).
     ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - Word.
@@ -1228,7 +1236,12 @@ if "!OPEN_PPT!"=="1" if exist "!PPT_PATH!" (
     call :NormalizePath "!PPT_PATH!" CURRENT_FOLDER_COMPARE
     if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_COMPARE!" (
         set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!PPT_PATH!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - PowerPoint.
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!PPT_PATH!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - PowerPoint alternate path.
     ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - PowerPoint.
@@ -1241,7 +1254,12 @@ if "!OPEN_EXCEL!"=="1" if exist "!EXCEL_PATH!" (
     call :NormalizePath "!EXCEL_PATH!" CURRENT_FOLDER_COMPARE
     if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_COMPARE!" (
         set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!EXCEL_PATH!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Excel.
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE!" (
+        set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
+        set "CUSTOM_TEMPLATE_OPEN_PATH=!EXCEL_PATH!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Excel alternate path.
     ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - Excel.
@@ -1282,6 +1300,7 @@ endlocal & (
     set "OPEN_DOCUMENT_THEME_FLAG=%OPEN_DOCUMENT_THEME_FLAG%"
     set "DOCUMENT_THEME_SELECT=%THEME_SELECT%"
     set "OPEN_CUSTOM_TEMPLATE_FLAG=%OPEN_CUSTOM_TEMPLATE_REQUEST%"
+    set "CUSTOM_TEMPLATE_OPEN_PATH=%CUSTOM_TEMPLATE_OPEN_PATH%"
     set "OPEN_ROAMING_TEMPLATE_FLAG=%OPEN_ROAMING_TEMPLATE_REQUEST%"
     set "OPEN_EXCEL_STARTUP_FLAG=%OPEN_EXCEL_STARTUP_REQUEST%"
     set "EXCEL_STARTUP_SELECT=%EXCEL_STARTUP_SELECT_LOCAL%"
