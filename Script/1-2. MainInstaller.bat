@@ -104,6 +104,7 @@ set "LAST_INSTALLED_PATH="
 set "OPENED_TEMPLATE_FOLDERS=;"
 set "OPEN_DOCUMENT_THEME_FLAG=false"
 set "DOCUMENT_THEME_SELECT="
+set "CUSTOM_OFFICE_TEMPLATE_PATH=C:\Users\PC\OneDrive\Documentos\Custom Office Templates"
 set "WORD_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "PPT_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Templates"
 set "EXCEL_BASE_TEMPLATE_DIR=%APPDATA%\Microsoft\Excel\XLSTART"
@@ -144,7 +145,7 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Completed CopyAll invocation block (errorlevel=!CopyAllErrorLevel!)
 )
 
-call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%"
+call :HandleDocumentThemeFolderOpen "%OPEN_DOCUMENT_THEME_FLAG%" "%IsDesignModeEnabled%" "%THEME_PATH%" "%DOCUMENT_THEME_SELECT%" "%CUSTOM_OFFICE_TEMPLATE_PATH%"
 
 if /I "%OPEN_DOCUMENT_THEME_FLAG%"=="true" (
     if /I "%IsDesignModeEnabled%"=="true" echo [INFO] Waiting %DOCUMENT_THEME_OPEN_DELAY_SECONDS% seconds before launching Office apps.
@@ -723,12 +724,19 @@ set "DT_SHOULD_OPEN=%~1"
 set "DT_DESIGN_MODE=%~2"
 set "DT_TARGET=%~3"
 set "DT_SELECT=%~4"
+set "DT_CUSTOM_PATH=%~5"
 
 if /I "%DT_SHOULD_OPEN%"=="true" (
     if defined DT_TARGET if exist "%DT_TARGET%" (
         call :OpenTemplateFolder "%DT_TARGET%" "" "%DT_DESIGN_MODE%" "Document Themes folder" "%DT_SELECT%"
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
         echo [DEBUG] Document Themes folder not opened because the path is unavailable.
+    )
+
+    if defined DT_CUSTOM_PATH if exist "%DT_CUSTOM_PATH%" (
+        call :OpenTemplateFolder "%DT_CUSTOM_PATH%" "" "%DT_DESIGN_MODE%" "Custom Office Templates folder" ""
+    ) else if /I "%DT_DESIGN_MODE%"=="true" (
+        echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
     )
 ) else if /I "%DT_DESIGN_MODE%"=="true" (
     echo [DEBUG] Document Themes folder open flag is false; skipping launch.
