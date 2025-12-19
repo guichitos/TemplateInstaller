@@ -167,35 +167,69 @@ goto :EOF
 :InstallBaseTemplates
 set "IBT_DesignMode=%~1"
 
+call :NormalizePath "%WORD_BASE_TEMPLATE_DIR%" IBT_WORD_BASE_COMPARE
+call :NormalizePath "%PPT_BASE_TEMPLATE_DIR%" IBT_PPT_BASE_COMPARE
+call :NormalizePath "%ROAMING_TEMPLATE_PATH%" IBT_ROAMING_COMPARE
+
 call :InstallApp "WORD" "Normal.dotx" "%APPDATA%\Microsoft\Templates" "Normal.dotx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template (Normal.dotx).
+    ) else (
+        call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "WORD" "Normal.dotm" "%APPDATA%\Microsoft\Templates" "Normal.dotm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template (Normal.dotm).
+    ) else (
+        call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "WORD" "NormalEmail.dotx" "%APPDATA%\Microsoft\Templates" "NormalEmail.dotx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template (NormalEmail.dotx).
+    ) else (
+        call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "WORD" "NormalEmail.dotm" "%APPDATA%\Microsoft\Templates" "NormalEmail.dotm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
-    call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template (NormalEmail.dotm).
+    ) else (
+        call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "POWERPOINT" "Blank.potx" "%APPDATA%\Microsoft\Templates" "Blank.potx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
-    call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_PPT_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base PowerPoint template (Blank.potx).
+    ) else (
+        call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "POWERPOINT" "Blank.potm" "%APPDATA%\Microsoft\Templates" "Blank.potm" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
-    call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    if /I "!IBT_PPT_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
+        set "OPEN_ROAMING_TEMPLATE_FLAG=true"
+        if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base PowerPoint template (Blank.potm).
+    ) else (
+        call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
+    )
 )
 call :InstallApp "EXCEL" "Book.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
 if "!LAST_INSTALL_STATUS!"=="1" (
@@ -969,6 +1003,8 @@ set "WORD_SELECT="
 set "PPT_SELECT="
 set "EXCEL_SELECT="
 set "THEME_SELECT="
+
+if /I "%OPEN_ROAMING_TEMPLATE_FLAG%"=="true" set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
 
 call :NormalizePath "%CUSTOM_OFFICE_TEMPLATE_PATH%" CUSTOM_OFFICE_TEMPLATE_COMPARE
 call :NormalizePath "%ROAMING_TEMPLATE_PATH%" ROAMING_TEMPLATE_COMPARE
