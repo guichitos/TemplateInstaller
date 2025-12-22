@@ -937,11 +937,9 @@ if not exist "%LFP_WORKER%" (
     exit /b
 )
 
-if not defined ComSpec set "ComSpec=%SystemRoot%\System32\cmd.exe"
-
 set "LFP_CLI=\"%LFP_WORKER%\" \"%LFP_DESIGN_MODE%\" \"%LFP_OPEN_DOC%\" \"%LFP_DOC_PATH%\" \"%LFP_DOC_SELECT%\" \"%LFP_OPEN_CUSTOM%\" \"%LFP_CUSTOM_PATH%\" \"%LFP_OPEN_CUSTOM_ALT%\" \"%LFP_CUSTOM_ALT_PATH%\" \"%LFP_OPEN_ROAMING%\" \"%LFP_ROAMING_PATH%\" \"%LFP_OPEN_EXCEL%\" \"%LFP_EXCEL_PATH%\" \"%LFP_EXCEL_SELECT%\""
-if /I "%LFP_DESIGN_MODE%"=="true" echo [DEBUG] Launching folder worker: %ComSpec% /c %LFP_CLI%
-start "" "%ComSpec%" /c %LFP_CLI%
+if /I "%LFP_DESIGN_MODE%"=="true" echo [DEBUG] Launching folder worker: start "" %LFP_CLI%
+start "" "%LFP_WORKER%" "%LFP_DESIGN_MODE%" "%LFP_OPEN_DOC%" "%LFP_DOC_PATH%" "%LFP_DOC_SELECT%" "%LFP_OPEN_CUSTOM%" "%LFP_CUSTOM_PATH%" "%LFP_OPEN_CUSTOM_ALT%" "%LFP_CUSTOM_ALT_PATH%" "%LFP_OPEN_ROAMING%" "%LFP_ROAMING_PATH%" "%LFP_OPEN_EXCEL%" "%LFP_EXCEL_PATH%" "%LFP_EXCEL_SELECT%"
 exit /b
 
 :NormalizePath
