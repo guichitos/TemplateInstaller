@@ -8,9 +8,9 @@ set "OPEN_EXCEL=1"
 set "OPEN_CUSTOM_ALT=1"
 
 set "SELECT_FILES=1"
-set "THEME_FILE="
+set "THEME_FILE=MissingTheme.thmx"
 set "CUSTOM_FILE="
-set "ROAMING_FILE="
+set "ROAMING_FILE=RandomList.txt"
 set "EXCEL_FILE=aDebe conservarse.xltx"
 set "CUSTOM_ALT_FILE=Debe conservarse.xltx"
 

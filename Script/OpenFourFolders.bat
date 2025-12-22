@@ -1,6 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
 
+:: Params:
+:: 1-5  - Booleans to open each folder (theme, custom, roaming, Excel startup, alt custom)
+:: 6    - Global boolean to attempt file selection instead of only opening the folder
+:: 7-11 - Filenames to optionally select per folder in the same order
 set "OPEN_THEME=%~1"
 set "OPEN_CUSTOM=%~2"
 set "OPEN_ROAMING=%~3"
