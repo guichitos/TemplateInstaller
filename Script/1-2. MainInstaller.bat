@@ -833,6 +833,8 @@ if /I "%DT_CUSTOM_OPEN_FLAG%"=="true" (
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
         if /I "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
             echo [DEBUG] Skipping Custom Office Templates folder because it is already being opened as the Document Themes folder.
+        ) else if /I "!DT_CUSTOM_ALT_COMPARE!"=="!DT_TARGET_COMPARE!" (
+            echo [DEBUG] Skipping Custom Office Templates alternate folder because it is already being opened as the Document Themes folder.
         ) else (
             echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
         )
