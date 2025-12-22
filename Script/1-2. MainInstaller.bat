@@ -921,10 +921,15 @@ set "LFP_CUSTOM_PATH=%~6"
 set "LFP_OPEN_CUSTOM_ALT=%~7"
 set "LFP_CUSTOM_ALT_PATH=%~8"
 set "LFP_OPEN_ROAMING=%~9"
-set "LFP_ROAMING_PATH=%~10"
-set "LFP_OPEN_EXCEL=%~11"
-set "LFP_EXCEL_PATH=%~12"
-set "LFP_EXCEL_SELECT=%~13"
+
+shift
+set "LFP_ROAMING_PATH=%~9"
+shift
+set "LFP_OPEN_EXCEL=%~9"
+shift
+set "LFP_EXCEL_PATH=%~9"
+shift
+set "LFP_EXCEL_SELECT=%~9"
 
 if /I not "%LFP_OPEN_DOC%"=="true" if /I not "%LFP_OPEN_CUSTOM%"=="true" if /I not "%LFP_OPEN_CUSTOM_ALT%"=="true" if /I not "%LFP_OPEN_ROAMING%"=="true" if /I not "%LFP_OPEN_EXCEL%"=="true" (
     if /I "%LFP_DESIGN_MODE%"=="true" echo [DEBUG] No template folders require opening; skipping worker launch.
@@ -974,10 +979,15 @@ if /I "%EFW_DESIGN_MODE%"=="true" echo [DEBUG] Generating missing folder worker 
     echo set "OF_OPEN_CUSTOM_ALT=%%~7"
     echo set "OF_CUSTOM_ALT_PATH=%%~8"
     echo set "OF_OPEN_ROAMING=%%~9"
-    echo set "OF_ROAMING_PATH=%%~10"
-    echo set "OF_OPEN_EXCEL=%%~11"
-    echo set "OF_EXCEL_PATH=%%~12"
-    echo set "OF_EXCEL_SELECT=%%~13"
+    echo.
+    echo shift
+    echo set "OF_ROAMING_PATH=%%~9"
+    echo shift
+    echo set "OF_OPEN_EXCEL=%%~9"
+    echo shift
+    echo set "OF_EXCEL_PATH=%%~9"
+    echo shift
+    echo set "OF_EXCEL_SELECT=%%~9"
     echo.
     echo set "OPENED_TEMPLATE_FOLDERS=;"
     echo.

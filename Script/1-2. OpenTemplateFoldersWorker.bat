@@ -10,10 +10,15 @@ set "OF_CUSTOM_PATH=%~6"
 set "OF_OPEN_CUSTOM_ALT=%~7"
 set "OF_CUSTOM_ALT_PATH=%~8"
 set "OF_OPEN_ROAMING=%~9"
-set "OF_ROAMING_PATH=%~10"
-set "OF_OPEN_EXCEL=%~11"
-set "OF_EXCEL_PATH=%~12"
-set "OF_EXCEL_SELECT=%~13"
+
+shift
+set "OF_ROAMING_PATH=%~9"
+shift
+set "OF_OPEN_EXCEL=%~9"
+shift
+set "OF_EXCEL_PATH=%~9"
+shift
+set "OF_EXCEL_SELECT=%~9"
 
 set "OPENED_TEMPLATE_FOLDERS=;"
 set "OF_LOG_FILE=%TEMP%\TemplateFolderWorker.log"
