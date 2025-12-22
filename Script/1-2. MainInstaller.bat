@@ -10,7 +10,7 @@ rem =========================================================
 rem Delay (in seconds) between opening the Document Themes folder and launching apps
 set "DOCUMENT_THEME_OPEN_DELAY_SECONDS=0"
 
-set "IsDesignModeEnabled=false"
+set "IsDesignModeEnabled=true"
 
 set "ScriptDirectory=%~dp0"
 set "BaseHint=%~1"
