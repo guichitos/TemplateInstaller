@@ -8,9 +8,9 @@ set "DEFAULT_ALLOWED_TEMPLATE_AUTHORS=www.grada.cc;www.gradaz.com"
 rem =========================================================
 
 rem Delay (in seconds) between opening the Document Themes folder and launching apps
-set "DOCUMENT_THEME_OPEN_DELAY_SECONDS=15"
+set "DOCUMENT_THEME_OPEN_DELAY_SECONDS=0"
 
-set "IsDesignModeEnabled=true"
+set "IsDesignModeEnabled=false"
 
 set "ScriptDirectory=%~dp0"
 set "BaseHint=%~1"
@@ -63,14 +63,14 @@ if /I "%~1"=="--check-author" (
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
-    title TEMPLATE INSTALLER - DEBUG MODE
+    title Executing
     echo [DEBUG] Design mode is enabled.
     echo [INFO] Script is running from: %BaseDirectoryPath%
 ) else (
-    title TEMPLATE INSTALLER
-    echo Installing custom templates and applying them as the new Microsoft Office defaults
+    title Executing
+    echo Installing custom templates and applying them as the new Microsoft Office defaults...
     echo Executing...
-    
+
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
