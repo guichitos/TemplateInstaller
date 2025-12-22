@@ -826,10 +826,10 @@ if /I "%DT_SHOULD_OPEN%"=="true" (
 )
 
 if /I "%DT_CUSTOM_OPEN_FLAG%"=="true" (
+    set "DT_CUSTOM_FOLDER_OPENED=false"
     if defined DT_CUSTOM_PATH if exist "%DT_CUSTOM_PATH%" if /I not "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
         call :OpenTemplateFolder "%DT_CUSTOM_PATH%" "" "%DT_DESIGN_MODE%" "Custom Office Templates folder" ""
-    ) else if defined DT_CUSTOM_ALT_PATH if exist "%DT_CUSTOM_ALT_PATH%" if /I not "!DT_CUSTOM_ALT_COMPARE!"=="!DT_CUSTOM_COMPARE!" if /I not "!DT_CUSTOM_ALT_COMPARE!"=="!DT_TARGET_COMPARE!" (
-        call :OpenTemplateFolder "%DT_CUSTOM_ALT_PATH%" "" "%DT_DESIGN_MODE%" "Custom Office Templates alternate folder" ""
+        set "DT_CUSTOM_FOLDER_OPENED=true"
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
         if /I "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
             echo [DEBUG] Skipping Custom Office Templates folder because it is already being opened as the Document Themes folder.
@@ -837,6 +837,22 @@ if /I "%DT_CUSTOM_OPEN_FLAG%"=="true" (
             echo [DEBUG] Skipping Custom Office Templates alternate folder because it is already being opened as the Document Themes folder.
         ) else (
             echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
+        )
+    )
+
+    if defined DT_CUSTOM_ALT_PATH if exist "%DT_CUSTOM_ALT_PATH%" if /I not "!DT_CUSTOM_ALT_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_CUSTOM_ALT_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
+        call :OpenTemplateFolder "%DT_CUSTOM_ALT_PATH%" "" "%DT_DESIGN_MODE%" "Custom Office Templates alternate folder" ""
+    ) else if /I "%DT_DESIGN_MODE%"=="true" (
+        if /I "!DT_CUSTOM_ALT_COMPARE!"=="!DT_TARGET_COMPARE!" (
+            echo [DEBUG] Skipping Custom Office Templates alternate folder because it is already being opened as the Document Themes folder.
+        ) else if /I "!DT_CUSTOM_ALT_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
+            if /I "!DT_CUSTOM_FOLDER_OPENED!"=="true" (
+                echo [DEBUG] Skipping Custom Office Templates alternate folder because the primary folder was opened with the same path.
+            ) else (
+                echo [DEBUG] Skipping Custom Office Templates alternate folder because it resolves to the primary path.
+            )
+        ) else (
+            echo [DEBUG] Custom Office Templates alternate folder not opened because the path is unavailable.
         )
     )
 ) else if /I "%DT_DESIGN_MODE%"=="true" (
