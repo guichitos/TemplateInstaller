@@ -6,12 +6,19 @@ set "OPEN_CUSTOM=%~2"
 set "OPEN_ROAMING=%~3"
 set "OPEN_EXCEL=%~4"
 set "OPEN_CUSTOM_ALT=%~5"
+set "SELECT_FILES=%~6"
+set "THEME_FILE=%~7"
+set "CUSTOM_FILE=%~8"
+set "ROAMING_FILE=%~9"
+set "EXCEL_FILE=%~10"
+set "CUSTOM_ALT_FILE=%~11"
 
 if not defined OPEN_THEME set "OPEN_THEME=1"
 if not defined OPEN_CUSTOM set "OPEN_CUSTOM=1"
 if not defined OPEN_ROAMING set "OPEN_ROAMING=1"
 if not defined OPEN_EXCEL set "OPEN_EXCEL=1"
 if not defined OPEN_CUSTOM_ALT set "OPEN_CUSTOM_ALT=1"
+if not defined SELECT_FILES set "SELECT_FILES=0"
 
 set "ScriptDirectory=%~dp0"
 set "OfficeTemplateLib=%ScriptDirectory%1-2. AuthContainerTools.bat"
@@ -92,23 +99,47 @@ if exist "%OfficeTemplateLib%" (
     if "!CUSTOM_OFFICE_TEMPLATE_ALT_PATH:~-1!"=="\" set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=!CUSTOM_OFFICE_TEMPLATE_ALT_PATH:~0,-1!"
 )
 
-call :OpenIfEnabled "!OPEN_THEME!" "%THEME_PATH%"
-call :OpenIfEnabled "!OPEN_CUSTOM!" "%CUSTOM_OFFICE_TEMPLATE_PATH%"
-call :OpenIfEnabled "!OPEN_ROAMING!" "%ROAMING_TEMPLATE_PATH%"
-call :OpenIfEnabled "!OPEN_EXCEL!" "%EXCEL_STARTUP_PATH%"
-call :OpenIfEnabled "!OPEN_CUSTOM_ALT!" "%CUSTOM_OFFICE_TEMPLATE_ALT_PATH%"
+call :OpenIfEnabled "!OPEN_THEME!" "%THEME_PATH%" "!SELECT_FILES!" "!THEME_FILE!"
+call :OpenIfEnabled "!OPEN_CUSTOM!" "%CUSTOM_OFFICE_TEMPLATE_PATH%" "!SELECT_FILES!" "!CUSTOM_FILE!"
+call :OpenIfEnabled "!OPEN_ROAMING!" "%ROAMING_TEMPLATE_PATH%" "!SELECT_FILES!" "!ROAMING_FILE!"
+call :OpenIfEnabled "!OPEN_EXCEL!" "%EXCEL_STARTUP_PATH%" "!SELECT_FILES!" "!EXCEL_FILE!"
+call :OpenIfEnabled "!OPEN_CUSTOM_ALT!" "%CUSTOM_OFFICE_TEMPLATE_ALT_PATH%" "!SELECT_FILES!" "!CUSTOM_ALT_FILE!"
 
 goto :EOF
 
 :OpenIfEnabled
 set "FLAG=%~1"
 set "TARGET=%~2"
+set "SELECT_FLAG=%~3"
+set "FILENAME=%~4"
 
 set "SHOULD_OPEN=0"
 for %%B in (1 true yes on) do if /I "!FLAG!"=="%%B" set "SHOULD_OPEN=1"
 
-if "!SHOULD_OPEN!"=="1" start "" "%TARGET%"
+if "!SHOULD_OPEN!"=="1" (
+    set "SHOULD_SELECT=0"
+    for %%B in (1 true yes on) do if /I "!SELECT_FLAG!"=="%%B" set "SHOULD_SELECT=1"
+
+    if "!SHOULD_SELECT!"=="1" (
+        if defined FILENAME (
+            set "FILE_TARGET=!TARGET!\!FILENAME!"
+            if exist "!FILE_TARGET!" (
+                start "" explorer.exe /select,"!FILE_TARGET!"
+            ) else (
+                start "" "!TARGET!"
+            )
+            set "FILE_TARGET="
+        ) else (
+            start "" "!TARGET!"
+        )
+    ) else (
+        start "" "!TARGET!"
+    )
+)
 set "FLAG="
 set "TARGET="
+set "SELECT_FLAG="
+set "SHOULD_SELECT="
+set "FILENAME="
 set "SHOULD_OPEN="
 goto :EOF
