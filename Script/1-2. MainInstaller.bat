@@ -932,6 +932,7 @@ if /I not "%LFP_OPEN_DOC%"=="true" if /I not "%LFP_OPEN_CUSTOM%"=="true" if /I n
 )
 
 set "LFP_WORKER=%ScriptDirectory%1-2. OpenTemplateFoldersWorker.bat"
+call :EnsureFolderWorker "%LFP_WORKER%" "%LFP_DESIGN_MODE%"
 if not exist "%LFP_WORKER%" (
     if /I "%LFP_DESIGN_MODE%"=="true" echo [DEBUG] Worker script not found: "%LFP_WORKER%". Skipping folder openings.
     exit /b
@@ -940,6 +941,90 @@ if not exist "%LFP_WORKER%" (
 set "LFP_START_CMD=%ComSpec% /c \"\"%LFP_WORKER%\" \"%LFP_DESIGN_MODE%\" \"%LFP_OPEN_DOC%\" \"%LFP_DOC_PATH%\" \"%LFP_DOC_SELECT%\" \"%LFP_OPEN_CUSTOM%\" \"%LFP_CUSTOM_PATH%\" \"%LFP_OPEN_CUSTOM_ALT%\" \"%LFP_CUSTOM_ALT_PATH%\" \"%LFP_OPEN_ROAMING%\" \"%LFP_ROAMING_PATH%\" \"%LFP_OPEN_EXCEL%\" \"%LFP_EXCEL_PATH%\" \"%LFP_EXCEL_SELECT%\"\""
 if /I "%LFP_DESIGN_MODE%"=="true" echo [DEBUG] Launching folder worker: start "" %LFP_START_CMD%
 start "" %LFP_START_CMD%
+exit /b
+
+:EnsureFolderWorker
+set "EFW_TARGET=%~1"
+set "EFW_DESIGN_MODE=%~2"
+
+if exist "%EFW_TARGET%" exit /b
+
+if /I "%EFW_DESIGN_MODE%"=="true" echo [DEBUG] Generating missing folder worker at "%EFW_TARGET%".
+(
+    echo @echo off
+    echo setlocal EnableDelayedExpansion
+    echo.
+    echo set "OF_DESIGN_MODE=%%~1"
+    echo set "OF_OPEN_DOC=%%~2"
+    echo set "OF_DOC_PATH=%%~3"
+    echo set "OF_DOC_SELECT=%%~4"
+    echo set "OF_OPEN_CUSTOM=%%~5"
+    echo set "OF_CUSTOM_PATH=%%~6"
+    echo set "OF_OPEN_CUSTOM_ALT=%%~7"
+    echo set "OF_CUSTOM_ALT_PATH=%%~8"
+    echo set "OF_OPEN_ROAMING=%%~9"
+    echo set "OF_ROAMING_PATH=%%~10"
+    echo set "OF_OPEN_EXCEL=%%~11"
+    echo set "OF_EXCEL_PATH=%%~12"
+    echo set "OF_EXCEL_SELECT=%%~13"
+    echo.
+    echo set "OPENED_TEMPLATE_FOLDERS=;"
+    echo.
+    echo call :OpenFolderIfRequested "%%OF_OPEN_DOC%%" "%%OF_DOC_PATH%%" "%%OF_DESIGN_MODE%%" "Document Themes folder" "%%OF_DOC_SELECT%%"
+    echo call :OpenFolderIfRequested "%%OF_OPEN_CUSTOM%%" "%%OF_CUSTOM_PATH%%" "%%OF_DESIGN_MODE%%" "Custom Office Templates folder" ""
+    echo call :OpenFolderIfRequested "%%OF_OPEN_CUSTOM_ALT%%" "%%OF_CUSTOM_ALT_PATH%%" "%%OF_DESIGN_MODE%%" "Custom Office Templates alternate folder" ""
+    echo call :OpenFolderIfRequested "%%OF_OPEN_ROAMING%%" "%%OF_ROAMING_PATH%%" "%%OF_DESIGN_MODE%%" "Roaming Templates folder" ""
+    echo call :OpenFolderIfRequested "%%OF_OPEN_EXCEL%%" "%%OF_EXCEL_PATH%%" "%%OF_DESIGN_MODE%%" "Excel startup folder" "%%OF_EXCEL_SELECT%%"
+    echo.
+    echo exit /b 0
+    echo.
+    echo :OpenFolderIfRequested
+    echo set "REQ_OPEN=%%~1"
+    echo set "TARGET_PATH=%%~2"
+    echo set "DESIGN_MODE=%%~3"
+    echo set "FOLDER_LABEL=%%~4"
+    echo set "SELECT_PATH=%%~5"
+    echo.
+    echo if /I not "%%REQ_OPEN%%"=="true" exit /b
+    echo if "%%TARGET_PATH%%"=="" exit /b
+    echo call :NormalizePath "%%TARGET_PATH%%" TARGET_COMPARE
+    echo set "TOKEN=;%%TARGET_COMPARE%%;"
+    echo if "!OPENED_TEMPLATE_FOLDERS:%%TOKEN%%=!!"=="!OPENED_TEMPLATE_FOLDERS!" ^(
+    echo ^    if /I "%%DESIGN_MODE%%"=="true" ^(
+    echo ^        if defined SELECT_PATH ^(
+    echo ^            echo [ACTION] Opening !FOLDER_LABEL! and selecting: !SELECT_PATH!
+    echo ^        ^) else ^(
+    echo ^            echo [ACTION] Opening !FOLDER_LABEL!: !TARGET_PATH!
+    echo ^        ^)
+    echo ^    ^)
+    echo.
+    echo ^    if defined SELECT_PATH ^(
+    echo ^        if exist "%%SELECT_PATH%%" ^(
+    echo ^            start "" explorer /select,"!SELECT_PATH!"
+    echo ^        ^) else ^(
+    echo ^            start "" explorer "!TARGET_PATH!"
+    echo ^        ^)
+    echo ^    ^) else ^(
+    echo ^        start "" explorer "!TARGET_PATH!"
+    echo ^    ^)
+    echo ^    set "OPENED_TEMPLATE_FOLDERS=!OPENED_TEMPLATE_FOLDERS!!TOKEN!"
+    echo ^)
+    echo exit /b
+    echo.
+    echo :NormalizePath
+    echo set "NP_INPUT=%%~1"
+    echo set "NP_OUTPUT_VAR=%%~2"
+    echo if "%%NP_OUTPUT_VAR%%"=="" exit /b
+    echo setlocal EnableDelayedExpansion
+    echo set "NP_WORK=!NP_INPUT!"
+    echo :_TrimLoop
+    echo if defined NP_WORK if "!NP_WORK:~-1!"==" " set "NP_WORK=!NP_WORK:~0,-1!" ^& goto _TrimLoop
+    echo if defined NP_WORK if "!NP_WORK:~-1!"=="\\" set "NP_WORK=!NP_WORK:~0,-1!" ^& goto _TrimLoop
+    echo endlocal ^& set "%%NP_OUTPUT_VAR%%=%%NP_WORK%%"
+    echo exit /b
+) > "%EFW_TARGET%"
+
+if not exist "%EFW_TARGET%" if /I "%EFW_DESIGN_MODE%"=="true" echo [WARN] Failed to create folder worker at "%EFW_TARGET%".
 exit /b
 
 :NormalizePath
