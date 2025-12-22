@@ -40,7 +40,24 @@ for %%V in (16.0 15.0 14.0 12.0) do (
 if not defined CUSTOM_OFFICE_TEMPLATE_PATH if defined DEFAULT_CUSTOM_DIR set "CUSTOM_OFFICE_TEMPLATE_PATH=%DEFAULT_CUSTOM_DIR%"
 if not defined CUSTOM_OFFICE_TEMPLATE_PATH set "CUSTOM_OFFICE_TEMPLATE_PATH=%USERPROFILE%\Documents\Custom Templates"
 
-set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=%DEFAULT_CUSTOM_DIR%"
+set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH="
+for %%V in (16.0 15.0 14.0 12.0) do (
+    if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH (
+        for /f "tokens=1,2,*" %%A in (
+          'reg query "HKCU\Software\Microsoft\Office\%%V\PowerPoint\Options" /v "PersonalTemplates" 2^>nul ^| find /I "PersonalTemplates"'
+        ) do set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=%%C"
+    )
+)
+for %%V in (16.0 15.0 14.0 12.0) do (
+    if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH (
+        for /f "tokens=1,2,*" %%A in (
+          'reg query "HKCU\Software\Microsoft\Office\%%V\Common\General" /v "UserTemplates" 2^>nul ^| find /I "UserTemplates"'
+        ) do set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=%%C"
+    )
+)
+if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH if defined DOCUMENTS_PATH set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=!DOCUMENTS_PATH!\Plantillas personalizadas de Office"
+if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=%USERPROFILE%\Documents\Plantillas personalizadas de Office"
+
 
 if exist "%OfficeTemplateLib%" (
     call "%OfficeTemplateLib%" :CleanPath APPDATA_EXPANDED
