@@ -69,8 +69,6 @@ if /I "%IsDesignModeEnabled%"=="true" (
 ) else (
     title Executing
     echo Installing custom templates and applying them as the new Microsoft Office defaults...
-    echo Executing...
-
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
