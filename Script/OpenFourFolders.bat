@@ -1,6 +1,18 @@
 @echo off
 setlocal enabledelayedexpansion
 
+set "OPEN_THEME=%~1"
+set "OPEN_CUSTOM=%~2"
+set "OPEN_ROAMING=%~3"
+set "OPEN_EXCEL=%~4"
+set "OPEN_CUSTOM_ALT=%~5"
+
+if not defined OPEN_THEME set "OPEN_THEME=1"
+if not defined OPEN_CUSTOM set "OPEN_CUSTOM=1"
+if not defined OPEN_ROAMING set "OPEN_ROAMING=1"
+if not defined OPEN_EXCEL set "OPEN_EXCEL=1"
+if not defined OPEN_CUSTOM_ALT set "OPEN_CUSTOM_ALT=1"
+
 set "ScriptDirectory=%~dp0"
 set "OfficeTemplateLib=%ScriptDirectory%1-2. AuthContainerTools.bat"
 
@@ -80,8 +92,23 @@ if exist "%OfficeTemplateLib%" (
     if "!CUSTOM_OFFICE_TEMPLATE_ALT_PATH:~-1!"=="\" set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=!CUSTOM_OFFICE_TEMPLATE_ALT_PATH:~0,-1!"
 )
 
-start "" "%THEME_PATH%"
-start "" "%CUSTOM_OFFICE_TEMPLATE_PATH%"
-start "" "%ROAMING_TEMPLATE_PATH%"
-start "" "%EXCEL_STARTUP_PATH%"
-start "" "%CUSTOM_OFFICE_TEMPLATE_ALT_PATH%"
+call :OpenIfEnabled "!OPEN_THEME!" "%THEME_PATH%"
+call :OpenIfEnabled "!OPEN_CUSTOM!" "%CUSTOM_OFFICE_TEMPLATE_PATH%"
+call :OpenIfEnabled "!OPEN_ROAMING!" "%ROAMING_TEMPLATE_PATH%"
+call :OpenIfEnabled "!OPEN_EXCEL!" "%EXCEL_STARTUP_PATH%"
+call :OpenIfEnabled "!OPEN_CUSTOM_ALT!" "%CUSTOM_OFFICE_TEMPLATE_ALT_PATH%"
+
+goto :EOF
+
+:OpenIfEnabled
+set "FLAG=%~1"
+set "TARGET=%~2"
+
+set "SHOULD_OPEN=0"
+for %%B in (1 true yes on) do if /I "!FLAG!"=="%%B" set "SHOULD_OPEN=1"
+
+if "!SHOULD_OPEN!"=="1" start "" "%TARGET%"
+set "FLAG="
+set "TARGET="
+set "SHOULD_OPEN="
+goto :EOF
