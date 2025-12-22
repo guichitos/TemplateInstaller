@@ -8,7 +8,7 @@ set "OPEN_EXCEL=1"
 set "OPEN_CUSTOM_ALT=1"
 
 set "SELECT_FILES=1"
-set "THEME_FILE=MissingTheme.thmx"
+set "THEME_FILE=The Dysolve's Office theme - Reliable Fonts.thmx"
 set "CUSTOM_FILE="
 set "ROAMING_FILE=RandomList.txt"
 set "EXCEL_FILE=aDebe conservarse.xltx"
