@@ -964,11 +964,11 @@ for %%I in ("%LFP_EXCEL_SELECT%") do if not "%%~I"=="" set "LFP_EXCEL_FILE=%%~nx
 for %%I in ("%LFP_CUSTOM_ALT_SELECT%") do if not "%%~I"=="" set "LFP_CUSTOM_ALT_FILE=%%~nxI"
 
 set "LFP_SELECT_FILES=0"
-for %%V in (LFP_THEME_FILE LFP_CUSTOM_FILE LFP_ROAMING_FILE LFP_EXCEL_FILE LFP_CUSTOM_ALT_FILE) do (
-    call set "LFP_TMP_VAL=%%%V%%"
-    if defined LFP_TMP_VAL set "LFP_SELECT_FILES=1"
-)
-set "LFP_TMP_VAL="
+if defined LFP_THEME_FILE set "LFP_SELECT_FILES=1"
+if defined LFP_CUSTOM_FILE set "LFP_SELECT_FILES=1"
+if defined LFP_ROAMING_FILE set "LFP_SELECT_FILES=1"
+if defined LFP_EXCEL_FILE set "LFP_SELECT_FILES=1"
+if defined LFP_CUSTOM_ALT_FILE set "LFP_SELECT_FILES=1"
 
 if /I "%LFP_DESIGN_MODE%"=="true" (
     echo [DEBUG] Folder opener located at: "%LFP_FOLDER_OPENER%"

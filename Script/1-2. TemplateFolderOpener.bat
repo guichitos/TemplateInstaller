@@ -20,6 +20,8 @@ set "EXCEL_FILE=%~9"
 shift
 set "CUSTOM_ALT_FILE=%~9"
 
+set "OPENED_TEMPLATE_FOLDERS=;"
+
 echo ================= WORKER RAW PARAMETERS =================
 echo Arg  Open theme = [%OPEN_THEME%]
 echo Arg  Open custom = [%OPEN_CUSTOM%]
@@ -152,7 +154,7 @@ echo Filename: [%~4]
 echo ---------------------------
 
 set "FLAG=%~1"
-set "TARGET=%~2"
+set "TARGET_RAW=%~2"
 set "SELECT_FLAG=%~3"
 set "FILENAME=%~4"
 
@@ -160,6 +162,9 @@ set "SHOULD_OPEN=0"
 for %%B in (1 true yes on) do if /I "!FLAG!"=="%%B" set "SHOULD_OPEN=1"
 
 if "!SHOULD_OPEN!"=="1" (
+    set "TARGET=!TARGET_RAW!"
+    call :NormalizePath "!TARGET!" TARGET_COMPARE
+    set "TARGET=!TARGET_COMPARE!"
 
     rem === detectar OneDrive ===
     set "IS_ONEDRIVE=0"
@@ -167,36 +172,44 @@ if "!SHOULD_OPEN!"=="1" (
 
     set "SHOULD_SELECT=0"
     for %%B in (1 true yes on) do if /I "!SELECT_FLAG!"=="%%B" set "SHOULD_SELECT=1"
+    if "!SHOULD_SELECT!"=="0" if defined FILENAME if not "!FILENAME!"=="" set "SHOULD_SELECT=1"
 
-    if "!SHOULD_SELECT!"=="1" if "!IS_ONEDRIVE!"=="0" (
-        echo Intentando seleccionar archivo: "!FILENAME!" en carpeta: "!TARGET!"
-        if defined FILENAME (
-            set "FILE_TARGET=!TARGET!\!FILENAME!"
-            if exist "!FILE_TARGET!" (
-                echo Ejecutando:
-                echo start "" explorer.exe /select,"!FILE_TARGET!"
-                start "" explorer.exe /select,"!FILE_TARGET!"
+    set "TOKEN=;!TARGET_COMPARE!;"
+    if "!OPENED_TEMPLATE_FOLDERS:%TOKEN%=!"=="!OPENED_TEMPLATE_FOLDERS!" (
+        if "!SHOULD_SELECT!"=="1" if "!IS_ONEDRIVE!"=="0" (
+            echo Intentando seleccionar archivo: "!FILENAME!" en carpeta: "!TARGET!"
+            if defined FILENAME (
+                set "FILE_TARGET=!TARGET!\!FILENAME!"
+                if exist "!FILE_TARGET!" (
+                    echo Ejecutando:
+                    echo start "" explorer.exe /select,"!FILE_TARGET!"
+                    start "" explorer.exe /select,"!FILE_TARGET!"
+                ) else (
+                    echo Archivo no existe. Abriendo solo carpeta.
+                    echo start "" "!TARGET!"
+                    start "" "!TARGET!"
+                )
+                set "FILE_TARGET="
             ) else (
-                echo Archivo no existe. Abriendo solo carpeta.
+                echo No se proporciono archivo. Abriendo solo carpeta.
+                echo start "" "!TARGET!"
                 start "" "!TARGET!"
             )
-            set "FILE_TARGET="
         ) else (
-            echo No se proporciono archivo. Abriendo solo carpeta.
+            if "!IS_ONEDRIVE!"=="1" (
+                echo Ruta bajo OneDrive detectada. Omitiendo seleccion de archivo.
+            ) else (
+                echo Seleccion deshabilitada o sin archivo. Abriendo solo carpeta.
+            )
+            echo start "" "!TARGET!"
             start "" "!TARGET!"
         )
-    ) else (
-        if "!IS_ONEDRIVE!"=="1" (
-            echo Ruta bajo OneDrive detectada. Omitiendo seleccion de archivo.
-        ) else (
-            echo Seleccion deshabilitada. Abriendo solo carpeta.
-        )
-        start "" "!TARGET!"
+        set "OPENED_TEMPLATE_FOLDERS=!OPENED_TEMPLATE_FOLDERS!!TOKEN!"
     )
 )
 
 set "FLAG="
-set "TARGET="
+set "TARGET_RAW="
 set "SELECT_FLAG="
 set "SHOULD_SELECT="
 set "FILENAME="
@@ -204,3 +217,15 @@ set "SHOULD_OPEN="
 set "IS_ONEDRIVE="
 
 goto :EOF
+
+:NormalizePath
+set "NP_INPUT=%~1"
+set "NP_OUTPUT_VAR=%~2"
+if "%NP_OUTPUT_VAR%"=="" exit /b
+setlocal enabledelayedexpansion
+set "NP_WORK=!NP_INPUT!"
+:_TrimLoop
+if defined NP_WORK if "!NP_WORK:~-1!"==" " set "NP_WORK=!NP_WORK:~0,-1!" & goto _TrimLoop
+if defined NP_WORK if "!NP_WORK:~-1!"=="\\" set "NP_WORK=!NP_WORK:~0,-1!" & goto _TrimLoop
+endlocal & set "%NP_OUTPUT_VAR%=%NP_WORK%"
+exit /b
