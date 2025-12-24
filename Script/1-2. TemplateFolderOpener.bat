@@ -1,155 +1,206 @@
 @echo off
 setlocal enabledelayedexpansion
 
-:: Parameters
-::  1  - Design mode flag (true/false) for verbose logging
-::  2  - Enable file selection (true/false)
-::  3  - Open Document Themes folder flag
-::  4  - Document Themes folder path
-::  5  - Document Themes file name to select (optional)
-::  6  - Open Custom Office Templates folder flag
-::  7  - Custom Office Templates folder path
-::  8  - Custom Office Templates file name to select (optional)
-::  9  - Open Roaming Templates folder flag
-:: 10  - Roaming Templates folder path
-:: 11  - Roaming Templates file name to select (optional)
-:: 12  - Open Excel startup folder flag
-:: 13  - Excel startup folder path
-:: 14  - Excel startup file name to select (optional)
-:: 15  - Open Custom Office Templates alternate folder flag
-:: 16  - Custom Office Templates alternate folder path
-:: 17  - Custom Office Templates alternate file name to select (optional)
-set "DESIGN_MODE=%~1"
-set "SELECT_FILES=%~2"
-set "OPEN_THEME=%~3"
-set "THEME_PATH=%~4"
-set "THEME_FILE=%~5"
-set "OPEN_CUSTOM=%~6"
-set "CUSTOM_PATH=%~7"
+:: Params:
+:: 1-5  - Booleans to open each folder (theme, custom, roaming, Excel startup, alt custom)
+:: 6    - Global boolean to attempt file selection instead of only opening the folder
+:: 7-11 - Filenames to optionally select per folder in the same order
+set "OPEN_THEME=%~1"
+set "OPEN_CUSTOM=%~2"
+set "OPEN_ROAMING=%~3"
+set "OPEN_EXCEL=%~4"
+set "OPEN_CUSTOM_ALT=%~5"
+set "SELECT_FILES=%~6"
+set "THEME_FILE=%~7"
 set "CUSTOM_FILE=%~8"
-set "OPEN_ROAMING=%~9"
-
-shift
-set "ROAMING_PATH=%~9"
-shift
 set "ROAMING_FILE=%~9"
 shift
-set "OPEN_EXCEL=%~9"
-shift
-set "EXCEL_PATH=%~9"
-shift
 set "EXCEL_FILE=%~9"
-shift
-set "OPEN_CUSTOM_ALT=%~9"
-shift
-set "CUSTOM_ALT_PATH=%~9"
+
 shift
 set "CUSTOM_ALT_FILE=%~9"
 
-if /I "!DESIGN_MODE!"=="true" (
-    echo [DEBUG] Template folder opener invoked with arguments:
-    echo         DESIGN_MODE="!DESIGN_MODE!"
-    echo         SELECT_FILES="!SELECT_FILES!"
-    echo         OPEN_THEME="!OPEN_THEME!" THEME_PATH="!THEME_PATH!" THEME_FILE="!THEME_FILE!"
-    echo         OPEN_CUSTOM="!OPEN_CUSTOM!" CUSTOM_PATH="!CUSTOM_PATH!" CUSTOM_FILE="!CUSTOM_FILE!"
-    echo         OPEN_ROAMING="!OPEN_ROAMING!" ROAMING_PATH="!ROAMING_PATH!" ROAMING_FILE="!ROAMING_FILE!"
-    echo         OPEN_EXCEL="!OPEN_EXCEL!" EXCEL_PATH="!EXCEL_PATH!" EXCEL_FILE="!EXCEL_FILE!"
-    echo         OPEN_CUSTOM_ALT="!OPEN_CUSTOM_ALT!" CUSTOM_ALT_PATH="!CUSTOM_ALT_PATH!" CUSTOM_ALT_FILE="!CUSTOM_ALT_FILE!"
+echo ================= WORKER RAW PARAMETERS =================
+echo Arg  Open theme = [%OPEN_THEME%]
+echo Arg  Open custom = [%OPEN_CUSTOM%]
+echo Arg  Open roaming = [%OPEN_ROAMING%]
+echo Arg  Open Excel startup = [%OPEN_EXCEL%]
+echo Arg  Open custom alt = [%OPEN_CUSTOM_ALT%]
+echo Arg  Select files = [%SELECT_FILES%]
+echo Arg  THEME_FILE = [%THEME_FILE%]
+echo Arg  CUSTOM_FILE = [%CUSTOM_FILE%]
+echo Arg  ROAMING_FILE = [%ROAMING_FILE%]
+echo Arg  EXCEL_FILE = [%EXCEL_FILE%]
+echo Arg  CUSTOM_ALT_FILE = [%CUSTOM_ALT_FILE%]
+echo =========================================================
+echo.
+
+
+if not defined OPEN_THEME set "OPEN_THEME=1"
+if not defined OPEN_CUSTOM set "OPEN_CUSTOM=1"
+if not defined OPEN_ROAMING set "OPEN_ROAMING=1"
+if not defined OPEN_EXCEL set "OPEN_EXCEL=1"
+if not defined OPEN_CUSTOM_ALT set "OPEN_CUSTOM_ALT=1"
+if not defined SELECT_FILES set "SELECT_FILES=0"
+
+set "ScriptDirectory=%~dp0"
+set "OfficeTemplateLib=%ScriptDirectory%1-2. AuthContainerTools.bat"
+
+set "APPDATA_EXPANDED="
+for /f "delims=" %%T in ('powershell -NoLogo -Command "$app=(Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders\" -Name AppData -ErrorAction SilentlyContinue).AppData; if ($app) {[Environment]::ExpandEnvironmentVariables($app)}"') do set "APPDATA_EXPANDED=%%T"
+if not defined APPDATA_EXPANDED set "APPDATA_EXPANDED=%APPDATA%"
+
+set "THEME_PATH=%APPDATA_EXPANDED%\Microsoft\Templates\Document Themes"
+set "ROAMING_TEMPLATE_PATH=%APPDATA_EXPANDED%\Microsoft\Templates"
+set "EXCEL_STARTUP_PATH=%APPDATA_EXPANDED%\Microsoft\Excel\XLSTART"
+
+set "DOCUMENTS_PATH="
+for /f "delims=" %%D in ('powershell -NoLogo -Command "$path=(Get-ItemProperty -Path \"HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Explorer\\User Shell Folders\" -Name Personal -ErrorAction SilentlyContinue).Personal; if ($path) {[Environment]::ExpandEnvironmentVariables($path)}"') do set "DOCUMENTS_PATH=%%D"
+if defined DOCUMENTS_PATH (
+    if "!DOCUMENTS_PATH:~-1!"=="\" set "DOCUMENTS_PATH=!DOCUMENTS_PATH:~0,-1!"
+    set "DEFAULT_CUSTOM_DIR=!DOCUMENTS_PATH!\Custom Templates"
+) else (
+    set "DEFAULT_CUSTOM_DIR=%USERPROFILE%\Documents\Custom Templates"
+)
+if not defined DEFAULT_CUSTOM_DIR set "DEFAULT_CUSTOM_DIR=%USERPROFILE%\Documents\Custom Templates"
+
+set "CUSTOM_OFFICE_TEMPLATE_PATH="
+for %%V in (16.0 15.0 14.0 12.0) do (
+    if not defined CUSTOM_OFFICE_TEMPLATE_PATH (
+        for /f "tokens=1,2,*" %%A in (
+          'reg query "HKCU\Software\Microsoft\Office\%%V\Word\Options" /v "PersonalTemplates" 2^>nul ^| find /I "PersonalTemplates"'
+        ) do set "CUSTOM_OFFICE_TEMPLATE_PATH=%%C"
+    )
+)
+for %%V in (16.0 15.0 14.0 12.0) do (
+    if not defined CUSTOM_OFFICE_TEMPLATE_PATH (
+        for /f "tokens=1,2,*" %%A in (
+          'reg query "HKCU\Software\Microsoft\Office\%%V\Common\General" /v "UserTemplates" 2^>nul ^| find /I "UserTemplates"'
+        ) do set "CUSTOM_OFFICE_TEMPLATE_PATH=%%C"
+    )
+)
+if not defined CUSTOM_OFFICE_TEMPLATE_PATH if defined DEFAULT_CUSTOM_DIR set "CUSTOM_OFFICE_TEMPLATE_PATH=%DEFAULT_CUSTOM_DIR%"
+if not defined CUSTOM_OFFICE_TEMPLATE_PATH set "CUSTOM_OFFICE_TEMPLATE_PATH=%USERPROFILE%\Documents\Custom Templates"
+
+set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH="
+for %%V in (16.0 15.0 14.0 12.0) do (
+    if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH (
+        for /f "tokens=1,2,*" %%A in (
+          'reg query "HKCU\Software\Microsoft\Office\%%V\PowerPoint\Options" /v "PersonalTemplates" 2^>nul ^| find /I "PersonalTemplates"'
+        ) do set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=%%C"
+    )
 )
 
-set "OPENED_TEMPLATE_FOLDERS=;"
+for %%V in (16.0 15.0 14.0 12.0) do (
+    if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH (
+        for /f "tokens=1,2,*" %%A in (
+          'reg query "HKCU\Software\Microsoft\Office\%%V\Common\General" /v "UserTemplates" 2^>nul ^| find /I "UserTemplates"'
+        ) do set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=%%C"
+    )
+)
+if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH if defined CUSTOM_OFFICE_TEMPLATE_PATH set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=%CUSTOM_OFFICE_TEMPLATE_PATH%"
+if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH if defined DEFAULT_CUSTOM_DIR set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=%DEFAULT_CUSTOM_DIR%"
+if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=%USERPROFILE%\Documents\Custom Templates"
 
-call :OpenIfEnabled "!OPEN_THEME!" "!THEME_PATH!" "!THEME_FILE!" "Document Themes folder"
-call :OpenIfEnabled "!OPEN_CUSTOM!" "!CUSTOM_PATH!" "!CUSTOM_FILE!" "Custom Office Templates folder"
-call :OpenIfEnabled "!OPEN_CUSTOM_ALT!" "!CUSTOM_ALT_PATH!" "!CUSTOM_ALT_FILE!" "Custom Office Templates alternate folder"
-call :OpenIfEnabled "!OPEN_ROAMING!" "!ROAMING_PATH!" "!ROAMING_FILE!" "Roaming Templates folder"
-call :OpenIfEnabled "!OPEN_EXCEL!" "!EXCEL_PATH!" "!EXCEL_FILE!" "Excel startup folder"
+if exist "%OfficeTemplateLib%" (
+    echo existe la libreria OfficeTemplateLib
+    call "%OfficeTemplateLib%" :CleanPath APPDATA_EXPANDED
+    call "%OfficeTemplateLib%" :CleanPath THEME_PATH
+    call "%OfficeTemplateLib%" :CleanPath ROAMING_TEMPLATE_PATH
+    call "%OfficeTemplateLib%" :CleanPath EXCEL_STARTUP_PATH
+    call "%OfficeTemplateLib%" :CleanPath DOCUMENTS_PATH
+    call "%OfficeTemplateLib%" :CleanPath DEFAULT_CUSTOM_DIR
+    call "%OfficeTemplateLib%" :CleanPath CUSTOM_OFFICE_TEMPLATE_PATH
+    call "%OfficeTemplateLib%" :CleanPath CUSTOM_OFFICE_TEMPLATE_ALT_PATH
+) else (
+    echo no existe la libreria OfficeTemplateLib
+    if "!APPDATA_EXPANDED:~-1!"=="\" set "APPDATA_EXPANDED=!APPDATA_EXPANDED:~0,-1!"
+    if "!THEME_PATH:~-1!"=="\" set "THEME_PATH=!THEME_PATH:~0,-1!"
+    if "!ROAMING_TEMPLATE_PATH:~-1!"=="\" set "ROAMING_TEMPLATE_PATH=!ROAMING_TEMPLATE_PATH:~0,-1!"
+    if "!EXCEL_STARTUP_PATH:~-1!"=="\" set "EXCEL_STARTUP_PATH=!EXCEL_STARTUP_PATH:~0,-1!"
+    if "!DOCUMENTS_PATH:~-1!"=="\" set "DOCUMENTS_PATH=!DOCUMENTS_PATH:~0,-1!"
+    if "!DEFAULT_CUSTOM_DIR:~-1!"=="\" set "DEFAULT_CUSTOM_DIR=!DEFAULT_CUSTOM_DIR:~0,-1!"
+    if "!CUSTOM_OFFICE_TEMPLATE_PATH:~-1!"=="\" set "CUSTOM_OFFICE_TEMPLATE_PATH=!CUSTOM_OFFICE_TEMPLATE_PATH:~0,-1!"
+    if "!CUSTOM_OFFICE_TEMPLATE_ALT_PATH:~-1!"=="\" set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=!CUSTOM_OFFICE_TEMPLATE_ALT_PATH:~0,-1!"
+)
 
-exit /b 0
+echo.
+echo ================= CALCULATED FOLDER PATHS =================
+echo THEME_PATH                     = [!THEME_PATH!]
+echo CUSTOM_OFFICE_TEMPLATE_PATH    = [!CUSTOM_OFFICE_TEMPLATE_PATH!]
+echo ROAMING_TEMPLATE_PATH          = [!ROAMING_TEMPLATE_PATH!]
+echo EXCEL_STARTUP_PATH             = [!EXCEL_STARTUP_PATH!]
+echo CUSTOM_OFFICE_TEMPLATE_ALT_PATH= [!CUSTOM_OFFICE_TEMPLATE_ALT_PATH!]
+echo ===========================================================
+echo.
+
+call :OpenIfEnabled "!OPEN_THEME!" "%THEME_PATH%" "!SELECT_FILES!" "!THEME_FILE!"
+call :OpenIfEnabled "!OPEN_CUSTOM!" "%CUSTOM_OFFICE_TEMPLATE_PATH%" "!SELECT_FILES!" "!CUSTOM_FILE!"
+call :OpenIfEnabled "!OPEN_ROAMING!" "%ROAMING_TEMPLATE_PATH%" "!SELECT_FILES!" "!ROAMING_FILE!"
+call :OpenIfEnabled "!OPEN_EXCEL!" "%EXCEL_STARTUP_PATH%" "!SELECT_FILES!" "!EXCEL_FILE!"
+call :OpenIfEnabled "!OPEN_CUSTOM_ALT!" "%CUSTOM_OFFICE_TEMPLATE_ALT_PATH%" "!SELECT_FILES!" "!CUSTOM_ALT_FILE!"
+
+goto :EOF
 
 :OpenIfEnabled
+echo ---------------------------
+echo Abriendo con parametros:
+echo Flag: [%~1]
+echo Target: [%~2]
+echo SelectFlag: [%~3]
+echo Filename: [%~4]
+echo ---------------------------
+
 set "FLAG=%~1"
 set "TARGET=%~2"
-set "FILENAME=%~3"
-set "LABEL=%~4"
-
-if not defined TARGET exit /b
-if not defined LABEL set "LABEL=template folder"
+set "SELECT_FLAG=%~3"
+set "FILENAME=%~4"
 
 set "SHOULD_OPEN=0"
 for %%B in (1 true yes on) do if /I "!FLAG!"=="%%B" set "SHOULD_OPEN=1"
-if not "!SHOULD_OPEN!"=="1" exit /b
 
-call :NormalizePath "!TARGET!" TARGET_COMPARE
-set "TOKEN=;!TARGET_COMPARE!;"
-if not "!OPENED_TEMPLATE_FOLDERS:%TOKEN%=!"=="!OPENED_TEMPLATE_FOLDERS!" exit /b
+if "!SHOULD_OPEN!"=="1" (
 
-set "IS_ONEDRIVE=0"
-if not "!TARGET:\OneDrive\=!"=="!TARGET!" set "IS_ONEDRIVE=1"
-if not "!TARGET:\\OneDrive\\=!"=="!TARGET!" set "IS_ONEDRIVE=1"
+    rem === detectar OneDrive ===
+    set "IS_ONEDRIVE=0"
+    if not "!TARGET:\OneDrive\=!"=="!TARGET!" set "IS_ONEDRIVE=1"
 
-set "SHOULD_SELECT=0"
-for %%B in (1 true yes on) do if /I "!SELECT_FILES!"=="%%B" set "SHOULD_SELECT=1"
+    set "SHOULD_SELECT=0"
+    for %%B in (1 true yes on) do if /I "!SELECT_FLAG!"=="%%B" set "SHOULD_SELECT=1"
 
-if /I "!DESIGN_MODE!"=="true" (
-    if defined FILENAME (
-        echo [ACTION] Opening !LABEL!; selection requested: "!FILENAME!"
+    if "!SHOULD_SELECT!"=="1" if "!IS_ONEDRIVE!"=="0" (
+        echo Intentando seleccionar archivo: "!FILENAME!" en carpeta: "!TARGET!"
+        if defined FILENAME (
+            set "FILE_TARGET=!TARGET!\!FILENAME!"
+            if exist "!FILE_TARGET!" (
+                echo Ejecutando:
+                echo start "" explorer.exe /select,"!FILE_TARGET!"
+                start "" explorer.exe /select,"!FILE_TARGET!"
+            ) else (
+                echo Archivo no existe. Abriendo solo carpeta.
+                start "" "!TARGET!"
+            )
+            set "FILE_TARGET="
+        ) else (
+            echo No se proporciono archivo. Abriendo solo carpeta.
+            start "" "!TARGET!"
+        )
     ) else (
-        echo [ACTION] Opening !LABEL!: "!TARGET!"
-    )
-)
-
-set "FINAL_SELECTION="
-if "!SHOULD_SELECT!"=="1" if "!IS_ONEDRIVE!"=="0" (
-    call :ResolveSelectionTarget "!TARGET!" "!FILENAME!" FINAL_SELECTION
-)
-
-if defined FINAL_SELECTION (
-    if exist "!FINAL_SELECTION!" (
-        start "" explorer.exe /select,"!FINAL_SELECTION!"
-    ) else (
-        if /I "!DESIGN_MODE!"=="true" echo [WARN] Selection target not found; opening folder instead: "!FINAL_SELECTION!"
+        if "!IS_ONEDRIVE!"=="1" (
+            echo Ruta bajo OneDrive detectada. Omitiendo seleccion de archivo.
+        ) else (
+            echo Seleccion deshabilitada. Abriendo solo carpeta.
+        )
         start "" "!TARGET!"
     )
-) else (
-    if "!SHOULD_SELECT!"=="1" if "!IS_ONEDRIVE!"=="1" if /I "!DESIGN_MODE!"=="true" echo [DEBUG] Selection skipped because the path is under OneDrive.
-    start "" "!TARGET!"
 )
 
-set "OPENED_TEMPLATE_FOLDERS=!OPENED_TEMPLATE_FOLDERS!!TOKEN!"
-exit /b
+set "FLAG="
+set "TARGET="
+set "SELECT_FLAG="
+set "SHOULD_SELECT="
+set "FILENAME="
+set "SHOULD_OPEN="
+set "IS_ONEDRIVE="
 
-:ResolveSelectionTarget
-set "RST_BASE=%~1"
-set "RST_NAME=%~2"
-set "RST_OUT=%~3"
-if "%RST_OUT%"=="" exit /b
-set "%RST_OUT%="
-
-if not defined RST_NAME exit /b
-if "!RST_NAME!"=="" exit /b
-
-set "RST_CANDIDATE=!RST_NAME!"
-if "!RST_NAME:~1,1!"==":" goto _SetSelection
-if "!RST_NAME:~0,2!"=="\\\\" goto _SetSelection
-
-call :NormalizePath "!RST_BASE!" RST_BASE_TRIMMED
-if defined RST_BASE_TRIMMED (
-    set "RST_CANDIDATE=!RST_BASE_TRIMMED!\!RST_NAME!"
-)
-
-:_SetSelection
-set "%RST_OUT%=%RST_CANDIDATE%"
-exit /b
-
-:NormalizePath
-set "NP_INPUT=%~1"
-set "NP_OUTPUT_VAR=%~2"
-if "%NP_OUTPUT_VAR%"=="" exit /b
-setlocal enabledelayedexpansion
-set "NP_WORK=!NP_INPUT!"
-:_TrimLoop
-if defined NP_WORK if "!NP_WORK:~-1!"==" " set "NP_WORK=!NP_WORK:~0,-1!" & goto _TrimLoop
-if defined NP_WORK if "!NP_WORK:~-1!"=="\\" set "NP_WORK=!NP_WORK:~0,-1!" & goto _TrimLoop
-endlocal & set "%NP_OUTPUT_VAR%=%NP_WORK%"
-exit /b
+goto :EOF

@@ -951,45 +951,48 @@ if not exist "%LFP_FOLDER_OPENER%" (
     exit /b
 )
 
+set "LFP_THEME_FILE="
+set "LFP_CUSTOM_FILE="
+set "LFP_ROAMING_FILE="
+set "LFP_EXCEL_FILE="
+set "LFP_CUSTOM_ALT_FILE="
+
+for %%I in ("%LFP_DOC_SELECT%") do if not "%%~I"=="" set "LFP_THEME_FILE=%%~nxI"
+for %%I in ("%LFP_CUSTOM_SELECT%") do if not "%%~I"=="" set "LFP_CUSTOM_FILE=%%~nxI"
+for %%I in ("%LFP_ROAMING_SELECT%") do if not "%%~I"=="" set "LFP_ROAMING_FILE=%%~nxI"
+for %%I in ("%LFP_EXCEL_SELECT%") do if not "%%~I"=="" set "LFP_EXCEL_FILE=%%~nxI"
+for %%I in ("%LFP_CUSTOM_ALT_SELECT%") do if not "%%~I"=="" set "LFP_CUSTOM_ALT_FILE=%%~nxI"
+
 set "LFP_SELECT_FILES=0"
-if defined LFP_DOC_SELECT set "LFP_SELECT_FILES=1"
-if defined LFP_CUSTOM_SELECT set "LFP_SELECT_FILES=1"
-if defined LFP_CUSTOM_ALT_SELECT set "LFP_SELECT_FILES=1"
-if defined LFP_ROAMING_SELECT set "LFP_SELECT_FILES=1"
-if defined LFP_EXCEL_SELECT set "LFP_SELECT_FILES=1"
+for %%V in (LFP_THEME_FILE LFP_CUSTOM_FILE LFP_ROAMING_FILE LFP_EXCEL_FILE LFP_CUSTOM_ALT_FILE) do (
+    call set "LFP_TMP_VAL=%%%V%%"
+    if defined LFP_TMP_VAL set "LFP_SELECT_FILES=1"
+)
+set "LFP_TMP_VAL="
 
 if /I "%LFP_DESIGN_MODE%"=="true" (
     echo [DEBUG] Folder opener located at: "%LFP_FOLDER_OPENER%"
     echo [DEBUG] Folder opener parameters:
-    echo     DESIGN_MODE="%LFP_DESIGN_MODE%" SELECT_FILES="%LFP_SELECT_FILES%"
-    echo     OPEN_DOC="%LFP_OPEN_DOC%" DOC_PATH="%LFP_DOC_PATH%" DOC_SELECT="%LFP_DOC_SELECT%"
-    echo     OPEN_CUSTOM="%LFP_OPEN_CUSTOM%" CUSTOM_PATH="%LFP_CUSTOM_PATH%"
-    echo     CUSTOM_SELECT="%LFP_CUSTOM_SELECT%"
-    echo     OPEN_CUSTOM_ALT="%LFP_OPEN_CUSTOM_ALT%" CUSTOM_ALT_PATH="%LFP_CUSTOM_ALT_PATH%"
-    echo     CUSTOM_ALT_SELECT="%LFP_CUSTOM_ALT_SELECT%"
-    echo     OPEN_ROAMING="%LFP_OPEN_ROAMING%" ROAMING_PATH="%LFP_ROAMING_PATH%"
-    echo     ROAMING_SELECT="%LFP_ROAMING_SELECT%"
-    echo     OPEN_EXCEL="%LFP_OPEN_EXCEL%" EXCEL_PATH="%LFP_EXCEL_PATH%" EXCEL_SELECT="%LFP_EXCEL_SELECT%"
+    echo     OPEN_THEME="%LFP_OPEN_DOC%" THEME_FILE="%LFP_THEME_FILE%"
+    echo     OPEN_CUSTOM="%LFP_OPEN_CUSTOM%" CUSTOM_FILE="%LFP_CUSTOM_FILE%"
+    echo     OPEN_ROAMING="%LFP_OPEN_ROAMING%" ROAMING_FILE="%LFP_ROAMING_FILE%"
+    echo     OPEN_EXCEL="%LFP_OPEN_EXCEL%" EXCEL_FILE="%LFP_EXCEL_FILE%"
+    echo     OPEN_CUSTOM_ALT="%LFP_OPEN_CUSTOM_ALT%" CUSTOM_ALT_FILE="%LFP_CUSTOM_ALT_FILE%"
+    echo     SELECT_FILES="%LFP_SELECT_FILES%"
 )
 
 call "%LFP_FOLDER_OPENER%" ^
-    "%LFP_DESIGN_MODE%" ^
-    "%LFP_SELECT_FILES%" ^
     "%LFP_OPEN_DOC%" ^
-    "%LFP_DOC_PATH%" ^
-    "%LFP_DOC_SELECT%" ^
     "%LFP_OPEN_CUSTOM%" ^
-    "%LFP_CUSTOM_PATH%" ^
-    "%LFP_CUSTOM_SELECT%" ^
     "%LFP_OPEN_ROAMING%" ^
-    "%LFP_ROAMING_PATH%" ^
-    "%LFP_ROAMING_SELECT%" ^
     "%LFP_OPEN_EXCEL%" ^
-    "%LFP_EXCEL_PATH%" ^
-    "%LFP_EXCEL_SELECT%" ^
     "%LFP_OPEN_CUSTOM_ALT%" ^
-    "%LFP_CUSTOM_ALT_PATH%" ^
-    "%LFP_CUSTOM_ALT_SELECT%"
+    "%LFP_SELECT_FILES%" ^
+    "%LFP_THEME_FILE%" ^
+    "%LFP_CUSTOM_FILE%" ^
+    "%LFP_ROAMING_FILE%" ^
+    "%LFP_EXCEL_FILE%" ^
+    "%LFP_CUSTOM_ALT_FILE%"
 exit /b
 
 :NormalizePath
