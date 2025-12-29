@@ -104,7 +104,7 @@ set "SHOULD_OPEN_DOCUMENT_THEME_FOLDER=false"
 set "DOCUMENT_THEME_SELECTION_PATH="
 set "SHOULD_OPEN_CUSTOM_TEMPLATE_FOLDER=false"
 set "CUSTOM_OFFICE_TEMPLATE_PATH=C:\Users\PC\OneDrive\Documentos\Custom Office Templates"
-set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=C:\Users\PC\OneDrive\Documentos\Plantillas personalizadas de Office"
+set "CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH=C:\Users\PC\OneDrive\Documentos\Plantillas personalizadas de Office"
 set "CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN=%CUSTOM_OFFICE_TEMPLATE_PATH%"
 set "SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER=false"
 set "ROAMING_TEMPLATE_FOLDER_PATH=%APPDATA%\Microsoft\Templates"
@@ -151,7 +151,7 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Completed CopyAll invocation block - errorlevel !CopyAllErrorLevel!
 )
 
-call :HandleDocumentThemeFolderOpen "%SHOULD_OPEN_DOCUMENT_THEME_FOLDER%" "%IsDesignModeEnabled%" "%DOCUMENT_THEME_FOLDER_PATH%" "%DOCUMENT_THEME_SELECTION_PATH%" "%CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN%" "%SHOULD_OPEN_CUSTOM_TEMPLATE_FOLDER%" "%ROAMING_TEMPLATE_FOLDER_PATH%" "%SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER%" "%EXCEL_STARTUP_FOLDER_PATH%" "%SHOULD_OPEN_EXCEL_STARTUP_FOLDER%" "%EXCEL_STARTUP_SELECTION_PATH%" "%CUSTOM_TEMPLATE_SELECTION_PATH%" "%ROAMING_TEMPLATE_SELECTION_PATH%" "%CUSTOM_TEMPLATE_ALTERNATE_SELECTION_PATH%"
+call :HandleDocumentThemeFolderOpen "%SHOULD_OPEN_DOCUMENT_THEME_FOLDER%" "%IsDesignModeEnabled%" "%DOCUMENT_THEME_FOLDER_PATH%" "%DOCUMENT_THEME_SELECTION_PATH%" "%CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN%" "%SHOULD_OPEN_CUSTOM_TEMPLATE_FOLDER%" "%ROAMING_TEMPLATE_FOLDER_PATH%" "%SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER%" "%EXCEL_STARTUP_FOLDER_PATH%" "%SHOULD_OPEN_EXCEL_STARTUP_FOLDER%" "%EXCEL_STARTUP_SELECTION_PATH%" "%CUSTOM_TEMPLATE_SELECTION_PATH%" "%ROAMING_TEMPLATE_SELECTION_PATH%" "%CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH%" "%CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH%"
 
 if /I "%SHOULD_OPEN_DOCUMENT_THEME_FOLDER%"=="true" (
     if /I "%IsDesignModeEnabled%"=="true" echo [INFO] Waiting %DOCUMENT_THEME_OPEN_DELAY_SECONDS% seconds before launching Office apps.
@@ -799,11 +799,12 @@ set "DT_EXCEL_STARTUP_SHOULD_OPEN=%~10"
 set "DT_EXCEL_STARTUP_SELECTION_PATH=%~11"
 set "DT_CUSTOM_SELECT=%~12"
 set "DT_ROAMING_SELECT=%~13"
-set "DT_CUSTOM_ALT_SELECT=%~14"
-set "DT_CUSTOM_ALT_PATH=%CUSTOM_OFFICE_TEMPLATE_ALT_PATH%"
+set "DT_ADDITIONAL_CUSTOM_TEMPLATE_SELECT=%~14"
+set "DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH=%~15"
+if "%DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH%"=="" set "DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH=%CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH%"
 call :NormalizePath "%DT_TARGET%" DT_TARGET_COMPARE
 call :NormalizePath "%DT_CUSTOM_PATH%" DT_CUSTOM_COMPARE
-call :NormalizePath "%DT_CUSTOM_ALT_PATH%" DT_CUSTOM_ALT_COMPARE
+call :NormalizePath "%DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH%" DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE
 call :NormalizePath "%DT_ROAMING_PATH%" DT_ROAMING_COMPARE
 call :NormalizePath "%DT_EXCEL_STARTUP_FOLDER_PATH%" DT_EXCEL_STARTUP_COMPARE
 set "DT_CUSTOM_OPEN_FLAG=%DT_SHOULD_OPEN%"
@@ -818,7 +819,7 @@ if defined DT_EXCEL_STARTUP_SELECTION_PATH if /I not "%DT_EXCEL_STARTUP_OPEN_FLA
 
 set "DT_OPEN_DOCUMENT_THEME=false"
 set "DT_OPEN_CUSTOM=false"
-set "DT_OPEN_CUSTOM_ALT=false"
+set "DT_OPEN_ADDITIONAL_CUSTOM_TEMPLATE=false"
 set "DT_OPEN_ROAMING=false"
 set "DT_OPEN_EXCEL=false"
 
@@ -838,26 +839,26 @@ if /I "%DT_CUSTOM_OPEN_FLAG%"=="true" (
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
         if /I "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
             echo [DEBUG] Skipping Custom Office Templates folder because it is already being opened as the Document Themes folder.
-        ) else if /I "!DT_CUSTOM_ALT_COMPARE!"=="!DT_TARGET_COMPARE!" (
-            echo [DEBUG] Skipping Custom Office Templates alternate folder because it is already being opened as the Document Themes folder.
+        ) else if /I "!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!"=="!DT_TARGET_COMPARE!" (
+            echo [DEBUG] Skipping additional Custom Office Templates folder because it is already being opened as the Document Themes folder.
         ) else (
             echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
         )
     )
 
-    if defined DT_CUSTOM_ALT_PATH if exist "%DT_CUSTOM_ALT_PATH%" if /I not "!DT_CUSTOM_ALT_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_CUSTOM_ALT_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
-        set "DT_OPEN_CUSTOM_ALT=true"
+    if defined DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH if exist "%DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH%" if /I not "!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
+        set "DT_OPEN_ADDITIONAL_CUSTOM_TEMPLATE=true"
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
-        if /I "!DT_CUSTOM_ALT_COMPARE!"=="!DT_TARGET_COMPARE!" (
-            echo [DEBUG] Skipping Custom Office Templates alternate folder because it is already being opened as the Document Themes folder.
-        ) else if /I "!DT_CUSTOM_ALT_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
+        if /I "!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!"=="!DT_TARGET_COMPARE!" (
+            echo [DEBUG] Skipping additional Custom Office Templates folder because it is already being opened as the Document Themes folder.
+        ) else if /I "!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
             if /I "%DT_OPEN_CUSTOM%"=="true" (
-                echo [DEBUG] Skipping Custom Office Templates alternate folder because the primary folder was opened with the same path.
+                echo [DEBUG] Skipping additional Custom Office Templates folder because the primary folder was opened with the same path.
             ) else (
-                echo [DEBUG] Skipping Custom Office Templates alternate folder because it resolves to the primary path.
+                echo [DEBUG] Skipping additional Custom Office Templates folder because it resolves to the primary path.
             )
         ) else (
-            echo [DEBUG] Custom Office Templates alternate folder not opened because the path is unavailable.
+            echo [DEBUG] Additional Custom Office Templates folder not opened because the path is unavailable.
         )
     )
 ) else if /I "%DT_DESIGN_MODE%"=="true" (
@@ -865,15 +866,15 @@ if /I "%DT_CUSTOM_OPEN_FLAG%"=="true" (
 )
 
 if /I "%DT_ROAMING_OPEN_FLAG%"=="true" (
-    if defined DT_ROAMING_PATH if exist "%DT_ROAMING_PATH%" if /I not "!DT_ROAMING_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_ROAMING_COMPARE!"=="!DT_CUSTOM_COMPARE!" if /I not "!DT_ROAMING_COMPARE!"=="!DT_CUSTOM_ALT_COMPARE!" (
+    if defined DT_ROAMING_PATH if exist "%DT_ROAMING_PATH%" if /I not "!DT_ROAMING_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_ROAMING_COMPARE!"=="!DT_CUSTOM_COMPARE!" if /I not "!DT_ROAMING_COMPARE!"=="!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!" (
         set "DT_OPEN_ROAMING=true"
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
         if /I "!DT_ROAMING_COMPARE!"=="!DT_TARGET_COMPARE!" (
             echo [DEBUG] Skipping Roaming Templates folder because it is already being opened as the Document Themes folder.
         ) else if /I "!DT_ROAMING_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
             echo [DEBUG] Skipping Roaming Templates folder because it is already being opened as the Custom Office Templates folder.
-        ) else if /I "!DT_ROAMING_COMPARE!"=="!DT_CUSTOM_ALT_COMPARE!" (
-            echo [DEBUG] Skipping Roaming Templates folder because it is already being opened as the Custom Office Templates alternate folder.
+        ) else if /I "!DT_ROAMING_COMPARE!"=="!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!" (
+            echo [DEBUG] Skipping Roaming Templates folder because it is already being opened as the additional Custom Office Templates folder.
         ) else (
             echo [DEBUG] Roaming Templates folder not opened because the path is unavailable.
         )
@@ -889,15 +890,15 @@ if /I "%DT_EXCEL_STARTUP_OPEN_FLAG%"=="true" (
             if /I "%DT_DESIGN_MODE%"=="true" echo [DEBUG] Ensured Excel startup folder exists at "%DT_EXCEL_STARTUP_FOLDER_PATH%".
         )
 
-        if exist "%DT_EXCEL_STARTUP_FOLDER_PATH%" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_ALT_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ROAMING_COMPARE!" (
+        if exist "%DT_EXCEL_STARTUP_FOLDER_PATH%" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ROAMING_COMPARE!" (
             set "DT_OPEN_EXCEL=true"
         ) else if /I "%DT_DESIGN_MODE%"=="true" (
             if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_TARGET_COMPARE!" (
                 echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Document Themes folder.
             ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
                 echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Custom Office Templates folder.
-            ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_ALT_COMPARE!" (
-                echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Custom Office Templates alternate folder.
+            ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!" (
+                echo [DEBUG] Skipping Excel startup folder because it is already being opened as the additional Custom Office Templates folder.
             ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ROAMING_COMPARE!" (
                 echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Roaming Templates folder.
             ) else (
@@ -911,7 +912,7 @@ if /I "%DT_EXCEL_STARTUP_OPEN_FLAG%"=="true" (
     echo [DEBUG] Excel startup folder open flag is false; skipping launch.
 )
 
-call :LaunchFolderOpenProcess "%DT_DESIGN_MODE%" "%DT_OPEN_DOCUMENT_THEME%" "%DT_TARGET%" "%DT_SELECT%" "%DT_OPEN_CUSTOM%" "%DT_CUSTOM_PATH%" "%DT_CUSTOM_SELECT%" "%DT_OPEN_CUSTOM_ALT%" "%DT_CUSTOM_ALT_PATH%" "%DT_CUSTOM_ALT_SELECT%" "%DT_OPEN_ROAMING%" "%DT_ROAMING_PATH%" "%DT_ROAMING_SELECT%" "%DT_OPEN_EXCEL%" "%DT_EXCEL_STARTUP_FOLDER_PATH%" "%DT_EXCEL_STARTUP_SELECTION_PATH%"
+call :LaunchFolderOpenProcess "%DT_DESIGN_MODE%" "%DT_OPEN_DOCUMENT_THEME%" "%DT_TARGET%" "%DT_SELECT%" "%DT_OPEN_CUSTOM%" "%DT_CUSTOM_PATH%" "%DT_CUSTOM_SELECT%" "%DT_OPEN_ADDITIONAL_CUSTOM_TEMPLATE%" "%DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH%" "%DT_ADDITIONAL_CUSTOM_TEMPLATE_SELECT%" "%DT_OPEN_ROAMING%" "%DT_ROAMING_PATH%" "%DT_ROAMING_SELECT%" "%DT_OPEN_EXCEL%" "%DT_EXCEL_STARTUP_FOLDER_PATH%" "%DT_EXCEL_STARTUP_SELECTION_PATH%"
 exit /b
 
 :LaunchFolderOpenProcess
@@ -922,11 +923,11 @@ set "LFP_DOC_SELECT=%~4"
 set "LFP_OPEN_CUSTOM=%~5"
 set "LFP_CUSTOM_PATH=%~6"
 set "LFP_CUSTOM_SELECT=%~7"
-set "LFP_OPEN_CUSTOM_ALT=%~8"
-set "LFP_CUSTOM_ALT_PATH=%~9"
+set "LFP_OPEN_ADDITIONAL_CUSTOM_TEMPLATE=%~8"
+set "LFP_ADDITIONAL_CUSTOM_TEMPLATE_PATH=%~9"
 
 shift
-set "LFP_CUSTOM_ALT_SELECT=%~9"
+set "LFP_ADDITIONAL_CUSTOM_TEMPLATE_SELECT=%~9"
 shift
 set "LFP_OPEN_ROAMING=%~9"
 shift
@@ -940,7 +941,7 @@ set "LFP_EXCEL_PATH=%~9"
 shift
 set "LFP_EXCEL_SELECT=%~9"
 
-if /I not "%LFP_OPEN_DOC%"=="true" if /I not "%LFP_OPEN_CUSTOM%"=="true" if /I not "%LFP_OPEN_CUSTOM_ALT%"=="true" if /I not "%LFP_OPEN_ROAMING%"=="true" if /I not "%LFP_OPEN_EXCEL%"=="true" (
+if /I not "%LFP_OPEN_DOC%"=="true" if /I not "%LFP_OPEN_CUSTOM%"=="true" if /I not "%LFP_OPEN_ADDITIONAL_CUSTOM_TEMPLATE%"=="true" if /I not "%LFP_OPEN_ROAMING%"=="true" if /I not "%LFP_OPEN_EXCEL%"=="true" (
     if /I "%LFP_DESIGN_MODE%"=="true" echo [DEBUG] No template folders require opening; skipping worker launch.
     exit /b
 )
@@ -955,20 +956,20 @@ set "LFP_THEME_FILE="
 set "LFP_CUSTOM_FILE="
 set "LFP_ROAMING_FILE="
 set "LFP_EXCEL_FILE="
-set "LFP_CUSTOM_ALT_FILE="
+set "LFP_ADDITIONAL_CUSTOM_TEMPLATE_FILE="
 
 for %%I in ("%LFP_DOC_SELECT%") do if not "%%~I"=="" set "LFP_THEME_FILE=%%~nxI"
 for %%I in ("%LFP_CUSTOM_SELECT%") do if not "%%~I"=="" set "LFP_CUSTOM_FILE=%%~nxI"
 for %%I in ("%LFP_ROAMING_SELECT%") do if not "%%~I"=="" set "LFP_ROAMING_FILE=%%~nxI"
 for %%I in ("%LFP_EXCEL_SELECT%") do if not "%%~I"=="" set "LFP_EXCEL_FILE=%%~nxI"
-for %%I in ("%LFP_CUSTOM_ALT_SELECT%") do if not "%%~I"=="" set "LFP_CUSTOM_ALT_FILE=%%~nxI"
+for %%I in ("%LFP_ADDITIONAL_CUSTOM_TEMPLATE_SELECT%") do if not "%%~I"=="" set "LFP_ADDITIONAL_CUSTOM_TEMPLATE_FILE=%%~nxI"
 
 set "LFP_SELECT_FILES=0"
 if defined LFP_THEME_FILE set "LFP_SELECT_FILES=1"
 if defined LFP_CUSTOM_FILE set "LFP_SELECT_FILES=1"
 if defined LFP_ROAMING_FILE set "LFP_SELECT_FILES=1"
 if defined LFP_EXCEL_FILE set "LFP_SELECT_FILES=1"
-if defined LFP_CUSTOM_ALT_FILE set "LFP_SELECT_FILES=1"
+if defined LFP_ADDITIONAL_CUSTOM_TEMPLATE_FILE set "LFP_SELECT_FILES=1"
 
 if /I "%LFP_DESIGN_MODE%"=="true" (
     echo [DEBUG] Folder opener located at: "%LFP_FOLDER_OPENER%"
@@ -977,7 +978,7 @@ if /I "%LFP_DESIGN_MODE%"=="true" (
     echo     OPEN_CUSTOM="%LFP_OPEN_CUSTOM%" CUSTOM_FILE="%LFP_CUSTOM_FILE%"
     echo     OPEN_ROAMING="%LFP_OPEN_ROAMING%" ROAMING_FILE="%LFP_ROAMING_FILE%"
     echo     OPEN_EXCEL="%LFP_OPEN_EXCEL%" EXCEL_FILE="%LFP_EXCEL_FILE%"
-    echo     OPEN_CUSTOM_ALT="%LFP_OPEN_CUSTOM_ALT%" CUSTOM_ALT_FILE="%LFP_CUSTOM_ALT_FILE%"
+    echo     OPEN_ADDITIONAL_CUSTOM_TEMPLATE="%LFP_OPEN_ADDITIONAL_CUSTOM_TEMPLATE%" ADDITIONAL_CUSTOM_TEMPLATE_FILE="%LFP_ADDITIONAL_CUSTOM_TEMPLATE_FILE%"
     echo     SELECT_FILES="%LFP_SELECT_FILES%"
 )
 
@@ -986,13 +987,13 @@ call "%LFP_FOLDER_OPENER%" ^
     "%LFP_OPEN_CUSTOM%" ^
     "%LFP_OPEN_ROAMING%" ^
     "%LFP_OPEN_EXCEL%" ^
-    "%LFP_OPEN_CUSTOM_ALT%" ^
+    "%LFP_OPEN_ADDITIONAL_CUSTOM_TEMPLATE%" ^
     "%LFP_SELECT_FILES%" ^
     "%LFP_THEME_FILE%" ^
     "%LFP_CUSTOM_FILE%" ^
     "%LFP_ROAMING_FILE%" ^
     "%LFP_EXCEL_FILE%" ^
-    "%LFP_CUSTOM_ALT_FILE%"
+    "%LFP_ADDITIONAL_CUSTOM_TEMPLATE_FILE%"
 exit /b
 
 :NormalizePath
@@ -1188,14 +1189,14 @@ set "EXCEL_SELECT="
 set "THEME_SELECT="
 set "EXCEL_STARTUP_SELECTION_PATH_LOCAL="
 set "CUSTOM_TEMPLATE_SELECTION_PATH="
-set "CUSTOM_TEMPLATE_ALTERNATE_SELECTION_PATH="
+set "CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH="
 set "ROAMING_TEMPLATE_SELECTION_PATH="
 
 if /I "%SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER%"=="true" set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
 if /I "%SHOULD_OPEN_EXCEL_STARTUP_FOLDER%"=="true" set "OPEN_EXCEL_STARTUP_REQUEST=true"
 
 call :NormalizePath "%CUSTOM_OFFICE_TEMPLATE_PATH%" CUSTOM_OFFICE_TEMPLATE_COMPARE
-call :NormalizePath "%CUSTOM_OFFICE_TEMPLATE_ALT_PATH%" CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE
+call :NormalizePath "%CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH%" CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_COMPARE
 call :NormalizePath "%ROAMING_TEMPLATE_FOLDER_PATH%" ROAMING_TEMPLATE_COMPARE
 call :NormalizePath "%EXCEL_STARTUP_FOLDER_PATH%" EXCEL_STARTUP_COMPARE
 
@@ -1338,11 +1339,11 @@ if "!OPEN_WORD!"=="1" if exist "!WORD_PATH!" (
         set "CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN=!WORD_PATH!"
         if "!CUSTOM_TEMPLATE_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_SELECTION_PATH=!WORD_SELECT!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Word.
-    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE!" (
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_COMPARE!" (
         set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
         set "CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN=!WORD_PATH!"
-        if "!CUSTOM_TEMPLATE_ALTERNATE_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_ALTERNATE_SELECTION_PATH=!WORD_SELECT!"
-        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Word - alternate path.
+        if "!CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH=!WORD_SELECT!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Word - additional path.
     ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
         if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!WORD_SELECT!"
@@ -1359,11 +1360,11 @@ if "!OPEN_PPT!"=="1" if exist "!PPT_PATH!" (
         set "CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN=!PPT_PATH!"
         if "!CUSTOM_TEMPLATE_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_SELECTION_PATH=!PPT_SELECT!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - PowerPoint.
-    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE!" (
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_COMPARE!" (
         set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
         set "CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN=!PPT_PATH!"
-        if "!CUSTOM_TEMPLATE_ALTERNATE_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_ALTERNATE_SELECTION_PATH=!PPT_SELECT!"
-        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - PowerPoint alternate path.
+        if "!CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH=!PPT_SELECT!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - PowerPoint additional path.
     ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
         if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!PPT_SELECT!"
@@ -1380,11 +1381,11 @@ if "!OPEN_EXCEL!"=="1" if exist "!EXCEL_PATH!" (
         set "CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN=!EXCEL_PATH!"
         if "!CUSTOM_TEMPLATE_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_SELECTION_PATH=!EXCEL_SELECT!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Excel.
-    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_TEMPLATE_ALT_COMPARE!" (
+    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_COMPARE!" (
         set "OPEN_CUSTOM_TEMPLATE_REQUEST=true"
         set "CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN=!EXCEL_PATH!"
-        if "!CUSTOM_TEMPLATE_ALTERNATE_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_ALTERNATE_SELECTION_PATH=!EXCEL_SELECT!"
-        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Excel alternate path.
+        if "!CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH=!EXCEL_SELECT!"
+        if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Excel additional path.
     ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
         set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
         if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!EXCEL_SELECT!"
@@ -1428,7 +1429,7 @@ endlocal & (
     set "SHOULD_OPEN_CUSTOM_TEMPLATE_FOLDER=%OPEN_CUSTOM_TEMPLATE_REQUEST%"
     set "CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN=%CUSTOM_TEMPLATE_FOLDER_PATH_TO_OPEN%"
     set "CUSTOM_TEMPLATE_SELECTION_PATH=%CUSTOM_TEMPLATE_SELECTION_PATH%"
-    set "CUSTOM_TEMPLATE_ALTERNATE_SELECTION_PATH=%CUSTOM_TEMPLATE_ALTERNATE_SELECTION_PATH%"
+    set "CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH=%CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH%"
     set "SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER=%OPEN_ROAMING_TEMPLATE_REQUEST%"
     set "ROAMING_TEMPLATE_SELECTION_PATH=%ROAMING_TEMPLATE_SELECTION_PATH%"
     set "SHOULD_OPEN_EXCEL_STARTUP_FOLDER=%OPEN_EXCEL_STARTUP_REQUEST%"
