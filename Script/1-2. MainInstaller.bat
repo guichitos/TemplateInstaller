@@ -984,6 +984,7 @@ if /I "%LFP_DESIGN_MODE%"=="true" (
 
 set "TFO_DESIGN_MODE=%LFP_DESIGN_MODE%"
 call "%LFP_FOLDER_OPENER%" ^
+    "%TFO_DESIGN_MODE%" ^
     "%LFP_OPEN_DOC%" ^
     "%LFP_OPEN_CUSTOM%" ^
     "%LFP_OPEN_ROAMING%" ^
