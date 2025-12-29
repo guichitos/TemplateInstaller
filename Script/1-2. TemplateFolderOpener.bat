@@ -23,8 +23,6 @@ set "EXCEL_FILE=%~9"
 shift
 set "CUSTOM_ALT_FILE=%~9"
 
-set "OPENED_TEMPLATE_FOLDERS=;"
-
 echo ================= WORKER RAW PARAMETERS =================
 echo Arg  Open theme = [%OPEN_THEME%]
 echo Arg  Open custom = [%OPEN_CUSTOM%]
@@ -179,37 +177,33 @@ if "!SHOULD_OPEN!"=="1" (
     for %%B in (1 true yes on) do if /I "!SELECT_FLAG!"=="%%B" set "SHOULD_SELECT=1"
     if "!SHOULD_SELECT!"=="0" if defined FILENAME if not "!FILENAME!"=="" set "SHOULD_SELECT=1"
 
-    set "TOKEN=;!TARGET_COMPARE!;"
-    if "!OPENED_TEMPLATE_FOLDERS:%TOKEN%=!"=="!OPENED_TEMPLATE_FOLDERS!" (
-        if "!SHOULD_SELECT!"=="1" if "!IS_ONEDRIVE!"=="0" (
-            echo Intentando seleccionar archivo: "!FILENAME!" en carpeta: "!TARGET!"
-            if defined FILENAME (
-                set "FILE_TARGET=!TARGET!\!FILENAME!"
-                if exist "!FILE_TARGET!" (
-                    echo Ejecutando:
-                    echo start "" explorer.exe /select,"!FILE_TARGET!"
-                    start "" explorer.exe /select,"!FILE_TARGET!"
-                ) else (
-                    echo Archivo no existe. Abriendo solo carpeta.
-                    echo start "" "!TARGET!"
-                    start "" "!TARGET!"
-                )
-                set "FILE_TARGET="
+    if "!SHOULD_SELECT!"=="1" if "!IS_ONEDRIVE!"=="0" (
+        echo Intentando seleccionar archivo: "!FILENAME!" en carpeta: "!TARGET!"
+        if defined FILENAME (
+            set "FILE_TARGET=!TARGET!\!FILENAME!"
+            if exist "!FILE_TARGET!" (
+                echo Ejecutando:
+                echo start "" explorer.exe /select,"!FILE_TARGET!"
+                start "" explorer.exe /select,"!FILE_TARGET!"
             ) else (
-                echo No se proporciono archivo. Abriendo solo carpeta.
+                echo Archivo no existe. Abriendo solo carpeta.
                 echo start "" "!TARGET!"
                 start "" "!TARGET!"
             )
+            set "FILE_TARGET="
         ) else (
-            if "!IS_ONEDRIVE!"=="1" (
-                echo Ruta bajo OneDrive detectada. Omitiendo seleccion de archivo.
-            ) else (
-                echo Seleccion deshabilitada o sin archivo. Abriendo solo carpeta.
-            )
+            echo No se proporciono archivo. Abriendo solo carpeta.
             echo start "" "!TARGET!"
             start "" "!TARGET!"
         )
-        set "OPENED_TEMPLATE_FOLDERS=!OPENED_TEMPLATE_FOLDERS!!TOKEN!"
+    ) else (
+        if "!IS_ONEDRIVE!"=="1" (
+            echo Ruta bajo OneDrive detectada. Omitiendo seleccion de archivo.
+        ) else (
+            echo Seleccion deshabilitada o sin archivo. Abriendo solo carpeta.
+        )
+        echo start "" "!TARGET!"
+        start "" "!TARGET!"
     )
 )
 
