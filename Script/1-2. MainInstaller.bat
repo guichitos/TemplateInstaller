@@ -8,9 +8,9 @@ set "DEFAULT_ALLOWED_TEMPLATE_AUTHORS=www.grada.cc;www.gradaz.com"
 rem =========================================================
 
 rem Delay (in seconds) between opening the Document Themes folder and launching apps
-set "DOCUMENT_THEME_OPEN_DELAY_SECONDS=0"
+set "DOCUMENT_THEME_OPEN_DELAY_SECONDS=15"
 
-set "IsDesignModeEnabled=true"
+set "IsDesignModeEnabled=false"
 
 set "ScriptDirectory=%~dp0"
 set "BaseHint=%~1"
