@@ -143,20 +143,20 @@ if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Invoking CopyAll with base directory and design mode enabled.
     call :CopyAll "" "%BaseDirectoryPath%" "%IsDesignModeEnabled%"
     set "CopyAllErrorLevel=!errorlevel!"
-    echo [DEBUG] :CopyAll returned with errorlevel !CopyAllErrorLevel!
+    echo [DEBUG] EXCEL_STARTUP_SELECTION_PATH     = "!EXCEL_STARTUP_SELECTION_PATH!"
     if not "!CopyAllErrorLevel!"=="0" (
         echo [WARN] Non-zero errorlevel detected after CopyAll execution: !CopyAllErrorLevel!
     )
-
     rem Captura inmediata del valor antes de salir del bloque
     set "TMP_EXCEL_STARTUP_SELECTION_PATH=%EXCEL_STARTUP_SELECTION_PATH%"
 
 ) else (
+    
     call :CopyAll "" "%BaseDirectoryPath%" "%IsDesignModeEnabled%"
     set "CopyAllErrorLevel=!errorlevel!"
-
+    
     rem Captura inmediata del valor antes de salir del bloque
-    set "TMP_EXCEL_STARTUP_SELECTION_PATH=!EXCEL_STARTUP_SELECTION_PATH!"
+    set "TMP_EXCEL_STARTUP_SELECTION_PATH=%EXCEL_STARTUP_SELECTION_PATH%"
 )
 
 rem ------------------------------------------------------------
@@ -958,6 +958,7 @@ rem Extract just filenames from selection paths
 for %%I in ("%LFP_DOC_SELECT%") do if not "%%~I"=="" set "LFP_THEME_FILE=%%~nxI"
 for %%I in ("%LFP_CUSTOM_SELECT%") do if not "%%~I"=="" set "LFP_CUSTOM_FILE=%%~nxI"
 for %%I in ("%LFP_ROAMING_SELECT%") do if not "%%~I"=="" set "LFP_ROAMING_FILE=%%~nxI"
+
 for %%I in ("%LFP_EXCEL_SELECT%") do if not "%%~I"=="" set "LFP_EXCEL_FILE=%%~nxI"
 for %%I in ("%LFP_ADDITIONAL_CUSTOM_TEMPLATE_SELECT%") do if not "%%~I"=="" set "LFP_ADDITIONAL_CUSTOM_TEMPLATE_FILE=%%~nxI"
 

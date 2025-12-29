@@ -8,7 +8,7 @@ setlocal enabledelayedexpansion
 :: 8-12  - Filenames to optionally select per folder in the same order
 set "TFO_DESIGN_MODE=%~1"
 if not defined TFO_DESIGN_MODE set "TFO_DESIGN_MODE=false"
-
+rem set "TFO_DESIGN_MODE=true" descomentar para debug local
 set "OPEN_THEME=%~2"
 set "OPEN_CUSTOM=%~3"
 set "OPEN_ROAMING=%~4"
@@ -17,12 +17,16 @@ set "OPEN_CUSTOM_ALT=%~6"
 set "SELECT_FILES=%~7"
 set "THEME_FILE=%~8"
 set "CUSTOM_FILE=%~9"
-set "ROAMING_FILE=%~10"
-set "EXCEL_FILE=%~11"
-set "CUSTOM_ALT_FILE=%~12"
+shift
+set "ROAMING_FILE=%~9"
+shift
+set "EXCEL_FILE=%~9"
+shift
+set "CUSTOM_ALT_FILE=%~9"
 
 if /I "%TFO_DESIGN_MODE%"=="true" (
     echo ================= WORKER RAW PARAMETERS =================
+    echo Arg  Indesign mode = [%TFO_DESIGN_MODE%]
     echo Arg  Open theme = [%OPEN_THEME%]
     echo Arg  Open custom = [%OPEN_CUSTOM%]
     echo Arg  Open roaming = [%OPEN_ROAMING%]

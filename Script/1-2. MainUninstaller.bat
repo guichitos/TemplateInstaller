@@ -13,9 +13,8 @@ rem false = silent mode (no console output or pause).
 set "IsDesignModeEnabled=false"
 
 if /I not "%IsDesignModeEnabled%"=="true" (
-    title TEMPLATE INSTALLER
-    echo Removing custom templates and restoring the Microsoft Office default settings
-    echo Executing...
+    title Executing
+    echo Removing custom templates and restoring the Microsoft Office default settings...
 )
 
 rem If wrapper passed the launcher directory (payload), use it.
@@ -66,7 +65,7 @@ if not exist "%OfficeTemplateLib%" (
 if /I "%IsDesignModeEnabled%"=="true" (
     if not exist "%LogsDirectoryPath%" mkdir "%LogsDirectoryPath%"
     echo [%DATE% %TIME%] --- START UNINSTALL --- > "%LogFilePath%"
-    title OFFICE TEMPLATE UNINSTALLER - DEBUG MODE
+    title Executing
     echo [DEBUG] Running from payload base: %BaseDirectoryPath%
 )
 
