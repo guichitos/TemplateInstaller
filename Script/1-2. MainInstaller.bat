@@ -181,6 +181,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
     if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER=true"
+        if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!LAST_INSTALLED_PATH!"
         if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template Normal.dotx.
     ) else (
         call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
@@ -191,6 +192,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
     if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER=true"
+        if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!LAST_INSTALLED_PATH!"
         if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template Normal.dotm.
     ) else (
         call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
@@ -201,6 +203,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
     if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER=true"
+        if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!LAST_INSTALLED_PATH!"
         if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template NormalEmail.dotx.
     ) else (
         call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
@@ -211,6 +214,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_WORD=1"
     if /I "!IBT_WORD_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER=true"
+        if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!LAST_INSTALLED_PATH!"
         if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base Word template NormalEmail.dotm.
     ) else (
         call :OpenTemplateFolder "%WORD_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base Word template folder" "!LAST_INSTALLED_PATH!"
@@ -221,6 +225,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
     if /I "!IBT_PPT_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER=true"
+        if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!LAST_INSTALLED_PATH!"
         if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base PowerPoint template Blank.potx.
     ) else (
         call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
@@ -231,6 +236,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_PPT=1"
     if /I "!IBT_PPT_BASE_COMPARE!"=="!IBT_ROAMING_COMPARE!" (
         set "SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER=true"
+        if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!LAST_INSTALLED_PATH!"
         if /I "!IBT_DesignMode!"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - base PowerPoint template Blank.potm.
     ) else (
         call :OpenTemplateFolder "%PPT_BASE_TEMPLATE_DIR%" "" "%IBT_DesignMode%" "base PowerPoint template folder" "!LAST_INSTALLED_PATH!"
@@ -1213,7 +1219,6 @@ set "THEME_SELECT="
 set "EXCEL_STARTUP_SELECTION_PATH_LOCAL="
 set "CUSTOM_TEMPLATE_SELECTION_PATH="
 set "CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH="
-set "ROAMING_TEMPLATE_SELECTION_PATH="
 
 if /I "%SHOULD_OPEN_ROAMING_TEMPLATE_FOLDER%"=="true" set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
 if /I "%SHOULD_OPEN_EXCEL_STARTUP_FOLDER%"=="true" set "OPEN_EXCEL_STARTUP_REQUEST=true"
@@ -1405,12 +1410,10 @@ if "!OPEN_WORD!"=="1" if exist "!WORD_PATH!" (
         if "!CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH=!WORD_SELECT!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Apertura diferida de Plantillas Personalizadas ruta adicional - Word. %CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH%
 
-    rem Caso 3:
-    rem La carpeta de Word corresponde a la carpeta Roaming
-    rem → Se marca Roaming para apertura centralizada y se guarda el archivo a seleccionar
-    ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
-        set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
-        if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!WORD_SELECT!"
+rem Caso 3:
+rem La carpeta de Word corresponde a la carpeta Roaming
+rem → Se marca Roaming para apertura centralizada y se guarda el archivo a seleccionar
+) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Apertura diferida de Roaming - Word. %ROAMING_TEMPLATE_SELECTION_PATH%
         pause
 
@@ -1438,8 +1441,6 @@ if "!OPEN_PPT!"=="1" if exist "!PPT_PATH!" (
         if "!CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH=!PPT_SELECT!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - PowerPoint additional path.
     ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
-        set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
-        if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!PPT_SELECT!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - PowerPoint.
     ) else (
         call :OpenTemplateFolder "!PPT_PATH!" "" "%IsDesignModeEnabled%" "PowerPoint template folder" "!PPT_SELECT!"
@@ -1460,8 +1461,6 @@ if "!OPEN_EXCEL!"=="1" if exist "!EXCEL_PATH!" (
         if "!CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH!"=="" set "CUSTOM_TEMPLATE_ADDITIONAL_SELECTION_PATH=!EXCEL_SELECT!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Custom Office Templates folder open for centralized handling - Excel additional path.
     ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
-        set "OPEN_ROAMING_TEMPLATE_REQUEST=true"
-        if "!ROAMING_TEMPLATE_SELECTION_PATH!"=="" set "ROAMING_TEMPLATE_SELECTION_PATH=!EXCEL_SELECT!"
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Deferring Roaming Templates folder open for centralized handling - Excel.
     ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!EXCEL_STARTUP_COMPARE!" (
         set "OPEN_EXCEL_STARTUP_REQUEST=true"
