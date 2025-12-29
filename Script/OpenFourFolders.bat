@@ -103,7 +103,6 @@ if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH if defined DEFAULT_CUSTOM_DIR set
 if not defined CUSTOM_OFFICE_TEMPLATE_ALT_PATH set "CUSTOM_OFFICE_TEMPLATE_ALT_PATH=%USERPROFILE%\Documents\Custom Templates"
 
 if exist "%OfficeTemplateLib%" (
-    echo existe la libreria OfficeTemplateLib
     call "%OfficeTemplateLib%" :CleanPath APPDATA_EXPANDED
     call "%OfficeTemplateLib%" :CleanPath THEME_PATH
     call "%OfficeTemplateLib%" :CleanPath ROAMING_TEMPLATE_PATH
@@ -113,7 +112,6 @@ if exist "%OfficeTemplateLib%" (
     call "%OfficeTemplateLib%" :CleanPath CUSTOM_OFFICE_TEMPLATE_PATH
     call "%OfficeTemplateLib%" :CleanPath CUSTOM_OFFICE_TEMPLATE_ALT_PATH
 ) else (
-    echo no existe la libreria OfficeTemplateLib
     if "!APPDATA_EXPANDED:~-1!"=="\" set "APPDATA_EXPANDED=!APPDATA_EXPANDED:~0,-1!"
     if "!THEME_PATH:~-1!"=="\" set "THEME_PATH=!THEME_PATH:~0,-1!"
     if "!ROAMING_TEMPLATE_PATH:~-1!"=="\" set "ROAMING_TEMPLATE_PATH=!ROAMING_TEMPLATE_PATH:~0,-1!"
