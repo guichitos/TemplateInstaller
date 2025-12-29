@@ -1,6 +1,9 @@
 @echo off
 setlocal enabledelayedexpansion
 
+echo ================= TEMPLATE FOLDER OPENER WORKER =================
+echo.
+pause
 :: Params:
 :: 1-5  - Booleans to open each folder (theme, custom, roaming, Excel startup, alt custom)
 :: 6    - Global boolean to attempt file selection instead of only opening the folder
@@ -36,6 +39,8 @@ echo Arg  EXCEL_FILE = [%EXCEL_FILE%]
 echo Arg  CUSTOM_ALT_FILE = [%CUSTOM_ALT_FILE%]
 echo =========================================================
 echo.
+
+pause
 
 
 if not defined OPEN_THEME set "OPEN_THEME=1"

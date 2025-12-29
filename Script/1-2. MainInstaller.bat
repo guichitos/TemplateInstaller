@@ -134,6 +134,11 @@ if /I "%IsDesignModeEnabled%"=="true" (
 
 set "CopyAllErrorLevel=0"
 
+rem ------------------------------------------------------------
+rem Variable intermedia para capturar el valor calculado por CopyAll
+rem ------------------------------------------------------------
+set "TMP_EXCEL_STARTUP_SELECTION_PATH="
+
 if /I "%IsDesignModeEnabled%"=="true" (
     echo [DEBUG] Invoking CopyAll with base directory and design mode enabled.
     call :CopyAll "" "%BaseDirectoryPath%" "%IsDesignModeEnabled%"
@@ -142,9 +147,23 @@ if /I "%IsDesignModeEnabled%"=="true" (
     if not "!CopyAllErrorLevel!"=="0" (
         echo [WARN] Non-zero errorlevel detected after CopyAll execution: !CopyAllErrorLevel!
     )
+
+    rem Captura inmediata del valor antes de salir del bloque
+    set "TMP_EXCEL_STARTUP_SELECTION_PATH=%EXCEL_STARTUP_SELECTION_PATH%"
+
 ) else (
     call :CopyAll "" "%BaseDirectoryPath%" "%IsDesignModeEnabled%"
     set "CopyAllErrorLevel=!errorlevel!"
+
+    rem Captura inmediata del valor antes de salir del bloque
+    set "TMP_EXCEL_STARTUP_SELECTION_PATH=!EXCEL_STARTUP_SELECTION_PATH!"
+)
+
+rem ------------------------------------------------------------
+rem Reasignación fuera del bloque (blindaje definitivo)
+rem ------------------------------------------------------------
+if defined TMP_EXCEL_STARTUP_SELECTION_PATH (
+    set "EXCEL_STARTUP_SELECTION_PATH=%TMP_EXCEL_STARTUP_SELECTION_PATH%"
 )
 
 if /I "%IsDesignModeEnabled%"=="true" (
@@ -243,6 +262,7 @@ if "!LAST_INSTALL_STATUS!"=="1" (
     )
 )
 call :InstallApp "EXCEL" "Book.xltx" "%APPDATA%\Microsoft\Excel\XLSTART" "Book.xltx" "" "%BaseDirectoryPath%" "%IBT_DesignMode%"
+
 if "!LAST_INSTALL_STATUS!"=="1" (
     set "FORCE_OPEN_EXCEL=1"
     if /I "!IBT_EXCEL_BASE_COMPARE!"=="!IBT_EXCEL_STARTUP_COMPARE!" (
@@ -814,6 +834,7 @@ set "DT_ADDITIONAL_CUSTOM_TEMPLATE_SELECT=%~9"
 shift
 set "DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH=%~9"
 
+
 if "%DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH%"=="" set "DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH=%CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH%"
 call :NormalizePath "%DT_DOCUMENT_THEME_PATH%" DT_TARGET_COMPARE
 call :NormalizePath "%DT_CUSTOM_PATH%" DT_CUSTOM_COMPARE
@@ -924,15 +945,12 @@ if /I "%DT_EXCEL_STARTUP_OPEN_FLAG%"=="true" (
 ) else if /I "%DT_DESIGN_MODE%"=="true" (
     echo [DEBUG] Excel startup folder open flag is false; skipping launch.
 )
-echo antes de entrar al LaunchFolderOpenProcess
-echo [DEBUG] DT_ROAMING_OPEN   = "%DT_ROAMING_OPEN%"
-echo [DEBUG] DT_ROAMING_PATH   = "%DT_ROAMING_PATH%"
-echo [DEBUG] DT_ROAMING_SELECT = "%DT_ROAMING_SELECT%"
-pause
+
 call :LaunchFolderOpenProcess "%DT_DESIGN_MODE%" "%DT_DOCUMENT_THEME_OPEN%" "%DT_DOCUMENT_THEME_PATH%" "%DT_DOCUMENT_THEME_SELECT%" "%DT_CUSTOM_OPEN%" "%DT_CUSTOM_PATH%" "%DT_CUSTOM_SELECT%" "%DT_ADDITIONAL_CUSTOM_TEMPLATE_OPEN%" "%DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH%" "%DT_ADDITIONAL_CUSTOM_TEMPLATE_SELECT%" "%DT_ROAMING_OPEN%" "%DT_ROAMING_PATH%" "%DT_ROAMING_SELECT%" "%DT_EXCEL_OPEN%" "%DT_EXCEL_STARTUP_FOLDER_PATH%" "%DT_EXCEL_STARTUP_SELECTION_PATH%"
 exit /b
 
 :LaunchFolderOpenProcess
+
 set "LFP_DESIGN_MODE=%~1"
 set "LFP_OPEN_DOC=%~2"
 set "LFP_DOC_PATH=%~3"
@@ -1388,8 +1406,6 @@ rem ------------------------------------------------------------
 rem Solo se evalúa si se instaló al menos una plantilla de Word
 rem y la carpeta de plantillas de Word existe
 if "!OPEN_WORD!"=="1" if exist "!WORD_PATH!" (
-    echo se instalo al menos una plantilla de Word - %WORD_PATH%
-    pause
     call :NormalizePath "!WORD_PATH!" CURRENT_FOLDER_COMPARE
 
     rem Caso 1:
@@ -1415,17 +1431,14 @@ rem La carpeta de Word corresponde a la carpeta Roaming
 rem → Se marca Roaming para apertura centralizada y se guarda el archivo a seleccionar
 ) else if /I "!CURRENT_FOLDER_COMPARE!"=="!ROAMING_TEMPLATE_COMPARE!" (
         if /I "%IsDesignModeEnabled%"=="true" echo [DEBUG] Apertura diferida de Roaming - Word. %ROAMING_TEMPLATE_SELECTION_PATH%
-        pause
 
     rem Caso 4:
     rem La carpeta de Word es una ruta independiente
     rem → Se abre inmediatamente y se selecciona el archivo instalado
     ) else (
-        echo se abre inmediatamente la carpeta de plantillas de Word
         call :OpenTemplateFolder "!WORD_PATH!" "" "%IsDesignModeEnabled%" "Carpeta de plantillas de Word" "!WORD_SELECT!"
     )
 )
-
 
 rem PowerPoint
 if "!OPEN_PPT!"=="1" if exist "!PPT_PATH!" (
