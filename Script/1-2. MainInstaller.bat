@@ -8,9 +8,9 @@ set "DEFAULT_ALLOWED_TEMPLATE_AUTHORS=www.grada.cc;www.gradaz.com"
 rem =========================================================
 
 rem Delay (in seconds) between opening the Document Themes folder and launching apps
-set "DOCUMENT_THEME_OPEN_DELAY_SECONDS=0"
+set "DOCUMENT_THEME_OPEN_DELAY_SECONDS=15"
 
-set "IsDesignModeEnabled=true"
+set "IsDesignModeEnabled=false"
 
 set "ScriptDirectory=%~dp0"
 set "BaseHint=%~1"
@@ -836,11 +836,6 @@ set "DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH=%~9"
 
 
 if "%DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH%"=="" set "DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH=%CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH%"
-call :NormalizePath "%DT_DOCUMENT_THEME_PATH%" DT_TARGET_COMPARE
-call :NormalizePath "%DT_CUSTOM_PATH%" DT_CUSTOM_COMPARE
-call :NormalizePath "%DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH%" DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE
-call :NormalizePath "%DT_ROAMING_PATH%" DT_ROAMING_COMPARE
-call :NormalizePath "%DT_EXCEL_STARTUP_FOLDER_PATH%" DT_EXCEL_STARTUP_COMPARE
 set "DT_CUSTOM_OPEN_FLAG=%DT_SHOULD_OPEN%"
 if /I "%DT_CUSTOM_SHOULD_OPEN%"=="true" set "DT_CUSTOM_OPEN_FLAG=true"
 set "DT_ROAMING_OPEN_FLAG=%DT_ROAMING_SHOULD_OPEN%"
@@ -868,50 +863,26 @@ if /I "%DT_SHOULD_OPEN%"=="true" (
 )
 
 if /I "%DT_CUSTOM_OPEN_FLAG%"=="true" (
-    if defined DT_CUSTOM_PATH if exist "%DT_CUSTOM_PATH%" if /I not "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
+    if defined DT_CUSTOM_PATH if exist "%DT_CUSTOM_PATH%" (
         set "DT_CUSTOM_OPEN=true"
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
-        if /I "!DT_CUSTOM_COMPARE!"=="!DT_TARGET_COMPARE!" (
-            echo [DEBUG] Skipping Custom Office Templates folder because it is already being opened as the Document Themes folder.
-        ) else if /I "!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!"=="!DT_TARGET_COMPARE!" (
-            echo [DEBUG] Skipping additional Custom Office Templates folder because it is already being opened as the Document Themes folder.
-        ) else (
-            echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
-        )
+        echo [DEBUG] Custom Office Templates folder not opened because the path is unavailable.
     )
 
-    if defined DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH if exist "%DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH%" if /I not "!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
+    if defined DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH if exist "%DT_ADDITIONAL_CUSTOM_TEMPLATE_PATH%" (
         set "DT_ADDITIONAL_CUSTOM_TEMPLATE_OPEN=true"
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
-        if /I "!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!"=="!DT_TARGET_COMPARE!" (
-            echo [DEBUG] Skipping additional Custom Office Templates folder because it is already being opened as the Document Themes folder.
-        ) else if /I "!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
-            if /I "%DT_CUSTOM_OPEN%"=="true" (
-                echo [DEBUG] Skipping additional Custom Office Templates folder because the primary folder was opened with the same path.
-            ) else (
-                echo [DEBUG] Skipping additional Custom Office Templates folder because it resolves to the primary path.
-            )
-        ) else (
-            echo [DEBUG] Additional Custom Office Templates folder not opened because the path is unavailable.
-        )
+        echo [DEBUG] Additional Custom Office Templates folder not opened because the path is unavailable.
     )
 ) else if /I "%DT_DESIGN_MODE%"=="true" (
     echo [DEBUG] Document Themes folder open flag is false; skipping launch.
 )
 
 if /I "%DT_ROAMING_OPEN_FLAG%"=="true" (
-    if defined DT_ROAMING_PATH if exist "%DT_ROAMING_PATH%" if /I not "!DT_ROAMING_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_ROAMING_COMPARE!"=="!DT_CUSTOM_COMPARE!" if /I not "!DT_ROAMING_COMPARE!"=="!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!" (
+    if defined DT_ROAMING_PATH if exist "%DT_ROAMING_PATH%" (
         set "DT_ROAMING_OPEN=true"
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
-        if /I "!DT_ROAMING_COMPARE!"=="!DT_TARGET_COMPARE!" (
-            echo [DEBUG] Skipping Roaming Templates folder because it is already being opened as the Document Themes folder.
-        ) else if /I "!DT_ROAMING_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
-            echo [DEBUG] Skipping Roaming Templates folder because it is already being opened as the Custom Office Templates folder.
-        ) else if /I "!DT_ROAMING_COMPARE!"=="!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!" (
-            echo [DEBUG] Skipping Roaming Templates folder because it is already being opened as the additional Custom Office Templates folder.
-        ) else (
-            echo [DEBUG] Roaming Templates folder not opened because the path is unavailable.
-        )
+        echo [DEBUG] Roaming Templates folder not opened because the path is unavailable.
     )
 ) else if /I "%DT_DESIGN_MODE%"=="true" (
     echo [DEBUG] Roaming Templates folder open flag is false; skipping launch.
@@ -924,20 +895,10 @@ if /I "%DT_EXCEL_STARTUP_OPEN_FLAG%"=="true" (
             if /I "%DT_DESIGN_MODE%"=="true" echo [DEBUG] Ensured Excel startup folder exists at "%DT_EXCEL_STARTUP_FOLDER_PATH%".
         )
 
-        if exist "%DT_EXCEL_STARTUP_FOLDER_PATH%" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_TARGET_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!" if /I not "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ROAMING_COMPARE!" (
+        if exist "%DT_EXCEL_STARTUP_FOLDER_PATH%" (
             set "DT_EXCEL_OPEN=true"
         ) else if /I "%DT_DESIGN_MODE%"=="true" (
-            if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_TARGET_COMPARE!" (
-                echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Document Themes folder.
-            ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_CUSTOM_COMPARE!" (
-                echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Custom Office Templates folder.
-            ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ADDITIONAL_CUSTOM_TEMPLATE_COMPARE!" (
-                echo [DEBUG] Skipping Excel startup folder because it is already being opened as the additional Custom Office Templates folder.
-            ) else if /I "!DT_EXCEL_STARTUP_COMPARE!"=="!DT_ROAMING_COMPARE!" (
-                echo [DEBUG] Skipping Excel startup folder because it is already being opened as the Roaming Templates folder.
-            ) else (
-                echo [DEBUG] Excel startup folder not opened because the path is unavailable.
-            )
+            echo [DEBUG] Excel startup folder not opened because the path is unavailable.
         )
     ) else if /I "%DT_DESIGN_MODE%"=="true" (
         echo [DEBUG] Excel startup folder not opened because the path is unavailable.
