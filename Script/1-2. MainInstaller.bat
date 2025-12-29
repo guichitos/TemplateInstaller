@@ -982,6 +982,7 @@ if /I "%LFP_DESIGN_MODE%"=="true" (
     echo     SELECT_FILES="%LFP_SELECT_FILES%"
 )
 
+set "TFO_DESIGN_MODE=%LFP_DESIGN_MODE%"
 call "%LFP_FOLDER_OPENER%" ^
     "%LFP_OPEN_DOC%" ^
     "%LFP_OPEN_CUSTOM%" ^
