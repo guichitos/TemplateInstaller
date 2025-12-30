@@ -1,0 +1,141 @@
+"""Instalador único basado en la carpeta actual."""
+from __future__ import annotations
+
+import argparse
+import logging
+import os
+import time
+from pathlib import Path
+from typing import Iterable
+
+from . import common
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Instalador de plantillas de Office (Python)")
+    parser.add_argument(
+        "--design-mode",
+        action="store_true",
+        help="Muestra salida detallada similar a IsDesignModeEnabled=true.",
+    )
+    parser.add_argument(
+        "--allowed-authors",
+        help="Lista separada por ';' de autores permitidos.",
+    )
+    parser.add_argument(
+        "--check-author",
+        metavar="RUTA",
+        help="Solo valida autor de archivo/carpeta y termina.",
+    )
+    return parser.parse_args()
+
+
+def main(argv: Iterable[str] | None = None) -> int:
+    args = parse_args()
+    design_mode = args.design_mode or common.DEFAULT_DESIGN_MODE
+    common.configure_logging(design_mode)
+
+    working_dir = Path.cwd()
+    base_dir = common.resolve_base_directory(working_dir)
+
+    if base_dir == working_dir and common.path_in_appdata(working_dir):
+        common.exit_with_error(
+            '[ERROR] No se recibió la ruta de las plantillas. Ejecute el instalador desde "1. Pin templates..." para que se le pase la carpeta correcta.'
+        )
+
+    allowed_authors = _resolve_allowed_authors(args.allowed_authors)
+    validation_enabled = common.AUTHOR_VALIDATION_ENABLED
+
+    if args.check_author:
+        result = common.check_template_author(
+            Path(args.check_author),
+            allowed_authors=allowed_authors,
+            validation_enabled=validation_enabled,
+        )
+        print(result.as_cli_output())
+        if design_mode:
+            logging.getLogger(__name__).info(result.message)
+        return 0 if result.allowed else 1
+
+    _print_intro(base_dir, design_mode)
+    common.close_office_apps(design_mode)
+
+    destinations = common.default_destinations()
+    flags = common.InstallFlags()
+
+    # Plantillas base
+    base_targets = [
+        ("WORD", "Normal.dotx", destinations["WORD"]),
+        ("WORD", "Normal.dotm", destinations["WORD"]),
+        ("WORD", "NormalEmail.dotx", destinations["WORD"]),
+        ("WORD", "NormalEmail.dotm", destinations["WORD"]),
+        ("POWERPOINT", "Blank.potx", destinations["POWERPOINT"]),
+        ("POWERPOINT", "Blank.potm", destinations["POWERPOINT"]),
+        ("EXCEL", "Book.xltx", destinations["EXCEL"]),
+        ("EXCEL", "Book.xltm", destinations["EXCEL"]),
+        ("EXCEL", "Sheet.xltx", destinations["EXCEL"]),
+        ("EXCEL", "Sheet.xltm", destinations["EXCEL"]),
+    ]
+
+    for app_label, filename, destination in base_targets:
+        common.install_template(
+            app_label,
+            filename,
+            base_dir,
+            destination,
+            flags,
+            allowed_authors,
+            validation_enabled,
+            design_mode,
+        )
+
+    # Plantillas personalizadas
+    common.copy_custom_templates(
+        base_dir=base_dir,
+        destinations=destinations,
+        flags=flags,
+        allowed=allowed_authors,
+        validation_enabled=validation_enabled,
+        design_mode=design_mode,
+    )
+
+    if flags.open_document_theme and common.DEFAULT_DOCUMENT_THEME_DELAY_SECONDS > 0:
+        if design_mode:
+            logging.getLogger(__name__).info(
+                "[INFO] Esperando %s segundos antes de abrir aplicaciones...",
+                common.DEFAULT_DOCUMENT_THEME_DELAY_SECONDS,
+            )
+        time.sleep(common.DEFAULT_DOCUMENT_THEME_DELAY_SECONDS)
+
+    common.launch_office_apps(flags, design_mode)
+
+    if design_mode:
+        logging.getLogger(__name__).info(
+            "[FINAL] Instalación completada. Archivos copiados=%s, errores=%s, bloqueados=%s.",
+            flags.totals["files"],
+            flags.totals["errors"],
+            flags.totals["blocked"],
+        )
+    else:
+        print("Ready")
+    return 0
+
+
+def _print_intro(base_dir: Path, design_mode: bool) -> None:
+    if design_mode:
+        logging.getLogger(__name__).info("[DEBUG] Modo diseño habilitado=true")
+        logging.getLogger(__name__).info("[INFO] Carpeta base: %s", base_dir)
+    else:
+        print("Installing custom templates and applying them as the new Microsoft Office defaults...")
+
+
+def _resolve_allowed_authors(cli_value: str | None) -> list[str]:
+    env_value = os.environ.get("AllowedTemplateAuthors")
+    raw = cli_value or env_value
+    if not raw:
+        return common.DEFAULT_ALLOWED_TEMPLATE_AUTHORS
+    return [author.strip() for author in raw.split(";") if author.strip()]
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
