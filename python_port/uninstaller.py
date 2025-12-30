@@ -13,7 +13,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--design-mode",
         action="store_true",
-        help="Muestra salida detallada similar a IsDesignModeEnabled=true.",
+        help="Muestra salida detallada para depuración.",
     )
     return parser.parse_args()
 
