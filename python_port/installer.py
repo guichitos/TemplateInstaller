@@ -8,7 +8,13 @@ import time
 from pathlib import Path
 from typing import Iterable
 
-from . import common
+try:
+    from . import common
+except ImportError:  # pragma: no cover - permite ejecución directa como script
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parent))
+    import common  # type: ignore[no-redef]
 
 
 def parse_args() -> argparse.Namespace:
@@ -16,7 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--design-mode",
         action="store_true",
-        help="Muestra salida detallada similar a IsDesignModeEnabled=true.",
+        help="Muestra salida detallada para depuración.",
     )
     parser.add_argument(
         "--allowed-authors",
