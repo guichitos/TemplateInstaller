@@ -211,15 +211,15 @@ def _extract_author(template_path: Path) -> tuple[Optional[str], Optional[str]]:
                 with zipped.open("docProps/core.xml") as core_file:
                     tree = ET.fromstring(core_file.read())
             except KeyError:
-                return None, "[WARN] No se pudo obtener el autor (core.xml ausente)."
+                return None, f"[WARN] No se pudo obtener el autor para \"{template_path.name}\" (core.xml ausente)."
     except Exception as exc:  # noqa: BLE001
-        return None, f"[ERROR] {exc}"
+        return None, f"[ERROR] {template_path.name}: {exc}"
 
     for candidate in ("{http://purl.org/dc/elements/1.1/}creator", "creator"):
         node = tree.find(candidate)
         if node is not None and node.text:
             return node.text.strip(), None
-    return None, "[WARN] Archivo sin autor definido."
+    return None, f"[WARN] \"{template_path.name}\" sin autor definido."
 
 
 # --------------------------------------------------------------------------- #
