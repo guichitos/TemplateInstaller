@@ -504,10 +504,19 @@ def open_template_folders(paths: dict[str, Path], design_mode: bool) -> None:
             ensure_directory(target)
             if design_mode:
                 LOGGER.info("[ACTION] Abriendo carpeta %s: %s", label, target)
+                if not target.exists():
+                    LOGGER.warning("[WARN] La carpeta %s no existe tras crearla: %s", label, target)
             try:
                 os.startfile(str(target))  # type: ignore[arg-type]
-            except OSError:
-                subprocess.run(["explorer", str(target)], check=False)
+                if design_mode:
+                    LOGGER.info("[OK] startfile lanzado para %s", label)
+            except OSError as exc:
+                if design_mode:
+                    LOGGER.warning("[WARN] startfile falló para %s (%s); usando explorer.", label, exc)
+                try:
+                    subprocess.run(["explorer", str(target)], check=False)
+                except OSError as exc2:
+                    LOGGER.warning("[WARN] explorer también falló para %s (%s)", label, exc2)
         except OSError as exc:
             LOGGER.warning("[WARN] No se pudo abrir carpeta %s (%s)", label, exc)
 
