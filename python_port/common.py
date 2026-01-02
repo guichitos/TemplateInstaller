@@ -504,7 +504,10 @@ def open_template_folders(paths: dict[str, Path], design_mode: bool) -> None:
             ensure_directory(target)
             if design_mode:
                 LOGGER.info("[ACTION] Abriendo carpeta %s: %s", label, target)
-            os.startfile(str(target))  # type: ignore[arg-type]
+            try:
+                os.startfile(str(target))  # type: ignore[arg-type]
+            except OSError:
+                subprocess.run(["explorer", str(target)], check=False)
         except OSError as exc:
             LOGGER.warning("[WARN] No se pudo abrir carpeta %s (%s)", label, exc)
 
