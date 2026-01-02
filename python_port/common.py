@@ -162,6 +162,9 @@ def check_template_author(
     if target.is_dir():
         authors_found: list[str] = []
         for file in iter_template_files(target):
+            if file.suffix.lower() == ".thmx":
+                LOGGER.info("Archivo: %s - Autor: [OMITIDO TEMA]", file.name)
+                continue
             author, error = _extract_author(file)
             if error:
                 LOGGER.warning(error)
@@ -180,6 +183,9 @@ def check_template_author(
 
     if not validation_enabled:
         return AuthorCheckResult(True, "[INFO] Validación de autores deshabilitada.", [])
+
+    if target.suffix.lower() == ".thmx":
+        return AuthorCheckResult(True, "[INFO] Validación de autor omitida para temas.", [])
 
     author, error = _extract_author(target)
     if error:
