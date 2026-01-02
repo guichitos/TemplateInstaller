@@ -485,6 +485,30 @@ def backup_existing(target_file: Path, design_mode: bool) -> None:
         LOGGER.warning("[WARN] No se pudo crear backup de %s (%s)", target_file, exc)
 
 
+def open_template_folders(paths: dict[str, Path], design_mode: bool) -> None:
+    if not is_windows():
+        if design_mode:
+            LOGGER.info("[WARN] Apertura de carpetas omitida: no es Windows.")
+        return
+    ordered = [
+        ("THEME_PATH", paths.get("THEME")),
+        ("CUSTOM_OFFICE_TEMPLATE_PATH", paths.get("CUSTOM")),
+        ("ROAMING_TEMPLATE_PATH", paths.get("ROAMING")),
+        ("EXCEL_STARTUP_PATH", paths.get("EXCEL")),
+        ("CUSTOM_ALT_PATH", paths.get("CUSTOM_ALT")),
+    ]
+    for label, target in ordered:
+        if target is None:
+            continue
+        try:
+            ensure_directory(target)
+            if design_mode:
+                LOGGER.info("[ACTION] Abriendo carpeta %s: %s", label, target)
+            os.startfile(str(target))  # type: ignore[arg-type]
+        except OSError as exc:
+            LOGGER.warning("[WARN] No se pudo abrir carpeta %s (%s)", label, exc)
+
+
 # --------------------------------------------------------------------------- #
 # Utilidades plataforma
 # --------------------------------------------------------------------------- #
