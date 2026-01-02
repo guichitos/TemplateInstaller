@@ -105,7 +105,7 @@ def iter_template_files(base_dir: Path) -> Iterator[Path]:
 
 
 def resolve_base_directory(base_dir: Path) -> Path:
-    """Replica :ResolveBaseDirectory; busca plantillas en carpeta actual."""
+    """Busca la carpeta que contiene las plantillas dentro de la ruta actual."""
     candidates = [base_dir, base_dir / "payload", base_dir / "templates", base_dir / "extracted"]
     for candidate in candidates:
         if any(candidate.glob("*.dot*")) or any(candidate.glob("*.pot*")) or any(candidate.glob("*.xlt*")):
@@ -211,15 +211,15 @@ def _extract_author(template_path: Path) -> tuple[Optional[str], Optional[str]]:
                 with zipped.open("docProps/core.xml") as core_file:
                     tree = ET.fromstring(core_file.read())
             except KeyError:
-                return None, "[WARN] No se pudo obtener el autor (core.xml ausente)."
+                return None, f"[WARN] No se pudo obtener el autor para \"{template_path.name}\" (core.xml ausente)."
     except Exception as exc:  # noqa: BLE001
-        return None, f"[ERROR] {exc}"
+        return None, f"[ERROR] {template_path.name}: {exc}"
 
     for candidate in ("{http://purl.org/dc/elements/1.1/}creator", "creator"):
         node = tree.find(candidate)
         if node is not None and node.text:
             return node.text.strip(), None
-    return None, "[WARN] Archivo sin autor definido."
+    return None, f"[WARN] \"{template_path.name}\" sin autor definido."
 
 
 # --------------------------------------------------------------------------- #
@@ -275,6 +275,8 @@ def install_template(
     try:
         ensure_parents_and_copy(source, destination)
         flags.totals["files"] += 1
+        if design_mode:
+            LOGGER.info("[OK] Copiado %s a %s", filename, destination)
     except OSError as exc:
         flags.totals["errors"] += 1
         LOGGER.error("[ERROR] Falló la copia de %s (%s)", filename, exc)
