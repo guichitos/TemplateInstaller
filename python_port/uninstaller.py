@@ -5,7 +5,13 @@ import argparse
 import logging
 from pathlib import Path
 
-from . import common
+try:
+    from . import common
+except ImportError:  # pragma: no cover - permite ejecución directa como script
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parent))
+    import common  # type: ignore[no-redef]
 
 
 def parse_args() -> argparse.Namespace:
