@@ -42,6 +42,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     design_mode = _resolve_design_mode()
     common.configure_logging(design_mode)
 
+    resolved_paths = common.resolve_template_paths()
+    common.log_template_paths(resolved_paths, design_mode)
+
     working_dir = Path.cwd()
     base_dir = common.resolve_base_directory(working_dir)
 
