@@ -105,7 +105,7 @@ def iter_template_files(base_dir: Path) -> Iterator[Path]:
 
 
 def resolve_base_directory(base_dir: Path) -> Path:
-    """Replica :ResolveBaseDirectory; busca plantillas en carpeta actual."""
+    """Busca la carpeta que contiene las plantillas dentro de la ruta actual."""
     candidates = [base_dir, base_dir / "payload", base_dir / "templates", base_dir / "extracted"]
     for candidate in candidates:
         if any(candidate.glob("*.dot*")) or any(candidate.glob("*.pot*")) or any(candidate.glob("*.xlt*")):
@@ -275,6 +275,8 @@ def install_template(
     try:
         ensure_parents_and_copy(source, destination)
         flags.totals["files"] += 1
+        if design_mode:
+            LOGGER.info("[OK] Copiado %s a %s", filename, destination)
     except OSError as exc:
         flags.totals["errors"] += 1
         LOGGER.error("[ERROR] Falló la copia de %s (%s)", filename, exc)
