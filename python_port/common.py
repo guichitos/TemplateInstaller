@@ -398,7 +398,10 @@ def copy_custom_templates(base_dir: Path, destinations: dict[str, Path], flags: 
         extension = file.suffix.lower()
         if filename in BASE_TEMPLATE_NAMES:
             continue
-        destination_root = _destination_for_extension(extension, destinations)
+        if extension in {".xltx", ".xltm"}:
+            destination_root = destinations["CUSTOM_ALT"]
+        else:
+            destination_root = _destination_for_extension(extension, destinations)
         if destination_root is None:
             if design_mode:
                 LOGGER.warning("[WARNING] No hay destino para %s", filename)
