@@ -12,6 +12,13 @@ from pathlib import Path
 from typing import Iterable, Iterator, List, Optional
 import xml.etree.ElementTree as ET
 
+
+def normalize_path(path: Path | str | None) -> Path:
+    if path is None:
+        return Path()
+    return Path(str(path).strip().rstrip("\\/"))
+
+
 try:
     import winreg  # type: ignore[import-not-found]
 except Exception:  # pragma: no cover - entornos no Windows
@@ -167,12 +174,6 @@ BASE_TEMPLATE_NAMES = {
 # --------------------------------------------------------------------------- #
 # Helpers genéricos
 # --------------------------------------------------------------------------- #
-
-
-def normalize_path(path: Path | str | None) -> Path:
-    if path is None:
-        return Path()
-    return Path(str(path).strip().rstrip("\\/"))
 
 
 def ensure_directory(path: Path) -> Path:
