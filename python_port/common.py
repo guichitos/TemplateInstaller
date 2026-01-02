@@ -275,6 +275,8 @@ def install_template(
     try:
         ensure_parents_and_copy(source, destination)
         flags.totals["files"] += 1
+        if design_mode:
+            LOGGER.info("[OK] Copiado %s a %s", filename, destination)
     except OSError as exc:
         flags.totals["errors"] += 1
         LOGGER.error("[ERROR] Falló la copia de %s (%s)", filename, exc)
