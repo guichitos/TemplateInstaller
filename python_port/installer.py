@@ -44,6 +44,13 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     resolved_paths = common.resolve_template_paths()
     common.log_template_paths(resolved_paths, design_mode)
+    if design_mode:
+        logging.getLogger(__name__).info(
+            "[INFO] Carpeta de plantillas extra WORD/POWERPOINT: %s", resolved_paths["CUSTOM"]
+        )
+        logging.getLogger(__name__).info(
+            "[INFO] Carpeta de plantillas extra EXCEL: %s", resolved_paths["CUSTOM_ALT"]
+        )
 
     working_dir = Path.cwd()
     base_dir = common.resolve_base_directory(working_dir)
