@@ -5,6 +5,12 @@ import argparse
 import logging
 from pathlib import Path
 
+# Configuración manual para el modo diseño.
+# - Establece en True para forzar modo diseño siempre.
+# - Establece en False para desactivarlo siempre.
+# - Deja en None para usar la lógica normal basada en entorno.
+MANUAL_IS_DESIGN_MODE: bool | None = None
+
 try:
     from . import common
 except ImportError:  # pragma: no cover - permite ejecución directa como script
@@ -16,17 +22,12 @@ except ImportError:  # pragma: no cover - permite ejecución directa como script
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Desinstalador de plantillas de Office (Python)")
-    parser.add_argument(
-        "--design-mode",
-        action="store_true",
-        help="Muestra salida detallada para depuración.",
-    )
     return parser.parse_args()
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args()
-    design_mode = args.design_mode or common.DEFAULT_DESIGN_MODE
+    design_mode = _resolve_design_mode()
     common.configure_logging(design_mode)
 
     base_dir = common.resolve_base_directory(Path.cwd())
@@ -49,6 +50,12 @@ def main(argv: list[str] | None = None) -> int:
     else:
         print("Ready")
     return 0
+
+
+def _resolve_design_mode() -> bool:
+    if MANUAL_IS_DESIGN_MODE is not None:
+        return bool(MANUAL_IS_DESIGN_MODE)
+    return bool(common.DEFAULT_DESIGN_MODE)
 
 
 if __name__ == "__main__":
