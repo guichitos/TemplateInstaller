@@ -8,7 +8,19 @@ import time
 from pathlib import Path
 from typing import Iterable
 
-from . import common
+# Configuración manual opcional para el modo diseño.
+# - Establece en True para forzar modo diseño siempre.
+# - Establece en False para desactivarlo y permitir que solo el flag CLI lo active.
+# - Deja en None para usar la lógica normal (CLI o variable de entorno).
+MANUAL_IS_DESIGN_MODE: bool | None = None
+
+try:
+    from . import common
+except ImportError:  # pragma: no cover - permite ejecución directa como script
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parent))
+    import common  # type: ignore[no-redef]
 
 
 def parse_args() -> argparse.Namespace:
@@ -16,7 +28,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--design-mode",
         action="store_true",
-        help="Muestra salida detallada similar a IsDesignModeEnabled=true.",
+        help="Muestra salida detallada para depuración.",
     )
     parser.add_argument(
         "--allowed-authors",
@@ -32,7 +44,7 @@ def parse_args() -> argparse.Namespace:
 
 def main(argv: Iterable[str] | None = None) -> int:
     args = parse_args()
-    design_mode = args.design_mode or common.DEFAULT_DESIGN_MODE
+    design_mode = _resolve_design_mode(args.design_mode)
     common.configure_logging(design_mode)
 
     working_dir = Path.cwd()
@@ -135,6 +147,14 @@ def _resolve_allowed_authors(cli_value: str | None) -> list[str]:
     if not raw:
         return common.DEFAULT_ALLOWED_TEMPLATE_AUTHORS
     return [author.strip() for author in raw.split(";") if author.strip()]
+
+
+def _resolve_design_mode(cli_flag: bool) -> bool:
+    if MANUAL_IS_DESIGN_MODE is True:
+        return True
+    if MANUAL_IS_DESIGN_MODE is False:
+        return bool(cli_flag)
+    return bool(cli_flag or common.DEFAULT_DESIGN_MODE)
 
 
 if __name__ == "__main__":
