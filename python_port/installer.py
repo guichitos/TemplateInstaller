@@ -43,13 +43,17 @@ def main(argv: Iterable[str] | None = None) -> int:
     common.configure_logging(design_mode)
 
     resolved_paths = common.resolve_template_paths()
+    common.log_registry_sources(design_mode)
     common.log_template_paths(resolved_paths, design_mode)
     if design_mode:
         logging.getLogger(__name__).info(
-            "[INFO] Carpeta de plantillas extra WORD/POWERPOINT: %s", resolved_paths["CUSTOM"]
+            "[INFO] Carpeta de plantillas extra WORD: %s", resolved_paths["CUSTOM_WORD"]
         )
         logging.getLogger(__name__).info(
-            "[INFO] Carpeta de plantillas extra EXCEL: %s", resolved_paths["CUSTOM_ALT"]
+            "[INFO] Carpeta de plantillas extra POWERPOINT: %s", resolved_paths["CUSTOM_PPT"]
+        )
+        logging.getLogger(__name__).info(
+            "[INFO] Carpeta de plantillas extra EXCEL: %s", resolved_paths["CUSTOM_ADDITIONAL"]
         )
 
     working_dir = Path.cwd()
