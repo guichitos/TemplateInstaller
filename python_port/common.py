@@ -399,6 +399,7 @@ def install_template(
         if design_mode:
             LOGGER.info("[OK] Copiado %s a %s", filename, destination)
         _mark_folder_open_flag(destination_root, flags, destinations_map)
+        _update_mru_if_applicable(app_label, destination, design_mode)
     except OSError as exc:
         flags.totals["errors"] += 1
         LOGGER.error("[ERROR] Falló la copia de %s (%s)", filename, exc)
@@ -460,6 +461,7 @@ def copy_custom_templates(base_dir: Path, destinations: dict[str, Path], flags: 
             _mark_folder_open_flag(destination_root, flags, destinations)
             if design_mode:
                 LOGGER.info("[OK] Copiado %s a %s", filename, destination_root / filename)
+            _update_mru_if_applicable_extension(extension, destination_root / filename, design_mode)
         except OSError as exc:
             flags.totals["errors"] += 1
             LOGGER.error("[ERROR] Falló la copia de %s (%s)", filename, exc)
@@ -594,6 +596,21 @@ def _mark_folder_open_flag(destination_root: Path, flags: InstallFlags, destinat
         flags.open_excel_startup_folder = True
 
 
+def _update_mru_if_applicable(app_label: str, destination: Path, design_mode: bool) -> None:
+    ext = destination.suffix.lower()
+    if ext in {".dotx", ".dotm", ".potx", ".potm", ".xltx", ".xltm"}:
+        update_mru_for_template(app_label, destination, design_mode)
+
+
+def _update_mru_if_applicable_extension(extension: str, destination: Path, design_mode: bool) -> None:
+    if extension in {".dotx", ".dotm"}:
+        update_mru_for_template("WORD", destination, design_mode)
+    if extension in {".potx", ".potm"}:
+        update_mru_for_template("POWERPOINT", destination, design_mode)
+    if extension in {".xltx", ".xltm"}:
+        update_mru_for_template("EXCEL", destination, design_mode)
+
+
 # --------------------------------------------------------------------------- #
 # Utilidades plataforma
 # --------------------------------------------------------------------------- #
@@ -699,6 +716,108 @@ def log_registry_sources(design_mode: bool) -> None:
     logger.info("[REG] Excel UserTemplates: %s", excel_user or "[no valor]")
 
 
+def update_mru_for_template(app_label: str, file_path: Path, design_mode: bool) -> None:
+    if not is_windows() or winreg is None:
+        return
+    mru_paths = _find_mru_paths(app_label)
+    if design_mode:
+        LOGGER.info("[MRU] Actualizando MRU para %s en rutas: %s", app_label, mru_paths)
+    for mru_path in mru_paths:
+        try:
+            _write_mru_entry(mru_path, file_path, design_mode)
+        except OSError as exc:
+            if design_mode:
+                LOGGER.warning("[MRU] No se pudo escribir en %s (%s)", mru_path, exc)
+
+
+def _find_mru_paths(app_label: str) -> list[str]:
+    reg_name = _app_registry_name(app_label)
+    if not reg_name:
+        return []
+    roots: list[str] = []
+    versions = ("16.0", "15.0", "14.0", "12.0")
+    for version in versions:
+        base = fr"Software\Microsoft\Office\{version}\{reg_name}\Recent Templates"
+        # Prefer LiveID/ADAL containers si existen
+        if winreg:
+            try:
+                with winreg.OpenKey(winreg.HKEY_CURRENT_USER, base) as root:
+                    sub_count = winreg.QueryInfoKey(root)[0]
+                    for idx in range(sub_count):
+                        sub = winreg.EnumKey(root, idx)
+                        if sub.upper().startswith("ADAL_") or sub.upper().startswith("LIVEID_"):
+                            roots.append(f"HKCU\\{base}\\{sub}\\File MRU")
+            except OSError:
+                pass
+        roots.append(f"HKCU\\{base}\\File MRU")
+    # Deduplicar manteniendo orden
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for path in roots:
+        if path not in seen:
+            seen.add(path)
+            ordered.append(path)
+    return ordered
+
+
+def _app_registry_name(app_label: str) -> str:
+    mapping = {"WORD": "Word", "POWERPOINT": "PowerPoint", "EXCEL": "Excel"}
+    return mapping.get(app_label.upper(), "")
+
+
+def _write_mru_entry(reg_path: str, file_path: Path, design_mode: bool) -> None:
+    if winreg is None:
+        return
+    file_path = normalize_path(file_path)
+    full_path = str(file_path)
+    basename = file_path.stem
+    hive, subkey = reg_path.split("\\", 1)
+    hive_obj = winreg.HKEY_CURRENT_USER if hive.upper() == "HKCU" else None
+    if hive_obj is None:
+        return
+    try:
+        key = winreg.CreateKeyEx(hive_obj, subkey, 0, winreg.KEY_ALL_ACCESS)
+    except OSError:
+        return
+    with key:
+        # Leer entradas existentes
+        existing_items: list[tuple[int, str, str]] = []
+        index = 0
+        try:
+            while True:
+                name, value, _ = winreg.EnumValue(key, index)
+                if name.startswith("Item Metadata "):
+                    index += 1
+                    continue
+                if name.startswith("Item "):
+                    try:
+                        num = int(name.split(" ", 1)[1])
+                    except Exception:
+                        num = 0
+                    existing_items.append((num, name, value))
+                index += 1
+        except OSError:
+            pass
+        # Filtrar duplicados del mismo path
+        filtered = []
+        for _, name, value in existing_items:
+            if isinstance(value, str) and full_path.lower() in value.lower():
+                continue
+            filtered.append((name, value))
+        # Preparar nueva lista con el archivo al frente
+        new_entries: list[str] = [full_path] + [val for _, val in filtered]
+        # Limitar, p.ej., a 10 entradas
+        new_entries = new_entries[:10]
+        # Reescribir
+        for idx, entry in enumerate(new_entries, start=1):
+            item_name = f"Item {idx}"
+            meta_name = f"Item Metadata {idx}"
+            reg_value = f"[F00000000][T0000000000000000][O00000000]*{entry}"
+            meta_value = f"<Metadata><AppSpecific><id>{entry}</id><nm>{basename}</nm><du>{entry}</du></AppSpecific></Metadata>"
+            winreg.SetValueEx(key, item_name, 0, winreg.REG_SZ, reg_value)
+            winreg.SetValueEx(key, meta_name, 0, winreg.REG_SZ, meta_value)
+        if design_mode:
+            LOGGER.info("[MRU] %s actualizado con %s", reg_path, full_path)
 def _destination_for_extension(extension: str, destinations: dict[str, Path]) -> Optional[Path]:
     if extension in {".dotx", ".dotm"}:
         return destinations["WORD"]
