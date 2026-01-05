@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import sys
 import zipfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Iterator, List, Optional
@@ -421,11 +421,7 @@ class InstallFlags:
     custom_selection: Optional[Path] = None
     roaming_selection: Optional[Path] = None
     excel_startup_selection: Optional[Path] = None
-    totals: dict = None
-
-    def __post_init__(self) -> None:
-        if self.totals is None:
-            self.totals = {"files": 0, "errors": 0, "blocked": 0}
+    totals: dict[str, int] = field(default_factory=lambda: {"files": 0, "errors": 0, "blocked": 0})
 
 
 def install_template(
