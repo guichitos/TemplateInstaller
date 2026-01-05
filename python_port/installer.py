@@ -8,16 +8,23 @@ import time
 from pathlib import Path
 from typing import Iterable
 
-from . import common
+# Configuración manual para el modo diseño.
+# - Establece en True para forzar modo diseño siempre.
+# - Establece en False para desactivarlo siempre.
+# - Deja en None para usar la lógica normal basada en entorno.
+MANUAL_IS_DESIGN_MODE: bool | None = True
+
+try:
+    from . import common
+except ImportError:  # pragma: no cover - permite ejecución directa como script
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parent))
+    import common  # type: ignore[no-redef]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Instalador de plantillas de Office (Python)")
-    parser.add_argument(
-        "--design-mode",
-        action="store_true",
-        help="Muestra salida detallada similar a IsDesignModeEnabled=true.",
-    )
     parser.add_argument(
         "--allowed-authors",
         help="Lista separada por ';' de autores permitidos.",
@@ -32,8 +39,22 @@ def parse_args() -> argparse.Namespace:
 
 def main(argv: Iterable[str] | None = None) -> int:
     args = parse_args()
-    design_mode = args.design_mode or common.DEFAULT_DESIGN_MODE
+    design_mode = _resolve_design_mode()
     common.configure_logging(design_mode)
+
+    resolved_paths = common.resolve_template_paths()
+    common.log_registry_sources(design_mode)
+    common.log_template_paths(resolved_paths, design_mode)
+    if design_mode and common.DESIGN_LOG_PATHS:
+        logging.getLogger(__name__).info(
+            "[INFO] Carpeta de plantillas extra WORD: %s", resolved_paths["CUSTOM_WORD"]
+        )
+        logging.getLogger(__name__).info(
+            "[INFO] Carpeta de plantillas extra POWERPOINT: %s", resolved_paths["CUSTOM_PPT"]
+        )
+        logging.getLogger(__name__).info(
+            "[INFO] Carpeta de plantillas extra EXCEL: %s", resolved_paths["CUSTOM_EXCEL"]
+        )
 
     working_dir = Path.cwd()
     base_dir = common.resolve_base_directory(working_dir)
@@ -51,9 +72,10 @@ def main(argv: Iterable[str] | None = None) -> int:
             Path(args.check_author),
             allowed_authors=allowed_authors,
             validation_enabled=validation_enabled,
+            design_mode=design_mode,
         )
         print(result.as_cli_output())
-        if design_mode:
+        if design_mode and common.DESIGN_LOG_AUTHOR:
             logging.getLogger(__name__).info(result.message)
         return 0 if result.allowed else 1
 
@@ -61,6 +83,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     common.close_office_apps(design_mode)
 
     destinations = common.default_destinations()
+    common.open_template_folders(resolved_paths, design_mode)
     flags = common.InstallFlags()
 
     # Plantillas base
@@ -83,6 +106,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             filename,
             base_dir,
             destination,
+            destinations,
             flags,
             allowed_authors,
             validation_enabled,
@@ -98,9 +122,10 @@ def main(argv: Iterable[str] | None = None) -> int:
         validation_enabled=validation_enabled,
         design_mode=design_mode,
     )
+    common.open_template_folders(resolved_paths, design_mode, flags)
 
     if flags.open_document_theme and common.DEFAULT_DOCUMENT_THEME_DELAY_SECONDS > 0:
-        if design_mode:
+        if design_mode and common.DESIGN_LOG_APP_LAUNCH:
             logging.getLogger(__name__).info(
                 "[INFO] Esperando %s segundos antes de abrir aplicaciones...",
                 common.DEFAULT_DOCUMENT_THEME_DELAY_SECONDS,
@@ -109,7 +134,7 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     common.launch_office_apps(flags, design_mode)
 
-    if design_mode:
+    if design_mode and common.DESIGN_LOG_INSTALLER:
         logging.getLogger(__name__).info(
             "[FINAL] Instalación completada. Archivos copiados=%s, errores=%s, bloqueados=%s.",
             flags.totals["files"],
@@ -122,7 +147,7 @@ def main(argv: Iterable[str] | None = None) -> int:
 
 
 def _print_intro(base_dir: Path, design_mode: bool) -> None:
-    if design_mode:
+    if design_mode and common.DESIGN_LOG_INSTALLER:
         logging.getLogger(__name__).info("[DEBUG] Modo diseño habilitado=true")
         logging.getLogger(__name__).info("[INFO] Carpeta base: %s", base_dir)
     else:
@@ -135,6 +160,12 @@ def _resolve_allowed_authors(cli_value: str | None) -> list[str]:
     if not raw:
         return common.DEFAULT_ALLOWED_TEMPLATE_AUTHORS
     return [author.strip() for author in raw.split(";") if author.strip()]
+
+
+def _resolve_design_mode() -> bool:
+    if MANUAL_IS_DESIGN_MODE is not None:
+        return bool(MANUAL_IS_DESIGN_MODE)
+    return bool(common.DEFAULT_DESIGN_MODE)
 
 
 if __name__ == "__main__":
