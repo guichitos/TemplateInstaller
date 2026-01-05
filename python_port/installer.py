@@ -53,7 +53,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             "[INFO] Carpeta de plantillas extra POWERPOINT: %s", resolved_paths["CUSTOM_PPT"]
         )
         logging.getLogger(__name__).info(
-            "[INFO] Carpeta de plantillas extra EXCEL: %s", resolved_paths["CUSTOM_ADDITIONAL"]
+            "[INFO] Carpeta de plantillas extra EXCEL: %s", resolved_paths["CUSTOM_EXCEL"]
         )
 
     working_dir = Path.cwd()

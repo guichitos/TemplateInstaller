@@ -100,18 +100,37 @@ def _resolve_custom_alt_path(custom_primary: Path, default_custom_dir: Path, def
     return normalize_path(custom_primary or default_custom_dir or default_alt_dir)
 
 
+def _resolve_excel_template_path(custom_primary: Path, default_custom_dir: Path, default_alt_dir: Path) -> Path:
+    if winreg:
+        for version in ("16.0", "15.0", "14.0", "12.0"):
+            value = _read_registry_value(
+                fr"Software\Microsoft\Office\{version}\Excel\Options", "PersonalTemplates"
+            )
+            if value:
+                return normalize_path(value)
+        for version in ("16.0", "15.0", "14.0", "12.0"):
+            value = _read_registry_value(
+                fr"Software\Microsoft\Office\{version}\Common\General", "UserTemplates"
+            )
+            if value:
+                return normalize_path(value)
+    return normalize_path(custom_primary or default_custom_dir or default_alt_dir)
+
+
 def _resolve_base_paths() -> dict[str, Path]:
     documents_path = _resolve_documents_path()
     default_custom_dir = documents_path / "Custom Office Templates"
     default_custom_alt_dir = documents_path / "Plantillas personalizadas de Office"
     custom_word = _resolve_custom_template_path(default_custom_dir)
     custom_ppt = _resolve_custom_alt_path(custom_word, default_custom_dir, default_custom_alt_dir)
+    custom_excel = _resolve_excel_template_path(custom_word, default_custom_dir, default_custom_alt_dir)
     appdata_path = _resolve_appdata_path()
     return {
         "APPDATA": appdata_path,
         "DOCUMENTS": documents_path,
         "CUSTOM_WORD": custom_word,
         "CUSTOM_PPT": custom_ppt,
+        "CUSTOM_EXCEL": custom_excel,
         "CUSTOM_ADDITIONAL": default_custom_alt_dir,
         "THEME": appdata_path / "Microsoft" / "Templates" / "Document Themes",
         "ROAMING": appdata_path / "Microsoft" / "Templates",
@@ -139,6 +158,9 @@ DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH = normalize_path(
 )
 DEFAULT_POWERPOINT_TEMPLATE_PATH = normalize_path(
     os.environ.get("POWERPOINT_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_PPT"])
+)
+DEFAULT_EXCEL_TEMPLATE_PATH = normalize_path(
+    os.environ.get("EXCEL_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_EXCEL"])
 )
 DEFAULT_CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH = normalize_path(
     os.environ.get("CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_ADDITIONAL"])
@@ -504,9 +526,10 @@ def open_template_folders(paths: dict[str, Path], design_mode: bool) -> None:
     ordered = [
         ("THEME_PATH", paths.get("THEME")),
         ("CUSTOM_WORD_TEMPLATE_PATH", paths.get("CUSTOM_WORD")),
+        ("CUSTOM_PPT_TEMPLATE_PATH", paths.get("CUSTOM_PPT")),
+        ("CUSTOM_EXCEL_TEMPLATE_PATH", paths.get("CUSTOM_EXCEL")),
         ("ROAMING_TEMPLATE_PATH", paths.get("ROAMING")),
         ("EXCEL_STARTUP_PATH", paths.get("EXCEL")),
-        ("CUSTOM_PPT_TEMPLATE_PATH", paths.get("CUSTOM_PPT")),
         ("CUSTOM_ADDITIONAL_PATH", paths.get("CUSTOM_ADDITIONAL")),
     ]
     for label, target in ordered:
@@ -589,7 +612,7 @@ def default_destinations() -> dict[str, Path]:
         "CUSTOM_ALT": paths["CUSTOM_ADDITIONAL"],
         "WORD_CUSTOM": paths["CUSTOM_WORD"],
         "POWERPOINT_CUSTOM": paths["CUSTOM_PPT"],
-        "EXCEL_CUSTOM": paths["CUSTOM_ADDITIONAL"],
+        "EXCEL_CUSTOM": paths["CUSTOM_EXCEL"],
         "ROAMING": paths["ROAMING"],
         "THEMES": paths["THEME"],
     }
@@ -600,6 +623,7 @@ def resolve_template_paths() -> dict[str, Path]:
         "THEME": DEFAULT_THEME_FOLDER,
         "CUSTOM_WORD": DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH,
         "CUSTOM_PPT": DEFAULT_POWERPOINT_TEMPLATE_PATH or DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH,
+        "CUSTOM_EXCEL": DEFAULT_EXCEL_TEMPLATE_PATH or DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH,
         "CUSTOM_ADDITIONAL": DEFAULT_CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH,
         "ROAMING": DEFAULT_ROAMING_TEMPLATE_FOLDER,
         "EXCEL": DEFAULT_EXCEL_STARTUP_FOLDER,
@@ -612,6 +636,7 @@ def log_template_paths(paths: dict[str, Path], design_mode: bool) -> None:
     logger.info("THEME_PATH                  = %s", paths["THEME"])
     logger.info("CUSTOM_WORD_TEMPLATE_PATH   = %s", paths["CUSTOM_WORD"])
     logger.info("CUSTOM_PPT_TEMPLATE_PATH    = %s", paths["CUSTOM_PPT"])
+    logger.info("CUSTOM_EXCEL_TEMPLATE_PATH  = %s", paths["CUSTOM_EXCEL"])
     logger.info("CUSTOM_ADDITIONAL_PATH      = %s", paths["CUSTOM_ADDITIONAL"])
     logger.info("ROAMING_TEMPLATE_PATH       = %s", paths["ROAMING"])
     logger.info("EXCEL_STARTUP_PATH          = %s", paths["EXCEL"])
@@ -626,10 +651,14 @@ def log_registry_sources(design_mode: bool) -> None:
     word_user = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Common\\General", "UserTemplates")
     ppt_personal = _read_registry_value(r"Software\Microsoft\Office\\16.0\\PowerPoint\\Options", "PersonalTemplates")
     ppt_user = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Common\\General", "UserTemplates")
+    excel_personal = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Excel\\Options", "PersonalTemplates")
+    excel_user = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Common\\General", "UserTemplates")
     logger.info("[REG] Word PersonalTemplates: %s", word_personal or "[no valor]")
     logger.info("[REG] Word UserTemplates: %s", word_user or "[no valor]")
     logger.info("[REG] PowerPoint PersonalTemplates: %s", ppt_personal or "[no valor]")
     logger.info("[REG] PowerPoint UserTemplates: %s", ppt_user or "[no valor]")
+    logger.info("[REG] Excel PersonalTemplates: %s", excel_personal or "[no valor]")
+    logger.info("[REG] Excel UserTemplates: %s", excel_user or "[no valor]")
 
 
 def _destination_for_extension(extension: str, destinations: dict[str, Path]) -> Optional[Path]:
