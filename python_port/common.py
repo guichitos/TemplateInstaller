@@ -597,18 +597,32 @@ def _mark_folder_open_flag(destination_root: Path, flags: InstallFlags, destinat
 
 
 def _update_mru_if_applicable(app_label: str, destination: Path, design_mode: bool) -> None:
+    if not _should_update_mru(destination):
+        return
     ext = destination.suffix.lower()
     if ext in {".dotx", ".dotm", ".potx", ".potm", ".xltx", ".xltm"}:
         update_mru_for_template(app_label, destination, design_mode)
 
 
 def _update_mru_if_applicable_extension(extension: str, destination: Path, design_mode: bool) -> None:
+    if not _should_update_mru(destination):
+        return
     if extension in {".dotx", ".dotm"}:
         update_mru_for_template("WORD", destination, design_mode)
     if extension in {".potx", ".potm"}:
         update_mru_for_template("POWERPOINT", destination, design_mode)
     if extension in {".xltx", ".xltm"}:
         update_mru_for_template("EXCEL", destination, design_mode)
+
+
+def _should_update_mru(path: Path) -> bool:
+    name = path.name
+    ext = path.suffix.lower()
+    if name in BASE_TEMPLATE_NAMES:
+        return False
+    if ext == ".thmx":
+        return False
+    return True
 
 
 # --------------------------------------------------------------------------- #
