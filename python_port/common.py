@@ -828,6 +828,9 @@ def _write_mru_entry(reg_path: str, file_path: Path, design_mode: bool) -> None:
             meta_name = f"Item Metadata {idx}"
             reg_value = f"[F00000000][T0000000000000000][O00000000]*{entry}"
             meta_value = f"<Metadata><AppSpecific><id>{entry}</id><nm>{basename}</nm><du>{entry}</du></AppSpecific></Metadata>"
+            if design_mode:
+                LOGGER.info("[MRU] Escribiendo %s='%s' en %s", item_name, reg_value, reg_path)
+                LOGGER.info("[MRU] Escribiendo %s='%s' en %s", meta_name, meta_value, reg_path)
             winreg.SetValueEx(key, item_name, 0, winreg.REG_SZ, reg_value)
             winreg.SetValueEx(key, meta_name, 0, winreg.REG_SZ, meta_value)
         if design_mode:
