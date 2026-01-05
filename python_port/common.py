@@ -153,6 +153,18 @@ DEFAULT_DOCUMENT_THEME_DELAY_SECONDS = int(
 DEFAULT_DESIGN_MODE = os.environ.get("IsDesignModeEnabled", "false").lower() == "true"
 AUTHOR_VALIDATION_ENABLED = os.environ.get("AuthorValidationEnabled", "TRUE").lower() != "false"
 
+
+def _design_flag(env_var: str) -> bool:
+    raw = os.environ.get(env_var)
+    if raw is None:
+        return DEFAULT_DESIGN_MODE
+    return raw.lower() == "true"
+
+
+DESIGN_LOG_PATHS = _design_flag("DesignLogPaths")
+DESIGN_LOG_MRU = _design_flag("DesignLogMRU")
+DESIGN_LOG_OPENING = _design_flag("DesignLogOpening")
+
 DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH = normalize_path(
     os.environ.get("CUSTOM_OFFICE_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_WORD"])
 )
@@ -562,23 +574,25 @@ def open_template_folders(paths: dict[str, Path], design_mode: bool, flags: Inst
             continue
         try:
             ensure_directory(target)
-            if design_mode:
+            if design_mode and DESIGN_LOG_OPENING:
                 LOGGER.info("[ACTION] Abriendo carpeta %s: %s", label, target)
                 if not target.exists():
                     LOGGER.warning("[WARN] La carpeta %s no existe tras crearla: %s", label, target)
             try:
                 os.startfile(str(target))  # type: ignore[arg-type]
-                if design_mode:
+                if design_mode and DESIGN_LOG_OPENING:
                     LOGGER.info("[OK] startfile lanzado para %s", label)
             except OSError as exc:
-                if design_mode:
+                if design_mode and DESIGN_LOG_OPENING:
                     LOGGER.warning("[WARN] startfile falló para %s (%s); usando explorer.", label, exc)
                 try:
                     subprocess.run(["explorer", str(target)], check=False)
                 except OSError as exc2:
-                    LOGGER.warning("[WARN] explorer también falló para %s (%s)", label, exc2)
+                    if design_mode and DESIGN_LOG_OPENING:
+                        LOGGER.warning("[WARN] explorer también falló para %s (%s)", label, exc2)
         except OSError as exc:
-            LOGGER.warning("[WARN] No se pudo abrir carpeta %s (%s)", label, exc)
+            if design_mode and DESIGN_LOG_OPENING:
+                LOGGER.warning("[WARN] No se pudo abrir carpeta %s (%s)", label, exc)
 
 
 def _mark_folder_open_flag(destination_root: Path, flags: InstallFlags, destinations: dict[str, Path]) -> None:
@@ -700,6 +714,8 @@ def resolve_template_paths() -> dict[str, Path]:
 
 
 def log_template_paths(paths: dict[str, Path], design_mode: bool) -> None:
+    if not design_mode or not DESIGN_LOG_PATHS:
+        return
     logger = logging.getLogger(__name__)
     logger.info("================= RUTAS CALCULADAS =================")
     logger.info("THEME_PATH                  = %s", paths["THEME"])
@@ -713,7 +729,7 @@ def log_template_paths(paths: dict[str, Path], design_mode: bool) -> None:
 
 
 def log_registry_sources(design_mode: bool) -> None:
-    if not design_mode:
+    if not design_mode or not DESIGN_LOG_MRU:
         return
     logger = logging.getLogger(__name__)
     word_personal = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Word\\Options", "PersonalTemplates")
@@ -734,13 +750,13 @@ def update_mru_for_template(app_label: str, file_path: Path, design_mode: bool) 
     if not is_windows() or winreg is None:
         return
     mru_paths = _find_mru_paths(app_label)
-    if design_mode:
+    if design_mode and DESIGN_LOG_MRU:
         LOGGER.info("[MRU] Actualizando MRU para %s en rutas: %s", app_label, mru_paths)
     for mru_path in mru_paths:
         try:
             _write_mru_entry(mru_path, file_path, design_mode)
         except OSError as exc:
-            if design_mode:
+            if design_mode and DESIGN_LOG_MRU:
                 LOGGER.warning("[MRU] No se pudo escribir en %s (%s)", mru_path, exc)
 
 
@@ -828,12 +844,12 @@ def _write_mru_entry(reg_path: str, file_path: Path, design_mode: bool) -> None:
             meta_name = f"Item Metadata {idx}"
             reg_value = f"[F00000000][T0000000000000000][O00000000]*{entry}"
             meta_value = f"<Metadata><AppSpecific><id>{entry}</id><nm>{basename}</nm><du>{entry}</du></AppSpecific></Metadata>"
-            if design_mode:
+            if design_mode and DESIGN_LOG_MRU:
                 LOGGER.info("[MRU] Escribiendo %s='%s' en %s", item_name, reg_value, reg_path)
                 LOGGER.info("[MRU] Escribiendo %s='%s' en %s", meta_name, meta_value, reg_path)
             winreg.SetValueEx(key, item_name, 0, winreg.REG_SZ, reg_value)
             winreg.SetValueEx(key, meta_name, 0, winreg.REG_SZ, meta_value)
-        if design_mode:
+        if design_mode and DESIGN_LOG_MRU:
             LOGGER.info("[MRU] %s actualizado con %s", reg_path, full_path)
 def _destination_for_extension(extension: str, destinations: dict[str, Path]) -> Optional[Path]:
     if extension in {".dotx", ".dotm"}:
