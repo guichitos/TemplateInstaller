@@ -1,11 +1,13 @@
-"""Funciones compartidas para instalar/desinstalar plantillas de Office."""
+"""Instalador monolítico (sin dependencias externas)."""
 from __future__ import annotations
 
+import argparse
 import logging
 import os
 import shutil
 import subprocess
 import sys
+import time
 import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -14,18 +16,11 @@ from typing import Iterable, Iterator, List, Optional, Set
 import xml.etree.ElementTree as ET
 
 
-def normalize_path(path: Path | str | None) -> Path:
-    if path is None:
-        return Path()
-    return Path(str(path).strip().rstrip("\\/"))
-
-
-try:
-    import winreg  # type: ignore[import-not-found]
-except Exception:  # pragma: no cover - entornos no Windows
-    winreg = None  # type: ignore[assignment]
-
-LOGGER = logging.getLogger(__name__)
+# Configuración manual para el modo diseño.
+# - Establece en True para forzar modo diseño siempre.
+# - Establece en False para desactivarlo siempre.
+# - Deja en None para usar la lógica normal basada en entorno.
+MANUAL_IS_DESIGN_MODE: bool | None = True
 
 # --------------------------------------------------------------------------- #
 # Flags manuales de diseño (override de variables de entorno)
@@ -44,12 +39,24 @@ MANUAL_DESIGN_LOG_CLOSE_APPS: bool | None = False
 MANUAL_DESIGN_LOG_INSTALLER: bool | None = False
 MANUAL_DESIGN_LOG_UNINSTALLER: bool | None = False
 
+try:
+    import winreg  # type: ignore[import-not-found]
+except Exception:  # pragma: no cover - entornos no Windows
+    winreg = None  # type: ignore[assignment]
+
+LOGGER = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------------- #
 # Constantes base
 # --------------------------------------------------------------------------- #
 
 _BASE_PATHS = None
+
+
+def normalize_path(path: Path | str | None) -> Path:
+    if path is None:
+        return Path()
+    return Path(str(path).strip().rstrip("\\/"))
 
 
 def _read_registry_value(path: str, name: str) -> Optional[str]:
@@ -211,6 +218,7 @@ def refresh_design_log_flags(effective_design_mode: bool) -> None:
     DESIGN_LOG_CLOSE_APPS = _design_flag("DesignLogCloseApps", MANUAL_DESIGN_LOG_CLOSE_APPS, effective_design_mode)
     DESIGN_LOG_INSTALLER = _design_flag("DesignLogInstaller", MANUAL_DESIGN_LOG_INSTALLER, effective_design_mode)
     DESIGN_LOG_UNINSTALLER = _design_flag("DesignLogUninstaller", MANUAL_DESIGN_LOG_UNINSTALLER, effective_design_mode)
+
 
 DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH = normalize_path(
     os.environ.get("CUSTOM_OFFICE_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_WORD"])
@@ -721,7 +729,6 @@ def _should_update_mru(path: Path) -> bool:
 def _collect_mru_targets(base_dir: Path, destinations: dict[str, Path]) -> list[Path]:
     """Devuelve rutas potenciales a limpiar de las MRU (base + payload personalizada)."""
     targets: set[Path] = set()
-    # Base templates
     base_targets = {
         "WORD": ["Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm"],
         "POWERPOINT": ["Blank.potx", "Blank.potm"],
@@ -732,7 +739,6 @@ def _collect_mru_targets(base_dir: Path, destinations: dict[str, Path]) -> list[
         if dest:
             for name in names:
                 targets.add(normalize_path(dest / name))
-    # Custom payload templates
     for file in iter_template_files(base_dir):
         if file.name in BASE_TEMPLATE_NAMES:
             continue
@@ -877,8 +883,7 @@ def update_mru_for_template(app_label: str, file_path: Path, design_mode: bool) 
         try:
             _write_mru_entry(mru_path, file_path, design_mode)
         except OSError as exc:
-            if design_mode and DESIGN_LOG_MRU:
-                LOGGER.warning("[MRU] No se pudo escribir en %s (%s)", mru_path, exc)
+            _design_log(DESIGN_LOG_MRU, design_mode, logging.WARNING, "[MRU] No se pudo escribir en %s (%s)", mru_path, exc)
 
 
 def _find_mru_paths(app_label: str) -> list[str]:
@@ -889,7 +894,6 @@ def _find_mru_paths(app_label: str) -> list[str]:
     versions = ("16.0", "15.0", "14.0", "12.0")
     for version in versions:
         base = fr"Software\Microsoft\Office\{version}\{reg_name}\Recent Templates"
-        # Prefer LiveID/ADAL containers si existen
         if winreg:
             try:
                 with winreg.OpenKey(winreg.HKEY_CURRENT_USER, base) as root:
@@ -901,7 +905,6 @@ def _find_mru_paths(app_label: str) -> list[str]:
             except OSError:
                 pass
         roots.append(f"HKCU\\{base}\\File MRU")
-    # Deduplicar manteniendo orden
     seen: set[str] = set()
     ordered: list[str] = []
     for path in roots:
@@ -931,7 +934,6 @@ def _write_mru_entry(reg_path: str, file_path: Path, design_mode: bool) -> None:
     except OSError:
         return
     with key:
-        # Leer entradas existentes
         existing_items: list[tuple[int, str]] = []
         index = 0
         try:
@@ -952,17 +954,13 @@ def _write_mru_entry(reg_path: str, file_path: Path, design_mode: bool) -> None:
                 index += 1
         except OSError:
             pass
-        # Filtrar duplicados del mismo path
         filtered = []
         for _, value in existing_items:
             if full_path.lower() == value.lower():
                 continue
             filtered.append(value)
-        # Preparar nueva lista con el archivo al frente
         new_entries: list[str] = [full_path] + filtered
-        # Limitar, p.ej., a 10 entradas
         new_entries = new_entries[:10]
-        # Reescribir
         for idx, entry in enumerate(new_entries, start=1):
             item_name = f"Item {idx}"
             meta_name = f"Item Metadata {idx}"
@@ -1021,7 +1019,6 @@ def _rewrite_mru_excluding(mru_path: str, targets: Set[str], design_mode: bool) 
                 index += 1
         except OSError:
             pass
-        # Eliminar todo antes de reescribir
         try:
             index = 0
             while True:
@@ -1032,7 +1029,6 @@ def _rewrite_mru_excluding(mru_path: str, targets: Set[str], design_mode: bool) 
                 index += 1
         except OSError:
             pass
-        # Filtrar y reindexar
         target_lowers = {t.lower() for t in targets}
         filtered: list[tuple[str, str]] = []
         for idx_num, value in sorted(items, key=lambda x: x[0]):
@@ -1048,6 +1044,8 @@ def _rewrite_mru_excluding(mru_path: str, targets: Set[str], design_mode: bool) 
             winreg.SetValueEx(key, item_name, 0, winreg.REG_SZ, val)
             if meta_val:
                 winreg.SetValueEx(key, meta_name, 0, winreg.REG_SZ, meta_val)
+
+
 def _destination_for_extension(extension: str, destinations: dict[str, Path]) -> Optional[Path]:
     if extension in {".dotx", ".dotm"}:
         return destinations["WORD"]
@@ -1068,3 +1066,150 @@ def configure_logging(design_mode: bool) -> None:
 def exit_with_error(message: str) -> None:
     print(message)
     sys.exit(1)
+
+
+# --------------------------------------------------------------------------- #
+# Instalador
+# --------------------------------------------------------------------------- #
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Instalador de plantillas de Office (Python monolítico)")
+    parser.add_argument(
+        "--allowed-authors",
+        help="Lista separada por ';' de autores permitidos.",
+    )
+    parser.add_argument(
+        "--check-author",
+        metavar="RUTA",
+        help="Solo valida autor de archivo/carpeta y termina.",
+    )
+    return parser.parse_args()
+
+
+def main(argv: Iterable[str] | None = None) -> int:
+    args = parse_args()
+    design_mode = _resolve_design_mode()
+    refresh_design_log_flags(design_mode)
+    configure_logging(design_mode)
+
+    resolved_paths = resolve_template_paths()
+    log_registry_sources(design_mode)
+    log_template_paths(resolved_paths, design_mode)
+    if design_mode and DESIGN_LOG_PATHS:
+        LOGGER.info("[INFO] Carpeta de plantillas extra WORD: %s", resolved_paths["CUSTOM_WORD"])
+        LOGGER.info("[INFO] Carpeta de plantillas extra POWERPOINT: %s", resolved_paths["CUSTOM_PPT"])
+        LOGGER.info("[INFO] Carpeta de plantillas extra EXCEL: %s", resolved_paths["CUSTOM_EXCEL"])
+
+    working_dir = Path.cwd()
+    base_dir = resolve_base_directory(working_dir)
+
+    if base_dir == working_dir and path_in_appdata(working_dir):
+        exit_with_error(
+            '[ERROR] No se recibió la ruta de las plantillas. Ejecute el instalador desde "1. Pin templates..." para que se le pase la carpeta correcta.'
+        )
+
+    allowed_authors = _resolve_allowed_authors(args.allowed_authors)
+    validation_enabled = AUTHOR_VALIDATION_ENABLED
+
+    if args.check_author:
+        result = check_template_author(
+            Path(args.check_author),
+            allowed_authors=allowed_authors,
+            validation_enabled=validation_enabled,
+            design_mode=design_mode,
+        )
+        print(result.as_cli_output())
+        if design_mode and DESIGN_LOG_AUTHOR:
+            LOGGER.info(result.message)
+        return 0 if result.allowed else 1
+
+    _print_intro(base_dir, design_mode)
+    close_office_apps(design_mode)
+
+    destinations = default_destinations()
+    open_template_folders(resolved_paths, design_mode)
+    flags = InstallFlags()
+
+    base_targets = [
+        ("WORD", "Normal.dotx", destinations["WORD"]),
+        ("WORD", "Normal.dotm", destinations["WORD"]),
+        ("WORD", "NormalEmail.dotx", destinations["WORD"]),
+        ("WORD", "NormalEmail.dotm", destinations["WORD"]),
+        ("POWERPOINT", "Blank.potx", destinations["POWERPOINT"]),
+        ("POWERPOINT", "Blank.potm", destinations["POWERPOINT"]),
+        ("EXCEL", "Book.xltx", destinations["EXCEL"]),
+        ("EXCEL", "Book.xltm", destinations["EXCEL"]),
+        ("EXCEL", "Sheet.xltx", destinations["EXCEL"]),
+        ("EXCEL", "Sheet.xltm", destinations["EXCEL"]),
+    ]
+
+    for app_label, filename, destination in base_targets:
+        install_template(
+            app_label,
+            filename,
+            base_dir,
+            destination,
+            destinations,
+            flags,
+            allowed_authors,
+            validation_enabled,
+            design_mode,
+        )
+
+    copy_custom_templates(
+        base_dir=base_dir,
+        destinations=destinations,
+        flags=flags,
+        allowed=allowed_authors,
+        validation_enabled=validation_enabled,
+        design_mode=design_mode,
+    )
+    open_template_folders(resolved_paths, design_mode, flags)
+
+    if flags.open_document_theme and DEFAULT_DOCUMENT_THEME_DELAY_SECONDS > 0:
+        if design_mode and DESIGN_LOG_APP_LAUNCH:
+            LOGGER.info(
+                "[INFO] Esperando %s segundos antes de abrir aplicaciones...",
+                DEFAULT_DOCUMENT_THEME_DELAY_SECONDS,
+            )
+        time.sleep(DEFAULT_DOCUMENT_THEME_DELAY_SECONDS)
+
+    launch_office_apps(flags, design_mode)
+
+    if design_mode and DESIGN_LOG_INSTALLER:
+        LOGGER.info(
+            "[FINAL] Instalación completada. Archivos copiados=%s, errores=%s, bloqueados=%s.",
+            flags.totals["files"],
+            flags.totals["errors"],
+            flags.totals["blocked"],
+        )
+    else:
+        print("Ready")
+    return 0
+
+
+def _print_intro(base_dir: Path, design_mode: bool) -> None:
+    if design_mode and DESIGN_LOG_INSTALLER:
+        LOGGER.info("[DEBUG] Modo diseño habilitado=true")
+        LOGGER.info("[INFO] Carpeta base: %s", base_dir)
+    else:
+        print("Installing custom templates and applying them as the new Microsoft Office defaults...")
+
+
+def _resolve_allowed_authors(cli_value: str | None) -> list[str]:
+    env_value = os.environ.get("AllowedTemplateAuthors")
+    raw = cli_value or env_value
+    if not raw:
+        return DEFAULT_ALLOWED_TEMPLATE_AUTHORS
+    return [author.strip() for author in raw.split(";") if author.strip()]
+
+
+def _resolve_design_mode() -> bool:
+    if MANUAL_IS_DESIGN_MODE is not None:
+        return bool(MANUAL_IS_DESIGN_MODE)
+    return bool(DEFAULT_DESIGN_MODE)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
