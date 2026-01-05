@@ -40,6 +40,7 @@ def parse_args() -> argparse.Namespace:
 def main(argv: Iterable[str] | None = None) -> int:
     args = parse_args()
     design_mode = _resolve_design_mode()
+    common.refresh_design_log_flags(design_mode)
     common.configure_logging(design_mode)
 
     resolved_paths = common.resolve_template_paths()

@@ -171,26 +171,45 @@ DEFAULT_DESIGN_MODE = os.environ.get("IsDesignModeEnabled", "false").lower() == 
 AUTHOR_VALIDATION_ENABLED = os.environ.get("AuthorValidationEnabled", "TRUE").lower() != "false"
 
 
-def _design_flag(env_var: str, manual_override: bool | None) -> bool:
+def _design_flag(env_var: str, manual_override: bool | None, fallback: bool) -> bool:
     if manual_override is not None:
         return bool(manual_override)
     raw = os.environ.get(env_var)
     if raw is None:
-        return DEFAULT_DESIGN_MODE
+        return fallback
     return raw.lower() == "true"
 
 
-DESIGN_LOG_PATHS = _design_flag("DesignLogPaths", MANUAL_DESIGN_LOG_PATHS)
-DESIGN_LOG_MRU = _design_flag("DesignLogMRU", MANUAL_DESIGN_LOG_MRU)
-DESIGN_LOG_OPENING = _design_flag("DesignLogOpening", MANUAL_DESIGN_LOG_OPENING)
-DESIGN_LOG_AUTHOR = _design_flag("DesignLogAuthor", MANUAL_DESIGN_LOG_AUTHOR)
-DESIGN_LOG_COPY_BASE = _design_flag("DesignLogCopyBase", MANUAL_DESIGN_LOG_COPY_BASE)
-DESIGN_LOG_COPY_CUSTOM = _design_flag("DesignLogCopyCustom", MANUAL_DESIGN_LOG_COPY_CUSTOM)
-DESIGN_LOG_BACKUP = _design_flag("DesignLogBackup", MANUAL_DESIGN_LOG_BACKUP)
-DESIGN_LOG_APP_LAUNCH = _design_flag("DesignLogAppLaunch", MANUAL_DESIGN_LOG_APP_LAUNCH)
-DESIGN_LOG_CLOSE_APPS = _design_flag("DesignLogCloseApps", MANUAL_DESIGN_LOG_CLOSE_APPS)
-DESIGN_LOG_INSTALLER = _design_flag("DesignLogInstaller", MANUAL_DESIGN_LOG_INSTALLER)
-DESIGN_LOG_UNINSTALLER = _design_flag("DesignLogUninstaller", MANUAL_DESIGN_LOG_UNINSTALLER)
+DESIGN_LOG_PATHS = _design_flag("DesignLogPaths", MANUAL_DESIGN_LOG_PATHS, DEFAULT_DESIGN_MODE)
+DESIGN_LOG_MRU = _design_flag("DesignLogMRU", MANUAL_DESIGN_LOG_MRU, DEFAULT_DESIGN_MODE)
+DESIGN_LOG_OPENING = _design_flag("DesignLogOpening", MANUAL_DESIGN_LOG_OPENING, DEFAULT_DESIGN_MODE)
+DESIGN_LOG_AUTHOR = _design_flag("DesignLogAuthor", MANUAL_DESIGN_LOG_AUTHOR, DEFAULT_DESIGN_MODE)
+DESIGN_LOG_COPY_BASE = _design_flag("DesignLogCopyBase", MANUAL_DESIGN_LOG_COPY_BASE, DEFAULT_DESIGN_MODE)
+DESIGN_LOG_COPY_CUSTOM = _design_flag("DesignLogCopyCustom", MANUAL_DESIGN_LOG_COPY_CUSTOM, DEFAULT_DESIGN_MODE)
+DESIGN_LOG_BACKUP = _design_flag("DesignLogBackup", MANUAL_DESIGN_LOG_BACKUP, DEFAULT_DESIGN_MODE)
+DESIGN_LOG_APP_LAUNCH = _design_flag("DesignLogAppLaunch", MANUAL_DESIGN_LOG_APP_LAUNCH, DEFAULT_DESIGN_MODE)
+DESIGN_LOG_CLOSE_APPS = _design_flag("DesignLogCloseApps", MANUAL_DESIGN_LOG_CLOSE_APPS, DEFAULT_DESIGN_MODE)
+DESIGN_LOG_INSTALLER = _design_flag("DesignLogInstaller", MANUAL_DESIGN_LOG_INSTALLER, DEFAULT_DESIGN_MODE)
+DESIGN_LOG_UNINSTALLER = _design_flag("DesignLogUninstaller", MANUAL_DESIGN_LOG_UNINSTALLER, DEFAULT_DESIGN_MODE)
+
+
+def refresh_design_log_flags(effective_design_mode: bool) -> None:
+    """Actualiza los flags de diseño para esta ejecución en base al modo efectivo."""
+    global DESIGN_LOG_PATHS, DESIGN_LOG_MRU, DESIGN_LOG_OPENING
+    global DESIGN_LOG_AUTHOR, DESIGN_LOG_COPY_BASE, DESIGN_LOG_COPY_CUSTOM, DESIGN_LOG_BACKUP
+    global DESIGN_LOG_APP_LAUNCH, DESIGN_LOG_CLOSE_APPS, DESIGN_LOG_INSTALLER, DESIGN_LOG_UNINSTALLER
+
+    DESIGN_LOG_PATHS = _design_flag("DesignLogPaths", MANUAL_DESIGN_LOG_PATHS, effective_design_mode)
+    DESIGN_LOG_MRU = _design_flag("DesignLogMRU", MANUAL_DESIGN_LOG_MRU, effective_design_mode)
+    DESIGN_LOG_OPENING = _design_flag("DesignLogOpening", MANUAL_DESIGN_LOG_OPENING, effective_design_mode)
+    DESIGN_LOG_AUTHOR = _design_flag("DesignLogAuthor", MANUAL_DESIGN_LOG_AUTHOR, effective_design_mode)
+    DESIGN_LOG_COPY_BASE = _design_flag("DesignLogCopyBase", MANUAL_DESIGN_LOG_COPY_BASE, effective_design_mode)
+    DESIGN_LOG_COPY_CUSTOM = _design_flag("DesignLogCopyCustom", MANUAL_DESIGN_LOG_COPY_CUSTOM, effective_design_mode)
+    DESIGN_LOG_BACKUP = _design_flag("DesignLogBackup", MANUAL_DESIGN_LOG_BACKUP, effective_design_mode)
+    DESIGN_LOG_APP_LAUNCH = _design_flag("DesignLogAppLaunch", MANUAL_DESIGN_LOG_APP_LAUNCH, effective_design_mode)
+    DESIGN_LOG_CLOSE_APPS = _design_flag("DesignLogCloseApps", MANUAL_DESIGN_LOG_CLOSE_APPS, effective_design_mode)
+    DESIGN_LOG_INSTALLER = _design_flag("DesignLogInstaller", MANUAL_DESIGN_LOG_INSTALLER, effective_design_mode)
+    DESIGN_LOG_UNINSTALLER = _design_flag("DesignLogUninstaller", MANUAL_DESIGN_LOG_UNINSTALLER, effective_design_mode)
 
 DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH = normalize_path(
     os.environ.get("CUSTOM_OFFICE_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_WORD"])
@@ -635,92 +654,6 @@ def open_template_folders(paths: dict[str, Path], design_mode: bool, flags: Inst
                     _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] explorer también falló para %s (%s)", label, exc2)
         except OSError as exc:
             _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] No se pudo abrir carpeta %s (%s)", label, exc)
-
-
-def _mark_folder_open_flag(destination_root: Path, flags: InstallFlags, destinations: dict[str, Path]) -> None:
-    if destination_root == destinations.get("THEMES"):
-        flags.open_theme_folder = True
-    if destination_root in {destinations.get("CUSTOM"), destinations.get("WORD_CUSTOM")}:
-        flags.open_custom_word_folder = True
-    if destination_root == destinations.get("POWERPOINT_CUSTOM"):
-        flags.open_custom_ppt_folder = True
-    if destination_root in {destinations.get("EXCEL_CUSTOM"), destinations.get("CUSTOM_ALT")}:
-        flags.open_custom_excel_folder = True
-    if destination_root == destinations.get("ROAMING"):
-        flags.open_roaming_folder = True
-    if destination_root == destinations.get("EXCEL"):
-        flags.open_excel_startup_folder = True
-
-
-def _update_mru_if_applicable(app_label: str, destination: Path, design_mode: bool) -> None:
-    if not _should_update_mru(destination):
-        return
-    ext = destination.suffix.lower()
-    if ext in {".dotx", ".dotm", ".potx", ".potm", ".xltx", ".xltm"}:
-        update_mru_for_template(app_label, destination, design_mode)
-
-
-def _update_mru_if_applicable_extension(extension: str, destination: Path, design_mode: bool) -> None:
-    if not _should_update_mru(destination):
-        return
-    if extension in {".dotx", ".dotm"}:
-        update_mru_for_template("WORD", destination, design_mode)
-    if extension in {".potx", ".potm"}:
-        update_mru_for_template("POWERPOINT", destination, design_mode)
-    if extension in {".xltx", ".xltm"}:
-        update_mru_for_template("EXCEL", destination, design_mode)
-
-
-def _should_update_mru(path: Path) -> bool:
-    name = path.name
-    ext = path.suffix.lower()
-    if name in BASE_TEMPLATE_NAMES:
-        return False
-    if ext == ".thmx":
-        return False
-    return True
-
-
-def open_template_folders(paths: dict[str, Path], design_mode: bool, flags: InstallFlags | None = None) -> None:
-    if not is_windows():
-        if design_mode:
-            LOGGER.info("[WARN] Apertura de carpetas omitida: no es Windows.")
-        return
-    ordered = [
-        ("THEME_PATH", "open_theme_folder", paths.get("THEME")),
-        ("CUSTOM_WORD_TEMPLATE_PATH", "open_custom_word_folder", paths.get("CUSTOM_WORD")),
-        ("CUSTOM_PPT_TEMPLATE_PATH", "open_custom_ppt_folder", paths.get("CUSTOM_PPT")),
-        ("CUSTOM_EXCEL_TEMPLATE_PATH", "open_custom_excel_folder", paths.get("CUSTOM_EXCEL")),
-        ("ROAMING_TEMPLATE_PATH", "open_roaming_folder", paths.get("ROAMING")),
-        ("EXCEL_STARTUP_PATH", "open_excel_startup_folder", paths.get("EXCEL")),
-        ("CUSTOM_ADDITIONAL_PATH", "open_custom_excel_folder", paths.get("CUSTOM_ADDITIONAL")),
-    ]
-    for label, flag_name, target in ordered:
-        if target is None:
-            continue
-        if flags is not None and not getattr(flags, flag_name, False):
-            continue
-        try:
-            ensure_directory(target)
-            if design_mode and DESIGN_LOG_OPENING:
-                LOGGER.info("[ACTION] Abriendo carpeta %s: %s", label, target)
-                if not target.exists():
-                    LOGGER.warning("[WARN] La carpeta %s no existe tras crearla: %s", label, target)
-            try:
-                os.startfile(str(target))  # type: ignore[arg-type]
-                if design_mode and DESIGN_LOG_OPENING:
-                    LOGGER.info("[OK] startfile lanzado para %s", label)
-            except OSError as exc:
-                if design_mode and DESIGN_LOG_OPENING:
-                    LOGGER.warning("[WARN] startfile falló para %s (%s); usando explorer.", label, exc)
-                try:
-                    subprocess.run(["explorer", str(target)], check=False)
-                except OSError as exc2:
-                    if design_mode and DESIGN_LOG_OPENING:
-                        LOGGER.warning("[WARN] explorer también falló para %s (%s)", label, exc2)
-        except OSError as exc:
-            if design_mode and DESIGN_LOG_OPENING:
-                LOGGER.warning("[WARN] No se pudo abrir carpeta %s (%s)", label, exc)
 
 
 def _mark_folder_open_flag(destination_root: Path, flags: InstallFlags, destinations: dict[str, Path]) -> None:

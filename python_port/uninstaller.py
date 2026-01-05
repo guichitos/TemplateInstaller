@@ -28,6 +28,7 @@ def parse_args() -> argparse.Namespace:
 def main(argv: list[str] | None = None) -> int:
     args = parse_args()
     design_mode = _resolve_design_mode()
+    common.refresh_design_log_flags(design_mode)
     common.configure_logging(design_mode)
 
     base_dir = common.resolve_base_directory(Path.cwd())
