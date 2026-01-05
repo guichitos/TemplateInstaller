@@ -169,7 +169,7 @@ DEFAULT_DOCUMENT_THEME_DELAY_SECONDS = int(
 )
 DEFAULT_DESIGN_MODE = os.environ.get("IsDesignModeEnabled", "false").lower() == "true"
 AUTHOR_VALIDATION_ENABLED = os.environ.get("AuthorValidationEnabled", "TRUE").lower() != "false"
-MRU_VALUE_PREFIX = "[F00000001][T01DC7E6C7AE18500][O00000000]*"
+MRU_VALUE_PREFIX = "[F00000000][T01ED6D7E58D00000][O00000000]*"
 
 
 def _design_flag(env_var: str, manual_override: bool | None, fallback: bool) -> bool:
