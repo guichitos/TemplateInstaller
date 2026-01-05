@@ -4,6 +4,7 @@ from __future__ import annotations
 import logging
 import os
 import shutil
+import subprocess
 import sys
 import zipfile
 from dataclasses import dataclass
@@ -12,6 +13,18 @@ from pathlib import Path
 from typing import Iterable, Iterator, List, Optional
 import xml.etree.ElementTree as ET
 
+
+def normalize_path(path: Path | str | None) -> Path:
+    if path is None:
+        return Path()
+    return Path(str(path).strip().rstrip("\\/"))
+
+
+try:
+    import winreg  # type: ignore[import-not-found]
+except Exception:  # pragma: no cover - entornos no Windows
+    winreg = None  # type: ignore[assignment]
+
 LOGGER = logging.getLogger(__name__)
 
 
@@ -19,8 +32,115 @@ LOGGER = logging.getLogger(__name__)
 # Constantes base
 # --------------------------------------------------------------------------- #
 
-APPDATA_PATH = Path(os.environ.get("APPDATA", Path.home() / "AppData" / "Roaming"))
-DOCUMENTS_PATH = Path(os.environ.get("USERPROFILE", Path.home())) / "Documents"
+_BASE_PATHS = None
+
+
+def _read_registry_value(path: str, name: str) -> Optional[str]:
+    if winreg is None:
+        return None
+    try:
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, path) as key:
+            value, _ = winreg.QueryValueEx(key, name)
+            return os.path.expandvars(str(value))
+    except OSError:
+        return None
+
+
+def _resolve_appdata_path() -> Path:
+    appdata = _read_registry_value(
+        r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders", "AppData"
+    )
+    if not appdata:
+        appdata = os.environ.get("APPDATA")
+    return normalize_path(appdata or (Path.home() / "AppData" / "Roaming"))
+
+
+def _resolve_documents_path() -> Path:
+    documents = _read_registry_value(
+        r"Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders", "Personal"
+    )
+    if not documents:
+        documents = os.environ.get("USERPROFILE")
+        if documents:
+            documents = str(Path(documents) / "Documents")
+    return normalize_path(documents or (Path.home() / "Documents"))
+
+
+def _resolve_custom_template_path(default_custom_dir: Path) -> Path:
+    if winreg:
+        for version in ("16.0", "15.0", "14.0", "12.0"):
+            value = _read_registry_value(
+                fr"Software\Microsoft\Office\{version}\Word\Options", "PersonalTemplates"
+            )
+            if value:
+                return normalize_path(value)
+        for version in ("16.0", "15.0", "14.0", "12.0"):
+            value = _read_registry_value(
+                fr"Software\Microsoft\Office\{version}\Common\General", "UserTemplates"
+            )
+            if value:
+                return normalize_path(value)
+    return normalize_path(default_custom_dir)
+
+
+def _resolve_custom_alt_path(custom_primary: Path, default_custom_dir: Path, default_alt_dir: Path) -> Path:
+    if winreg:
+        for version in ("16.0", "15.0", "14.0", "12.0"):
+            value = _read_registry_value(
+                fr"Software\Microsoft\Office\{version}\PowerPoint\Options", "PersonalTemplates"
+            )
+            if value:
+                return normalize_path(value)
+        for version in ("16.0", "15.0", "14.0", "12.0"):
+            value = _read_registry_value(
+                fr"Software\Microsoft\Office\{version}\Common\General", "UserTemplates"
+            )
+            if value:
+                return normalize_path(value)
+    return normalize_path(custom_primary or default_custom_dir or default_alt_dir)
+
+
+def _resolve_excel_template_path(custom_primary: Path, default_custom_dir: Path, default_alt_dir: Path) -> Path:
+    if winreg:
+        for version in ("16.0", "15.0", "14.0", "12.0"):
+            value = _read_registry_value(
+                fr"Software\Microsoft\Office\{version}\Excel\Options", "PersonalTemplates"
+            )
+            if value:
+                return normalize_path(value)
+        for version in ("16.0", "15.0", "14.0", "12.0"):
+            value = _read_registry_value(
+                fr"Software\Microsoft\Office\{version}\Common\General", "UserTemplates"
+            )
+            if value:
+                return normalize_path(value)
+    return normalize_path(custom_primary or default_custom_dir or default_alt_dir)
+
+
+def _resolve_base_paths() -> dict[str, Path]:
+    documents_path = _resolve_documents_path()
+    default_custom_dir = documents_path / "Custom Office Templates"
+    default_custom_alt_dir = documents_path / "Plantillas personalizadas de Office"
+    custom_word = _resolve_custom_template_path(default_custom_dir)
+    custom_ppt = _resolve_custom_alt_path(custom_word, default_custom_dir, default_custom_alt_dir)
+    custom_excel = _resolve_excel_template_path(custom_word, default_custom_dir, default_custom_alt_dir)
+    appdata_path = _resolve_appdata_path()
+    return {
+        "APPDATA": appdata_path,
+        "DOCUMENTS": documents_path,
+        "CUSTOM_WORD": custom_word,
+        "CUSTOM_PPT": custom_ppt,
+        "CUSTOM_EXCEL": custom_excel,
+        "CUSTOM_ADDITIONAL": default_custom_alt_dir,
+        "THEME": appdata_path / "Microsoft" / "Templates" / "Document Themes",
+        "ROAMING": appdata_path / "Microsoft" / "Templates",
+        "EXCEL_STARTUP": appdata_path / "Microsoft" / "Excel" / "XLSTART",
+    }
+
+
+_BASE_PATHS = _resolve_base_paths()
+APPDATA_PATH = _BASE_PATHS["APPDATA"]
+DOCUMENTS_PATH = _BASE_PATHS["DOCUMENTS"]
 
 DEFAULT_ALLOWED_TEMPLATE_AUTHORS = [
     "www.grada.cc",
@@ -33,31 +153,25 @@ DEFAULT_DOCUMENT_THEME_DELAY_SECONDS = int(
 DEFAULT_DESIGN_MODE = os.environ.get("IsDesignModeEnabled", "false").lower() == "true"
 AUTHOR_VALIDATION_ENABLED = os.environ.get("AuthorValidationEnabled", "TRUE").lower() != "false"
 
-DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH = Path(
-    os.environ.get(
-        "CUSTOM_OFFICE_TEMPLATE_PATH",
-        DOCUMENTS_PATH / "Custom Office Templates",
-    )
+DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH = normalize_path(
+    os.environ.get("CUSTOM_OFFICE_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_WORD"])
 )
-DEFAULT_CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH = Path(
-    os.environ.get(
-        "CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH",
-        DOCUMENTS_PATH / "Plantillas personalizadas de Office",
-    )
+DEFAULT_POWERPOINT_TEMPLATE_PATH = normalize_path(
+    os.environ.get("POWERPOINT_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_PPT"])
 )
-
-DEFAULT_ROAMING_TEMPLATE_FOLDER = Path(
-    os.environ.get(
-        "ROAMING_TEMPLATE_FOLDER_PATH",
-        APPDATA_PATH / "Microsoft" / "Templates",
-    )
+DEFAULT_EXCEL_TEMPLATE_PATH = normalize_path(
+    os.environ.get("EXCEL_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_EXCEL"])
 )
-DEFAULT_EXCEL_STARTUP_FOLDER = Path(
-    os.environ.get(
-        "EXCEL_STARTUP_FOLDER_PATH",
-        APPDATA_PATH / "Microsoft" / "Excel" / "XLSTART",
-    )
+DEFAULT_CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH = normalize_path(
+    os.environ.get("CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_ADDITIONAL"])
 )
+DEFAULT_ROAMING_TEMPLATE_FOLDER = normalize_path(
+    os.environ.get("ROAMING_TEMPLATE_FOLDER_PATH", _BASE_PATHS["ROAMING"])
+)
+DEFAULT_EXCEL_STARTUP_FOLDER = normalize_path(
+    os.environ.get("EXCEL_STARTUP_FOLDER_PATH", _BASE_PATHS["EXCEL_STARTUP"])
+)
+DEFAULT_THEME_FOLDER = normalize_path(_BASE_PATHS["THEME"])
 
 SUPPORTED_TEMPLATE_EXTENSIONS = {
     ".dotx",
@@ -88,12 +202,6 @@ BASE_TEMPLATE_NAMES = {
 # --------------------------------------------------------------------------- #
 
 
-def normalize_path(path: Path | str | None) -> Path:
-    if path is None:
-        return Path()
-    return Path(str(path).strip().rstrip("\\/"))
-
-
 def ensure_directory(path: Path) -> Path:
     path.mkdir(parents=True, exist_ok=True)
     return path
@@ -105,7 +213,7 @@ def iter_template_files(base_dir: Path) -> Iterator[Path]:
 
 
 def resolve_base_directory(base_dir: Path) -> Path:
-    """Replica :ResolveBaseDirectory; busca plantillas en carpeta actual."""
+    """Busca la carpeta que contiene las plantillas dentro de la ruta actual."""
     candidates = [base_dir, base_dir / "payload", base_dir / "templates", base_dir / "extracted"]
     for candidate in candidates:
         if any(candidate.glob("*.dot*")) or any(candidate.glob("*.pot*")) or any(candidate.glob("*.xlt*")):
@@ -162,6 +270,9 @@ def check_template_author(
     if target.is_dir():
         authors_found: list[str] = []
         for file in iter_template_files(target):
+            if file.suffix.lower() == ".thmx":
+                LOGGER.info("Archivo: %s - Autor: [OMITIDO TEMA]", file.name)
+                continue
             author, error = _extract_author(file)
             if error:
                 LOGGER.warning(error)
@@ -180,6 +291,9 @@ def check_template_author(
 
     if not validation_enabled:
         return AuthorCheckResult(True, "[INFO] Validación de autores deshabilitada.", [])
+
+    if target.suffix.lower() == ".thmx":
+        return AuthorCheckResult(True, "[INFO] Validación de autor omitida para temas.", [])
 
     author, error = _extract_author(target)
     if error:
@@ -211,15 +325,15 @@ def _extract_author(template_path: Path) -> tuple[Optional[str], Optional[str]]:
                 with zipped.open("docProps/core.xml") as core_file:
                     tree = ET.fromstring(core_file.read())
             except KeyError:
-                return None, "[WARN] No se pudo obtener el autor (core.xml ausente)."
+                return None, f"[WARN] No se pudo obtener el autor para \"{template_path.name}\" (core.xml ausente)."
     except Exception as exc:  # noqa: BLE001
-        return None, f"[ERROR] {exc}"
+        return None, f"[ERROR] {template_path.name}: {exc}"
 
     for candidate in ("{http://purl.org/dc/elements/1.1/}creator", "creator"):
         node = tree.find(candidate)
         if node is not None and node.text:
             return node.text.strip(), None
-    return None, "[WARN] Archivo sin autor definido."
+    return None, f"[WARN] \"{template_path.name}\" sin autor definido."
 
 
 # --------------------------------------------------------------------------- #
@@ -275,6 +389,8 @@ def install_template(
     try:
         ensure_parents_and_copy(source, destination)
         flags.totals["files"] += 1
+        if design_mode:
+            LOGGER.info("[OK] Copiado %s a %s", filename, destination)
     except OSError as exc:
         flags.totals["errors"] += 1
         LOGGER.error("[ERROR] Falló la copia de %s (%s)", filename, exc)
@@ -308,7 +424,14 @@ def copy_custom_templates(base_dir: Path, destinations: dict[str, Path], flags: 
         extension = file.suffix.lower()
         if filename in BASE_TEMPLATE_NAMES:
             continue
-        destination_root = _destination_for_extension(extension, destinations)
+        if extension in {".xltx", ".xltm"}:
+            destination_root = destinations["EXCEL_CUSTOM"]
+        elif extension in {".dotx", ".dotm"}:
+            destination_root = destinations["WORD_CUSTOM"]
+        elif extension in {".potx", ".potm"}:
+            destination_root = destinations["POWERPOINT_CUSTOM"]
+        else:
+            destination_root = _destination_for_extension(extension, destinations)
         if destination_root is None:
             if design_mode:
                 LOGGER.warning("[WARNING] No hay destino para %s", filename)
@@ -395,6 +518,44 @@ def backup_existing(target_file: Path, design_mode: bool) -> None:
         LOGGER.warning("[WARN] No se pudo crear backup de %s (%s)", target_file, exc)
 
 
+def open_template_folders(paths: dict[str, Path], design_mode: bool) -> None:
+    if not is_windows():
+        if design_mode:
+            LOGGER.info("[WARN] Apertura de carpetas omitida: no es Windows.")
+        return
+    ordered = [
+        ("THEME_PATH", paths.get("THEME")),
+        ("CUSTOM_WORD_TEMPLATE_PATH", paths.get("CUSTOM_WORD")),
+        ("CUSTOM_PPT_TEMPLATE_PATH", paths.get("CUSTOM_PPT")),
+        ("CUSTOM_EXCEL_TEMPLATE_PATH", paths.get("CUSTOM_EXCEL")),
+        ("ROAMING_TEMPLATE_PATH", paths.get("ROAMING")),
+        ("EXCEL_STARTUP_PATH", paths.get("EXCEL")),
+        ("CUSTOM_ADDITIONAL_PATH", paths.get("CUSTOM_ADDITIONAL")),
+    ]
+    for label, target in ordered:
+        if target is None:
+            continue
+        try:
+            ensure_directory(target)
+            if design_mode:
+                LOGGER.info("[ACTION] Abriendo carpeta %s: %s", label, target)
+                if not target.exists():
+                    LOGGER.warning("[WARN] La carpeta %s no existe tras crearla: %s", label, target)
+            try:
+                os.startfile(str(target))  # type: ignore[arg-type]
+                if design_mode:
+                    LOGGER.info("[OK] startfile lanzado para %s", label)
+            except OSError as exc:
+                if design_mode:
+                    LOGGER.warning("[WARN] startfile falló para %s (%s); usando explorer.", label, exc)
+                try:
+                    subprocess.run(["explorer", str(target)], check=False)
+                except OSError as exc2:
+                    LOGGER.warning("[WARN] explorer también falló para %s (%s)", label, exc2)
+        except OSError as exc:
+            LOGGER.warning("[WARN] No se pudo abrir carpeta %s (%s)", label, exc)
+
+
 # --------------------------------------------------------------------------- #
 # Utilidades plataforma
 # --------------------------------------------------------------------------- #
@@ -442,15 +603,62 @@ def launch_office_apps(flags: InstallFlags, design_mode: bool) -> None:
 
 
 def default_destinations() -> dict[str, Path]:
+    paths = resolve_template_paths()
     return {
-        "WORD": DEFAULT_ROAMING_TEMPLATE_FOLDER,
-        "POWERPOINT": DEFAULT_ROAMING_TEMPLATE_FOLDER,
-        "EXCEL": DEFAULT_EXCEL_STARTUP_FOLDER,
-        "CUSTOM": DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH,
-        "CUSTOM_ALT": DEFAULT_CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH,
-        "ROAMING": DEFAULT_ROAMING_TEMPLATE_FOLDER,
-        "THEMES": DEFAULT_ROAMING_TEMPLATE_FOLDER / "Document Themes",
+        "WORD": paths["ROAMING"],
+        "POWERPOINT": paths["ROAMING"],
+        "EXCEL": paths["EXCEL"],
+        "CUSTOM": paths["CUSTOM_WORD"],
+        "CUSTOM_ALT": paths["CUSTOM_ADDITIONAL"],
+        "WORD_CUSTOM": paths["CUSTOM_WORD"],
+        "POWERPOINT_CUSTOM": paths["CUSTOM_PPT"],
+        "EXCEL_CUSTOM": paths["CUSTOM_EXCEL"],
+        "ROAMING": paths["ROAMING"],
+        "THEMES": paths["THEME"],
     }
+
+
+def resolve_template_paths() -> dict[str, Path]:
+    return {
+        "THEME": DEFAULT_THEME_FOLDER,
+        "CUSTOM_WORD": DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH,
+        "CUSTOM_PPT": DEFAULT_POWERPOINT_TEMPLATE_PATH or DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH,
+        "CUSTOM_EXCEL": DEFAULT_EXCEL_TEMPLATE_PATH or DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH,
+        "CUSTOM_ADDITIONAL": DEFAULT_CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH,
+        "ROAMING": DEFAULT_ROAMING_TEMPLATE_FOLDER,
+        "EXCEL": DEFAULT_EXCEL_STARTUP_FOLDER,
+    }
+
+
+def log_template_paths(paths: dict[str, Path], design_mode: bool) -> None:
+    logger = logging.getLogger(__name__)
+    logger.info("================= RUTAS CALCULADAS =================")
+    logger.info("THEME_PATH                  = %s", paths["THEME"])
+    logger.info("CUSTOM_WORD_TEMPLATE_PATH   = %s", paths["CUSTOM_WORD"])
+    logger.info("CUSTOM_PPT_TEMPLATE_PATH    = %s", paths["CUSTOM_PPT"])
+    logger.info("CUSTOM_EXCEL_TEMPLATE_PATH  = %s", paths["CUSTOM_EXCEL"])
+    logger.info("CUSTOM_ADDITIONAL_PATH      = %s", paths["CUSTOM_ADDITIONAL"])
+    logger.info("ROAMING_TEMPLATE_PATH       = %s", paths["ROAMING"])
+    logger.info("EXCEL_STARTUP_PATH          = %s", paths["EXCEL"])
+    logger.info("====================================================")
+
+
+def log_registry_sources(design_mode: bool) -> None:
+    if not design_mode:
+        return
+    logger = logging.getLogger(__name__)
+    word_personal = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Word\\Options", "PersonalTemplates")
+    word_user = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Common\\General", "UserTemplates")
+    ppt_personal = _read_registry_value(r"Software\Microsoft\Office\\16.0\\PowerPoint\\Options", "PersonalTemplates")
+    ppt_user = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Common\\General", "UserTemplates")
+    excel_personal = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Excel\\Options", "PersonalTemplates")
+    excel_user = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Common\\General", "UserTemplates")
+    logger.info("[REG] Word PersonalTemplates: %s", word_personal or "[no valor]")
+    logger.info("[REG] Word UserTemplates: %s", word_user or "[no valor]")
+    logger.info("[REG] PowerPoint PersonalTemplates: %s", ppt_personal or "[no valor]")
+    logger.info("[REG] PowerPoint UserTemplates: %s", ppt_user or "[no valor]")
+    logger.info("[REG] Excel PersonalTemplates: %s", excel_personal or "[no valor]")
+    logger.info("[REG] Excel UserTemplates: %s", excel_user or "[no valor]")
 
 
 def _destination_for_extension(extension: str, destinations: dict[str, Path]) -> Optional[Path]:
