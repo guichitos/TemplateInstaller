@@ -27,6 +27,15 @@ except Exception:  # pragma: no cover - entornos no Windows
 
 LOGGER = logging.getLogger(__name__)
 
+# --------------------------------------------------------------------------- #
+# Flags manuales de diseño (override de variables de entorno)
+# --------------------------------------------------------------------------- #
+# Pon en True/False para forzar logs por categoría; deja en None para usar
+# la variable de entorno correspondiente o, en su defecto, IsDesignModeEnabled.
+MANUAL_DESIGN_LOG_PATHS: bool | None = None
+MANUAL_DESIGN_LOG_MRU: bool | None = None
+MANUAL_DESIGN_LOG_OPENING: bool | None = None
+
 
 # --------------------------------------------------------------------------- #
 # Constantes base
@@ -154,16 +163,18 @@ DEFAULT_DESIGN_MODE = os.environ.get("IsDesignModeEnabled", "false").lower() == 
 AUTHOR_VALIDATION_ENABLED = os.environ.get("AuthorValidationEnabled", "TRUE").lower() != "false"
 
 
-def _design_flag(env_var: str) -> bool:
+def _design_flag(env_var: str, manual_override: bool | None) -> bool:
+    if manual_override is not None:
+        return bool(manual_override)
     raw = os.environ.get(env_var)
     if raw is None:
         return DEFAULT_DESIGN_MODE
     return raw.lower() == "true"
 
 
-DESIGN_LOG_PATHS = _design_flag("DesignLogPaths")
-DESIGN_LOG_MRU = _design_flag("DesignLogMRU")
-DESIGN_LOG_OPENING = _design_flag("DesignLogOpening")
+DESIGN_LOG_PATHS = _design_flag("DesignLogPaths", MANUAL_DESIGN_LOG_PATHS)
+DESIGN_LOG_MRU = _design_flag("DesignLogMRU", MANUAL_DESIGN_LOG_MRU)
+DESIGN_LOG_OPENING = _design_flag("DesignLogOpening", MANUAL_DESIGN_LOG_OPENING)
 
 DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH = normalize_path(
     os.environ.get("CUSTOM_OFFICE_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_WORD"])
