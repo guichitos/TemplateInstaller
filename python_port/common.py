@@ -869,7 +869,7 @@ def _write_mru_entry(reg_path: str, file_path: Path, design_mode: bool) -> None:
         return
     with key:
         # Leer entradas existentes
-        existing_items: list[tuple[int, str, str]] = []
+        existing_items: list[tuple[int, str]] = []
         index = 0
         try:
             while True:
@@ -882,18 +882,21 @@ def _write_mru_entry(reg_path: str, file_path: Path, design_mode: bool) -> None:
                         num = int(name.split(" ", 1)[1])
                     except Exception:
                         num = 0
-                    existing_items.append((num, name, value))
+                    if isinstance(value, str):
+                        extracted = _extract_mru_path(value)
+                        if extracted:
+                            existing_items.append((num, extracted))
                 index += 1
         except OSError:
             pass
         # Filtrar duplicados del mismo path
         filtered = []
-        for _, name, value in existing_items:
-            if isinstance(value, str) and full_path.lower() in value.lower():
+        for _, value in existing_items:
+            if full_path.lower() == value.lower():
                 continue
-            filtered.append((name, value))
+            filtered.append(value)
         # Preparar nueva lista con el archivo al frente
-        new_entries: list[str] = [full_path] + [val for _, val in filtered]
+        new_entries: list[str] = [full_path] + filtered
         # Limitar, p.ej., a 10 entradas
         new_entries = new_entries[:10]
         # Reescribir
@@ -902,13 +905,20 @@ def _write_mru_entry(reg_path: str, file_path: Path, design_mode: bool) -> None:
             meta_name = f"Item Metadata {idx}"
             reg_value = f"[F00000000][T0000000000000000][O00000000]*{entry}"
             meta_value = f"<Metadata><AppSpecific><id>{entry}</id><nm>{basename}</nm><du>{entry}</du></AppSpecific></Metadata>"
-            if design_mode and DESIGN_LOG_MRU:
-                LOGGER.info("[MRU] Escribiendo %s='%s' en %s", item_name, reg_value, reg_path)
-                LOGGER.info("[MRU] Escribiendo %s='%s' en %s", meta_name, meta_value, reg_path)
+            _design_log(DESIGN_LOG_MRU, design_mode, logging.INFO, "[MRU] %s -> %s", item_name, entry)
+            _design_log(DESIGN_LOG_MRU, design_mode, logging.DEBUG, "[MRU] %s (nombre=%s)", meta_name, basename)
             winreg.SetValueEx(key, item_name, 0, winreg.REG_SZ, reg_value)
             winreg.SetValueEx(key, meta_name, 0, winreg.REG_SZ, meta_value)
-        if design_mode and DESIGN_LOG_MRU:
-            LOGGER.info("[MRU] %s actualizado con %s", reg_path, full_path)
+        _design_log(DESIGN_LOG_MRU, design_mode, logging.INFO, "[MRU] %s actualizado con %s", reg_path, full_path)
+
+
+def _extract_mru_path(raw_value: str) -> Optional[str]:
+    if not raw_value:
+        return None
+    if "*" in raw_value:
+        candidate = raw_value.split("*")[-1]
+        return candidate.strip() or None
+    return raw_value.strip() or None
 def _destination_for_extension(extension: str, destinations: dict[str, Path]) -> Optional[Path]:
     if extension in {".dotx", ".dotm"}:
         return destinations["WORD"]
