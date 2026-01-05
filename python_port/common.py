@@ -35,6 +35,14 @@ LOGGER = logging.getLogger(__name__)
 MANUAL_DESIGN_LOG_PATHS: bool | None = None
 MANUAL_DESIGN_LOG_MRU: bool | None = None
 MANUAL_DESIGN_LOG_OPENING: bool | None = None
+MANUAL_DESIGN_LOG_AUTHOR: bool | None = None
+MANUAL_DESIGN_LOG_COPY_BASE: bool | None = None
+MANUAL_DESIGN_LOG_COPY_CUSTOM: bool | None = None
+MANUAL_DESIGN_LOG_BACKUP: bool | None = None
+MANUAL_DESIGN_LOG_APP_LAUNCH: bool | None = None
+MANUAL_DESIGN_LOG_CLOSE_APPS: bool | None = None
+MANUAL_DESIGN_LOG_INSTALLER: bool | None = None
+MANUAL_DESIGN_LOG_UNINSTALLER: bool | None = None
 
 
 # --------------------------------------------------------------------------- #
@@ -175,6 +183,14 @@ def _design_flag(env_var: str, manual_override: bool | None) -> bool:
 DESIGN_LOG_PATHS = _design_flag("DesignLogPaths", MANUAL_DESIGN_LOG_PATHS)
 DESIGN_LOG_MRU = _design_flag("DesignLogMRU", MANUAL_DESIGN_LOG_MRU)
 DESIGN_LOG_OPENING = _design_flag("DesignLogOpening", MANUAL_DESIGN_LOG_OPENING)
+DESIGN_LOG_AUTHOR = _design_flag("DesignLogAuthor", MANUAL_DESIGN_LOG_AUTHOR)
+DESIGN_LOG_COPY_BASE = _design_flag("DesignLogCopyBase", MANUAL_DESIGN_LOG_COPY_BASE)
+DESIGN_LOG_COPY_CUSTOM = _design_flag("DesignLogCopyCustom", MANUAL_DESIGN_LOG_COPY_CUSTOM)
+DESIGN_LOG_BACKUP = _design_flag("DesignLogBackup", MANUAL_DESIGN_LOG_BACKUP)
+DESIGN_LOG_APP_LAUNCH = _design_flag("DesignLogAppLaunch", MANUAL_DESIGN_LOG_APP_LAUNCH)
+DESIGN_LOG_CLOSE_APPS = _design_flag("DesignLogCloseApps", MANUAL_DESIGN_LOG_CLOSE_APPS)
+DESIGN_LOG_INSTALLER = _design_flag("DesignLogInstaller", MANUAL_DESIGN_LOG_INSTALLER)
+DESIGN_LOG_UNINSTALLER = _design_flag("DesignLogUninstaller", MANUAL_DESIGN_LOG_UNINSTALLER)
 
 DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH = normalize_path(
     os.environ.get("CUSTOM_OFFICE_TEMPLATE_PATH", _BASE_PATHS["CUSTOM_WORD"])
@@ -258,6 +274,11 @@ def ensure_parents_and_copy(source: Path, destination: Path) -> None:
     shutil.copy2(source, destination)
 
 
+def _design_log(enabled: bool, design_mode: bool, level: int, message: str, *args: object) -> None:
+    if design_mode and enabled:
+        LOGGER.log(level, message, *args)
+
+
 # --------------------------------------------------------------------------- #
 # Autoría
 # --------------------------------------------------------------------------- #
@@ -278,6 +299,7 @@ def check_template_author(
     target: Path,
     allowed_authors: Iterable[str] | None = None,
     validation_enabled: bool = True,
+    design_mode: bool = False,
 ) -> AuthorCheckResult:
     allowed = _normalize_allowed_authors(allowed_authors or DEFAULT_ALLOWED_TEMPLATE_AUTHORS)
     target = normalize_path(target)
@@ -294,16 +316,16 @@ def check_template_author(
         authors_found: list[str] = []
         for file in iter_template_files(target):
             if file.suffix.lower() == ".thmx":
-                LOGGER.info("Archivo: %s - Autor: [OMITIDO TEMA]", file.name)
+                _design_log(DESIGN_LOG_AUTHOR, design_mode, logging.INFO, "Archivo: %s - Autor: [OMITIDO TEMA]", file.name)
                 continue
             author, error = _extract_author(file)
             if error:
-                LOGGER.warning(error)
+                _design_log(DESIGN_LOG_AUTHOR, design_mode, logging.WARNING, error)
             if author:
                 authors_found.append(author)
-                LOGGER.info("Archivo: %s - Autor: %s", file.name, author)
+                _design_log(DESIGN_LOG_AUTHOR, design_mode, logging.INFO, "Archivo: %s - Autor: %s", file.name, author)
             else:
-                LOGGER.info("Archivo: %s - Autor: [VACÍO]", file.name)
+                _design_log(DESIGN_LOG_AUTHOR, design_mode, logging.INFO, "Archivo: %s - Autor: [VACÍO]", file.name)
 
         message = (
             f"[INFO] Autores listados para la carpeta \"{target}\"."
@@ -403,15 +425,18 @@ def install_template(
     destination = destination_root / filename
 
     if not source.exists():
-        if design_mode:
-            LOGGER.warning("[WARNING] Archivo fuente no encontrado: %s", source)
+        _design_log(DESIGN_LOG_COPY_BASE, design_mode, logging.WARNING, "[WARNING] Archivo fuente no encontrado: %s", source)
         flags.totals["errors"] += 1
         return
 
-    author_check = check_template_author(source, allowed_authors=allowed_authors, validation_enabled=validation_enabled)
+    author_check = check_template_author(
+        source,
+        allowed_authors=allowed_authors,
+        validation_enabled=validation_enabled,
+        design_mode=design_mode,
+    )
     if not author_check.allowed:
-        if design_mode:
-            LOGGER.warning(author_check.message)
+        _design_log(DESIGN_LOG_AUTHOR, design_mode, logging.WARNING, author_check.message)
         flags.totals["blocked"] += 1
         return
 
@@ -419,13 +444,12 @@ def install_template(
     try:
         ensure_parents_and_copy(source, destination)
         flags.totals["files"] += 1
-        if design_mode:
-            LOGGER.info("[OK] Copiado %s a %s", filename, destination)
+        _design_log(DESIGN_LOG_COPY_BASE, design_mode, logging.INFO, "[OK] Copiado %s a %s", filename, destination)
         _mark_folder_open_flag(destination_root, flags, destinations_map)
         _update_mru_if_applicable(app_label, destination, design_mode)
     except OSError as exc:
         flags.totals["errors"] += 1
-        LOGGER.error("[ERROR] Falló la copia de %s (%s)", filename, exc)
+        _design_log(DESIGN_LOG_COPY_BASE, design_mode, logging.ERROR, "[ERROR] Falló la copia de %s (%s)", filename, exc)
         return
 
     if app_label == "WORD":
@@ -467,27 +491,36 @@ def copy_custom_templates(base_dir: Path, destinations: dict[str, Path], flags: 
         else:
             destination_root = _destination_for_extension(extension, destinations)
         if destination_root is None:
-            if design_mode:
-                LOGGER.warning("[WARNING] No hay destino para %s", filename)
+            _design_log(DESIGN_LOG_COPY_CUSTOM, design_mode, logging.WARNING, "[WARNING] No hay destino para %s", filename)
             continue
 
-        result = check_template_author(file, allowed_authors=allowed, validation_enabled=validation_enabled)
+        result = check_template_author(
+            file,
+            allowed_authors=allowed,
+            validation_enabled=validation_enabled,
+            design_mode=design_mode,
+        )
         if not result.allowed:
             flags.totals["blocked"] += 1
-            if design_mode:
-                LOGGER.warning(result.message)
+            _design_log(DESIGN_LOG_AUTHOR, design_mode, logging.WARNING, result.message)
             continue
 
         try:
             ensure_parents_and_copy(file, destination_root / filename)
             flags.totals["files"] += 1
             _mark_folder_open_flag(destination_root, flags, destinations)
-            if design_mode:
-                LOGGER.info("[OK] Copiado %s a %s", filename, destination_root / filename)
+            _design_log(
+                DESIGN_LOG_COPY_CUSTOM,
+                design_mode,
+                logging.INFO,
+                "[OK] Copiado %s a %s",
+                filename,
+                destination_root / filename,
+            )
             _update_mru_if_applicable_extension(extension, destination_root / filename, design_mode)
         except OSError as exc:
             flags.totals["errors"] += 1
-            LOGGER.error("[ERROR] Falló la copia de %s (%s)", filename, exc)
+            _design_log(DESIGN_LOG_COPY_CUSTOM, design_mode, logging.ERROR, "[ERROR] Falló la copia de %s (%s)", filename, exc)
             continue
 
         if extension in {".dotx", ".dotm"}:
@@ -528,10 +561,9 @@ def remove_installed_templates(destinations: dict[str, Path], design_mode: bool)
             try:
                 if target.exists():
                     target.unlink()
-                    if design_mode:
-                        LOGGER.info("[INFO] Eliminado %s", target)
+                    _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", target)
             except OSError as exc:
-                LOGGER.warning("[WARN] No se pudo eliminar %s (%s)", target, exc)
+                _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", target, exc)
 
 
 def delete_custom_copies(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
@@ -543,10 +575,9 @@ def delete_custom_copies(base_dir: Path, destinations: dict[str, Path], design_m
             try:
                 if candidate.exists():
                     candidate.unlink()
-                    if design_mode:
-                        LOGGER.info("[INFO] Eliminado %s", candidate)
+                    _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", candidate)
             except OSError as exc:
-                LOGGER.warning("[WARN] No se pudo eliminar %s (%s)", candidate, exc)
+                _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", candidate, exc)
 
 
 def backup_existing(target_file: Path, design_mode: bool) -> None:
@@ -558,10 +589,96 @@ def backup_existing(target_file: Path, design_mode: bool) -> None:
     backup_path = backup_dir / f"{timestamp}_{target_file.name}"
     try:
         shutil.copy2(target_file, backup_path)
-        if design_mode:
-            LOGGER.info("[BACKUP] Copia creada en %s", backup_path)
+        _design_log(DESIGN_LOG_BACKUP, design_mode, logging.INFO, "[BACKUP] Copia creada en %s", backup_path)
     except OSError as exc:
-        LOGGER.warning("[WARN] No se pudo crear backup de %s (%s)", target_file, exc)
+        _design_log(
+            DESIGN_LOG_BACKUP,
+            design_mode,
+            logging.WARNING,
+            "[WARN] No se pudo crear backup de %s (%s)",
+            target_file,
+            exc,
+        )
+
+
+def open_template_folders(paths: dict[str, Path], design_mode: bool, flags: InstallFlags | None = None) -> None:
+    if not is_windows():
+        _design_log(DESIGN_LOG_OPENING, design_mode, logging.INFO, "[WARN] Apertura de carpetas omitida: no es Windows.")
+        return
+    ordered = [
+        ("THEME_PATH", "open_theme_folder", paths.get("THEME")),
+        ("CUSTOM_WORD_TEMPLATE_PATH", "open_custom_word_folder", paths.get("CUSTOM_WORD")),
+        ("CUSTOM_PPT_TEMPLATE_PATH", "open_custom_ppt_folder", paths.get("CUSTOM_PPT")),
+        ("CUSTOM_EXCEL_TEMPLATE_PATH", "open_custom_excel_folder", paths.get("CUSTOM_EXCEL")),
+        ("ROAMING_TEMPLATE_PATH", "open_roaming_folder", paths.get("ROAMING")),
+        ("EXCEL_STARTUP_PATH", "open_excel_startup_folder", paths.get("EXCEL")),
+        ("CUSTOM_ADDITIONAL_PATH", "open_custom_excel_folder", paths.get("CUSTOM_ADDITIONAL")),
+    ]
+    for label, flag_name, target in ordered:
+        if target is None:
+            continue
+        if flags is not None and not getattr(flags, flag_name, False):
+            continue
+        try:
+            ensure_directory(target)
+            if not target.exists():
+                _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] La carpeta %s no existe tras crearla: %s", label, target)
+            _design_log(DESIGN_LOG_OPENING, design_mode, logging.INFO, "[ACTION] Abriendo carpeta %s: %s", label, target)
+            try:
+                os.startfile(str(target))  # type: ignore[arg-type]
+                _design_log(DESIGN_LOG_OPENING, design_mode, logging.INFO, "[OK] startfile lanzado para %s", label)
+            except OSError as exc:
+                _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] startfile falló para %s (%s); usando explorer.", label, exc)
+                try:
+                    subprocess.run(["explorer", str(target)], check=False)
+                except OSError as exc2:
+                    _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] explorer también falló para %s (%s)", label, exc2)
+        except OSError as exc:
+            _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] No se pudo abrir carpeta %s (%s)", label, exc)
+
+
+def _mark_folder_open_flag(destination_root: Path, flags: InstallFlags, destinations: dict[str, Path]) -> None:
+    if destination_root == destinations.get("THEMES"):
+        flags.open_theme_folder = True
+    if destination_root in {destinations.get("CUSTOM"), destinations.get("WORD_CUSTOM")}:
+        flags.open_custom_word_folder = True
+    if destination_root == destinations.get("POWERPOINT_CUSTOM"):
+        flags.open_custom_ppt_folder = True
+    if destination_root in {destinations.get("EXCEL_CUSTOM"), destinations.get("CUSTOM_ALT")}:
+        flags.open_custom_excel_folder = True
+    if destination_root == destinations.get("ROAMING"):
+        flags.open_roaming_folder = True
+    if destination_root == destinations.get("EXCEL"):
+        flags.open_excel_startup_folder = True
+
+
+def _update_mru_if_applicable(app_label: str, destination: Path, design_mode: bool) -> None:
+    if not _should_update_mru(destination):
+        return
+    ext = destination.suffix.lower()
+    if ext in {".dotx", ".dotm", ".potx", ".potm", ".xltx", ".xltm"}:
+        update_mru_for_template(app_label, destination, design_mode)
+
+
+def _update_mru_if_applicable_extension(extension: str, destination: Path, design_mode: bool) -> None:
+    if not _should_update_mru(destination):
+        return
+    if extension in {".dotx", ".dotm"}:
+        update_mru_for_template("WORD", destination, design_mode)
+    if extension in {".potx", ".potm"}:
+        update_mru_for_template("POWERPOINT", destination, design_mode)
+    if extension in {".xltx", ".xltm"}:
+        update_mru_for_template("EXCEL", destination, design_mode)
+
+
+def _should_update_mru(path: Path) -> bool:
+    name = path.name
+    ext = path.suffix.lower()
+    if name in BASE_TEMPLATE_NAMES:
+        return False
+    if ext == ".thmx":
+        return False
+    return True
 
 
 def open_template_folders(paths: dict[str, Path], design_mode: bool, flags: InstallFlags | None = None) -> None:
@@ -666,14 +783,12 @@ def close_office_apps(design_mode: bool) -> None:
         try:
             os.system(f"taskkill /IM {exe} /F >nul 2>&1")
         except OSError:
-            if design_mode:
-                LOGGER.debug("[DEBUG] No se pudo cerrar %s", exe)
+            _design_log(DESIGN_LOG_CLOSE_APPS, design_mode, logging.DEBUG, "[DEBUG] No se pudo cerrar %s", exe)
 
 
 def launch_office_apps(flags: InstallFlags, design_mode: bool) -> None:
     if not is_windows():
-        if design_mode:
-            LOGGER.info("[WARN] Apertura de aplicaciones omitida: no es Windows.")
+        _design_log(DESIGN_LOG_APP_LAUNCH, design_mode, logging.INFO, "[WARN] Apertura de aplicaciones omitida: no es Windows.")
         return
     launches = []
     if flags.open_word:
@@ -684,11 +799,10 @@ def launch_office_apps(flags: InstallFlags, design_mode: bool) -> None:
         launches.append(("excel.exe", "Microsoft Excel"))
     for exe, label in launches:
         try:
-            if design_mode:
-                LOGGER.info("[ACTION] Lanzando %s", label)
+            _design_log(DESIGN_LOG_APP_LAUNCH, design_mode, logging.INFO, "[ACTION] Lanzando %s", label)
             os.startfile(exe)  # type: ignore[arg-type]
         except OSError as exc:
-            LOGGER.warning("[WARN] No se pudo iniciar %s (%s)", label, exc)
+            _design_log(DESIGN_LOG_APP_LAUNCH, design_mode, logging.WARNING, "[WARN] No se pudo iniciar %s (%s)", label, exc)
 
 
 # --------------------------------------------------------------------------- #

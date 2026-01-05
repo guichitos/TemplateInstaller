@@ -36,7 +36,7 @@ def main(argv: list[str] | None = None) -> int:
             '[ERROR] No se recibió la ruta de las plantillas. Ejecute el desinstalador desde "1. Pin templates..." para que se le pase la carpeta correcta.'
         )
 
-    if design_mode:
+    if design_mode and common.DESIGN_LOG_UNINSTALLER:
         logging.getLogger(__name__).info("[INFO] Desinstalando desde: %s", base_dir)
 
     common.close_office_apps(design_mode)
@@ -45,7 +45,7 @@ def main(argv: list[str] | None = None) -> int:
     common.remove_installed_templates(destinations, design_mode)
     common.delete_custom_copies(base_dir, destinations, design_mode)
 
-    if design_mode:
+    if design_mode and common.DESIGN_LOG_UNINSTALLER:
         logging.getLogger(__name__).info("[FINAL] Desinstalación completada.")
     else:
         print("Ready")

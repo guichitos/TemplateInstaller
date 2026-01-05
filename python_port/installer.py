@@ -45,7 +45,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     resolved_paths = common.resolve_template_paths()
     common.log_registry_sources(design_mode)
     common.log_template_paths(resolved_paths, design_mode)
-    if design_mode:
+    if design_mode and common.DESIGN_LOG_PATHS:
         logging.getLogger(__name__).info(
             "[INFO] Carpeta de plantillas extra WORD: %s", resolved_paths["CUSTOM_WORD"]
         )
@@ -72,9 +72,10 @@ def main(argv: Iterable[str] | None = None) -> int:
             Path(args.check_author),
             allowed_authors=allowed_authors,
             validation_enabled=validation_enabled,
+            design_mode=design_mode,
         )
         print(result.as_cli_output())
-        if design_mode:
+        if design_mode and common.DESIGN_LOG_AUTHOR:
             logging.getLogger(__name__).info(result.message)
         return 0 if result.allowed else 1
 
@@ -124,7 +125,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     common.open_template_folders(resolved_paths, design_mode, flags)
 
     if flags.open_document_theme and common.DEFAULT_DOCUMENT_THEME_DELAY_SECONDS > 0:
-        if design_mode:
+        if design_mode and common.DESIGN_LOG_APP_LAUNCH:
             logging.getLogger(__name__).info(
                 "[INFO] Esperando %s segundos antes de abrir aplicaciones...",
                 common.DEFAULT_DOCUMENT_THEME_DELAY_SECONDS,
@@ -133,7 +134,7 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     common.launch_office_apps(flags, design_mode)
 
-    if design_mode:
+    if design_mode and common.DESIGN_LOG_INSTALLER:
         logging.getLogger(__name__).info(
             "[FINAL] Instalación completada. Archivos copiados=%s, errores=%s, bloqueados=%s.",
             flags.totals["files"],
@@ -146,7 +147,7 @@ def main(argv: Iterable[str] | None = None) -> int:
 
 
 def _print_intro(base_dir: Path, design_mode: bool) -> None:
-    if design_mode:
+    if design_mode and common.DESIGN_LOG_INSTALLER:
         logging.getLogger(__name__).info("[DEBUG] Modo diseño habilitado=true")
         logging.getLogger(__name__).info("[INFO] Carpeta base: %s", base_dir)
     else:
