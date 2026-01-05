@@ -1,8 +1,6 @@
-"""Instalador monolítico (sin dependencias externas)."""
 from __future__ import annotations
 
 import argparse
-import logging
 import os
 import shutil
 import subprocess
@@ -16,19 +14,9 @@ from typing import Iterable, Iterator, List, Optional, Set
 import xml.etree.ElementTree as ET
 
 
-# Configuración manual para el modo diseño.
-# - Establece en True para forzar modo diseño siempre.
-# - Establece en False para desactivarlo siempre.
-# - Deja en None para usar la lógica normal basada en entorno.
-MANUAL_IS_DESIGN_MODE: bool | None = True
-
-# --------------------------------------------------------------------------- #
-# Flags manuales de diseño (override de variables de entorno)
-# --------------------------------------------------------------------------- #
-# Pon en True/False para forzar logs por categoría; deja en None para usar
-# la variable de entorno correspondiente o, en su defecto, IsDesignModeEnabled.
+MANUAL_IS_DESIGN_MODE: bool | None = False
 MANUAL_DESIGN_LOG_PATHS: bool | None = False
-MANUAL_DESIGN_LOG_MRU: bool | None = True
+MANUAL_DESIGN_LOG_MRU: bool | None = False
 MANUAL_DESIGN_LOG_OPENING: bool | None = False
 MANUAL_DESIGN_LOG_AUTHOR: bool | None = False
 MANUAL_DESIGN_LOG_COPY_BASE: bool | None = False
@@ -44,11 +32,7 @@ try:
 except Exception:  # pragma: no cover - entornos no Windows
     winreg = None  # type: ignore[assignment]
 
-LOGGER = logging.getLogger(__name__)
-
-# --------------------------------------------------------------------------- #
-# Constantes base
-# --------------------------------------------------------------------------- #
+LOGGER = None
 
 _BASE_PATHS = None
 
@@ -171,21 +155,14 @@ DEFAULT_ALLOWED_TEMPLATE_AUTHORS = [
     "www.gradaz.com",
 ]
 
-DEFAULT_DOCUMENT_THEME_DELAY_SECONDS = int(
-    os.environ.get("DOCUMENT_THEME_OPEN_DELAY_SECONDS", "0") or 0
-)
-DEFAULT_DESIGN_MODE = os.environ.get("IsDesignModeEnabled", "false").lower() == "true"
-AUTHOR_VALIDATION_ENABLED = os.environ.get("AuthorValidationEnabled", "TRUE").lower() != "false"
+DEFAULT_DOCUMENT_THEME_DELAY_SECONDS = 0
+DEFAULT_DESIGN_MODE = False
+AUTHOR_VALIDATION_ENABLED = True
 MRU_VALUE_PREFIX = "[F00000000][T01ED6D7E58D00000][O00000000]*"
 
 
 def _design_flag(env_var: str, manual_override: bool | None, fallback: bool) -> bool:
-    if manual_override is not None:
-        return bool(manual_override)
-    raw = os.environ.get(env_var)
-    if raw is None:
-        return fallback
-    return raw.lower() == "true"
+    return False
 
 
 DESIGN_LOG_PATHS = _design_flag("DesignLogPaths", MANUAL_DESIGN_LOG_PATHS, DEFAULT_DESIGN_MODE)
@@ -202,22 +179,20 @@ DESIGN_LOG_UNINSTALLER = _design_flag("DesignLogUninstaller", MANUAL_DESIGN_LOG_
 
 
 def refresh_design_log_flags(effective_design_mode: bool) -> None:
-    """Actualiza los flags de diseño para esta ejecución en base al modo efectivo."""
     global DESIGN_LOG_PATHS, DESIGN_LOG_MRU, DESIGN_LOG_OPENING
     global DESIGN_LOG_AUTHOR, DESIGN_LOG_COPY_BASE, DESIGN_LOG_COPY_CUSTOM, DESIGN_LOG_BACKUP
     global DESIGN_LOG_APP_LAUNCH, DESIGN_LOG_CLOSE_APPS, DESIGN_LOG_INSTALLER, DESIGN_LOG_UNINSTALLER
-
-    DESIGN_LOG_PATHS = _design_flag("DesignLogPaths", MANUAL_DESIGN_LOG_PATHS, effective_design_mode)
-    DESIGN_LOG_MRU = _design_flag("DesignLogMRU", MANUAL_DESIGN_LOG_MRU, effective_design_mode)
-    DESIGN_LOG_OPENING = _design_flag("DesignLogOpening", MANUAL_DESIGN_LOG_OPENING, effective_design_mode)
-    DESIGN_LOG_AUTHOR = _design_flag("DesignLogAuthor", MANUAL_DESIGN_LOG_AUTHOR, effective_design_mode)
-    DESIGN_LOG_COPY_BASE = _design_flag("DesignLogCopyBase", MANUAL_DESIGN_LOG_COPY_BASE, effective_design_mode)
-    DESIGN_LOG_COPY_CUSTOM = _design_flag("DesignLogCopyCustom", MANUAL_DESIGN_LOG_COPY_CUSTOM, effective_design_mode)
-    DESIGN_LOG_BACKUP = _design_flag("DesignLogBackup", MANUAL_DESIGN_LOG_BACKUP, effective_design_mode)
-    DESIGN_LOG_APP_LAUNCH = _design_flag("DesignLogAppLaunch", MANUAL_DESIGN_LOG_APP_LAUNCH, effective_design_mode)
-    DESIGN_LOG_CLOSE_APPS = _design_flag("DesignLogCloseApps", MANUAL_DESIGN_LOG_CLOSE_APPS, effective_design_mode)
-    DESIGN_LOG_INSTALLER = _design_flag("DesignLogInstaller", MANUAL_DESIGN_LOG_INSTALLER, effective_design_mode)
-    DESIGN_LOG_UNINSTALLER = _design_flag("DesignLogUninstaller", MANUAL_DESIGN_LOG_UNINSTALLER, effective_design_mode)
+    DESIGN_LOG_PATHS = False
+    DESIGN_LOG_MRU = False
+    DESIGN_LOG_OPENING = False
+    DESIGN_LOG_AUTHOR = False
+    DESIGN_LOG_COPY_BASE = False
+    DESIGN_LOG_COPY_CUSTOM = False
+    DESIGN_LOG_BACKUP = False
+    DESIGN_LOG_APP_LAUNCH = False
+    DESIGN_LOG_CLOSE_APPS = False
+    DESIGN_LOG_INSTALLER = False
+    DESIGN_LOG_UNINSTALLER = False
 
 
 DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH = normalize_path(
@@ -303,8 +278,7 @@ def ensure_parents_and_copy(source: Path, destination: Path) -> None:
 
 
 def _design_log(enabled: bool, design_mode: bool, level: int, message: str, *args: object) -> None:
-    if design_mode and enabled:
-        LOGGER.log(level, message, *args)
+    return
 
 
 # --------------------------------------------------------------------------- #
@@ -841,36 +815,11 @@ def resolve_template_paths() -> dict[str, Path]:
 
 
 def log_template_paths(paths: dict[str, Path], design_mode: bool) -> None:
-    if not design_mode or not DESIGN_LOG_PATHS:
-        return
-    logger = logging.getLogger(__name__)
-    logger.info("================= RUTAS CALCULADAS =================")
-    logger.info("THEME_PATH                  = %s", paths["THEME"])
-    logger.info("CUSTOM_WORD_TEMPLATE_PATH   = %s", paths["CUSTOM_WORD"])
-    logger.info("CUSTOM_PPT_TEMPLATE_PATH    = %s", paths["CUSTOM_PPT"])
-    logger.info("CUSTOM_EXCEL_TEMPLATE_PATH  = %s", paths["CUSTOM_EXCEL"])
-    logger.info("CUSTOM_ADDITIONAL_PATH      = %s", paths["CUSTOM_ADDITIONAL"])
-    logger.info("ROAMING_TEMPLATE_PATH       = %s", paths["ROAMING"])
-    logger.info("EXCEL_STARTUP_PATH          = %s", paths["EXCEL"])
-    logger.info("====================================================")
+    return
 
 
 def log_registry_sources(design_mode: bool) -> None:
-    if not design_mode or not DESIGN_LOG_MRU:
-        return
-    logger = logging.getLogger(__name__)
-    word_personal = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Word\\Options", "PersonalTemplates")
-    word_user = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Common\\General", "UserTemplates")
-    ppt_personal = _read_registry_value(r"Software\Microsoft\Office\\16.0\\PowerPoint\\Options", "PersonalTemplates")
-    ppt_user = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Common\\General", "UserTemplates")
-    excel_personal = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Excel\\Options", "PersonalTemplates")
-    excel_user = _read_registry_value(r"Software\Microsoft\Office\\16.0\\Common\\General", "UserTemplates")
-    logger.info("[REG] Word PersonalTemplates: %s", word_personal or "[no valor]")
-    logger.info("[REG] Word UserTemplates: %s", word_user or "[no valor]")
-    logger.info("[REG] PowerPoint PersonalTemplates: %s", ppt_personal or "[no valor]")
-    logger.info("[REG] PowerPoint UserTemplates: %s", ppt_user or "[no valor]")
-    logger.info("[REG] Excel PersonalTemplates: %s", excel_personal or "[no valor]")
-    logger.info("[REG] Excel UserTemplates: %s", excel_user or "[no valor]")
+    return
 
 
 def update_mru_for_template(app_label: str, file_path: Path, design_mode: bool) -> None:
@@ -1059,8 +1008,7 @@ def _destination_for_extension(extension: str, destinations: dict[str, Path]) ->
 
 
 def configure_logging(design_mode: bool) -> None:
-    level = logging.DEBUG if design_mode else logging.INFO
-    logging.basicConfig(level=level, format="%(message)s")
+    return
 
 
 def exit_with_error(message: str) -> None:
@@ -1089,17 +1037,12 @@ def parse_args() -> argparse.Namespace:
 
 def main(argv: Iterable[str] | None = None) -> int:
     args = parse_args()
-    design_mode = _resolve_design_mode()
+    design_mode = False
     refresh_design_log_flags(design_mode)
-    configure_logging(design_mode)
 
     resolved_paths = resolve_template_paths()
     log_registry_sources(design_mode)
     log_template_paths(resolved_paths, design_mode)
-    if design_mode and DESIGN_LOG_PATHS:
-        LOGGER.info("[INFO] Carpeta de plantillas extra WORD: %s", resolved_paths["CUSTOM_WORD"])
-        LOGGER.info("[INFO] Carpeta de plantillas extra POWERPOINT: %s", resolved_paths["CUSTOM_PPT"])
-        LOGGER.info("[INFO] Carpeta de plantillas extra EXCEL: %s", resolved_paths["CUSTOM_EXCEL"])
 
     working_dir = Path.cwd()
     base_dir = resolve_base_directory(working_dir)
@@ -1120,8 +1063,6 @@ def main(argv: Iterable[str] | None = None) -> int:
             design_mode=design_mode,
         )
         print(result.as_cli_output())
-        if design_mode and DESIGN_LOG_AUTHOR:
-            LOGGER.info(result.message)
         return 0 if result.allowed else 1
 
     _print_intro(base_dir, design_mode)
@@ -1168,33 +1109,16 @@ def main(argv: Iterable[str] | None = None) -> int:
     open_template_folders(resolved_paths, design_mode, flags)
 
     if flags.open_document_theme and DEFAULT_DOCUMENT_THEME_DELAY_SECONDS > 0:
-        if design_mode and DESIGN_LOG_APP_LAUNCH:
-            LOGGER.info(
-                "[INFO] Esperando %s segundos antes de abrir aplicaciones...",
-                DEFAULT_DOCUMENT_THEME_DELAY_SECONDS,
-            )
         time.sleep(DEFAULT_DOCUMENT_THEME_DELAY_SECONDS)
 
     launch_office_apps(flags, design_mode)
 
-    if design_mode and DESIGN_LOG_INSTALLER:
-        LOGGER.info(
-            "[FINAL] Instalación completada. Archivos copiados=%s, errores=%s, bloqueados=%s.",
-            flags.totals["files"],
-            flags.totals["errors"],
-            flags.totals["blocked"],
-        )
-    else:
-        print("Ready")
+    print("Ready")
     return 0
 
 
 def _print_intro(base_dir: Path, design_mode: bool) -> None:
-    if design_mode and DESIGN_LOG_INSTALLER:
-        LOGGER.info("[DEBUG] Modo diseño habilitado=true")
-        LOGGER.info("[INFO] Carpeta base: %s", base_dir)
-    else:
-        print("Installing custom templates and applying them as the new Microsoft Office defaults...")
+    print("Installing custom templates and applying them as the new Microsoft Office defaults...")
 
 
 def _resolve_allowed_authors(cli_value: str | None) -> list[str]:
@@ -1206,9 +1130,7 @@ def _resolve_allowed_authors(cli_value: str | None) -> list[str]:
 
 
 def _resolve_design_mode() -> bool:
-    if MANUAL_IS_DESIGN_MODE is not None:
-        return bool(MANUAL_IS_DESIGN_MODE)
-    return bool(DEFAULT_DESIGN_MODE)
+    return False
 
 
 if __name__ == "__main__":

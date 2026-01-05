@@ -1,8 +1,6 @@
-"""Desinstalador monolítico (sin dependencias externas)."""
 from __future__ import annotations
 
 import argparse
-import logging
 import os
 import shutil
 import subprocess
@@ -15,17 +13,9 @@ from typing import Iterable, Iterator, List, Optional, Set
 import xml.etree.ElementTree as ET
 
 
-# Configuración manual para el modo diseño.
-# - Establece en True para forzar modo diseño siempre.
-# - Establece en False para desactivarlo siempre.
-# - Deja en None para usar la lógica normal basada en entorno.
-MANUAL_IS_DESIGN_MODE: bool | None = True
-
-# --------------------------------------------------------------------------- #
-# Flags manuales de diseño (override de variables de entorno)
-# --------------------------------------------------------------------------- #
+MANUAL_IS_DESIGN_MODE: bool | None = False
 MANUAL_DESIGN_LOG_PATHS: bool | None = False
-MANUAL_DESIGN_LOG_MRU: bool | None = True
+MANUAL_DESIGN_LOG_MRU: bool | None = False
 MANUAL_DESIGN_LOG_OPENING: bool | None = False
 MANUAL_DESIGN_LOG_AUTHOR: bool | None = False
 MANUAL_DESIGN_LOG_COPY_BASE: bool | None = False
@@ -41,7 +31,7 @@ try:
 except Exception:  # pragma: no cover - entornos no Windows
     winreg = None  # type: ignore[assignment]
 
-LOGGER = logging.getLogger(__name__)
+LOGGER = None
 
 # --------------------------------------------------------------------------- #
 # Constantes base y utilidades compartidas (mismo bloque que el instalador)
@@ -280,12 +270,7 @@ except Exception:
     }
 
     def _design_flag(env_var: str, manual_override: bool | None, fallback: bool) -> bool:
-        if manual_override is not None:
-            return bool(manual_override)
-        raw = os.environ.get(env_var)
-        if raw is None:
-            return fallback
-        return raw.lower() == "true"
+        return False
 
     DESIGN_LOG_PATHS = _design_flag("DesignLogPaths", MANUAL_DESIGN_LOG_PATHS, DEFAULT_DESIGN_MODE)
     DESIGN_LOG_MRU = _design_flag("DesignLogMRU", MANUAL_DESIGN_LOG_MRU, DEFAULT_DESIGN_MODE)
@@ -304,17 +289,17 @@ except Exception:
         global DESIGN_LOG_AUTHOR, DESIGN_LOG_COPY_BASE, DESIGN_LOG_COPY_CUSTOM, DESIGN_LOG_BACKUP
         global DESIGN_LOG_APP_LAUNCH, DESIGN_LOG_CLOSE_APPS, DESIGN_LOG_INSTALLER, DESIGN_LOG_UNINSTALLER
 
-        DESIGN_LOG_PATHS = _design_flag("DesignLogPaths", MANUAL_DESIGN_LOG_PATHS, effective_design_mode)
-        DESIGN_LOG_MRU = _design_flag("DesignLogMRU", MANUAL_DESIGN_LOG_MRU, effective_design_mode)
-        DESIGN_LOG_OPENING = _design_flag("DesignLogOpening", MANUAL_DESIGN_LOG_OPENING, effective_design_mode)
-        DESIGN_LOG_AUTHOR = _design_flag("DesignLogAuthor", MANUAL_DESIGN_LOG_AUTHOR, effective_design_mode)
-        DESIGN_LOG_COPY_BASE = _design_flag("DesignLogCopyBase", MANUAL_DESIGN_LOG_COPY_BASE, effective_design_mode)
-        DESIGN_LOG_COPY_CUSTOM = _design_flag("DesignLogCopyCustom", MANUAL_DESIGN_LOG_COPY_CUSTOM, effective_design_mode)
-        DESIGN_LOG_BACKUP = _design_flag("DesignLogBackup", MANUAL_DESIGN_LOG_BACKUP, effective_design_mode)
-        DESIGN_LOG_APP_LAUNCH = _design_flag("DesignLogAppLaunch", MANUAL_DESIGN_LOG_APP_LAUNCH, effective_design_mode)
-        DESIGN_LOG_CLOSE_APPS = _design_flag("DesignLogCloseApps", MANUAL_DESIGN_LOG_CLOSE_APPS, effective_design_mode)
-        DESIGN_LOG_INSTALLER = _design_flag("DesignLogInstaller", MANUAL_DESIGN_LOG_INSTALLER, effective_design_mode)
-        DESIGN_LOG_UNINSTALLER = _design_flag("DesignLogUninstaller", MANUAL_DESIGN_LOG_UNINSTALLER, effective_design_mode)
+        DESIGN_LOG_PATHS = False
+        DESIGN_LOG_MRU = False
+        DESIGN_LOG_OPENING = False
+        DESIGN_LOG_AUTHOR = False
+        DESIGN_LOG_COPY_BASE = False
+        DESIGN_LOG_COPY_CUSTOM = False
+        DESIGN_LOG_BACKUP = False
+        DESIGN_LOG_APP_LAUNCH = False
+        DESIGN_LOG_CLOSE_APPS = False
+        DESIGN_LOG_INSTALLER = False
+        DESIGN_LOG_UNINSTALLER = False
 
     _BASE_PATHS = _resolve_base_paths()
     APPDATA_PATH = _BASE_PATHS["APPDATA"]
@@ -367,8 +352,7 @@ except Exception:
         }
 
     def configure_logging(design_mode: bool) -> None:
-        level = logging.DEBUG if design_mode else logging.INFO
-        logging.basicConfig(level=level, format="%(message)s")
+        return
 
     def path_in_appdata(path: Path) -> bool:
         try:
@@ -421,8 +405,7 @@ except Exception:
         shutil.copy2(source, destination)
 
     def _design_log(enabled: bool, design_mode: bool, level: int, message: str, *args: object) -> None:
-        if design_mode and enabled:
-            LOGGER.log(level, message, *args)
+        return
 
     def _extract_author(template_path: Path) -> tuple[Optional[str], Optional[str]]:
         if not template_path.exists():
@@ -991,18 +974,14 @@ def parse_args() -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args()
-    design_mode = _resolve_design_mode()
+    design_mode = False
     refresh_design_log_flags(design_mode)
-    configure_logging(design_mode)
 
     base_dir = resolve_base_directory(Path.cwd())
     if base_dir == Path.cwd() and path_in_appdata(base_dir):
         exit_with_error(
             '[ERROR] No se recibió la ruta de las plantillas. Ejecute el desinstalador desde "1. Pin templates..." para que se le pase la carpeta correcta.'
         )
-
-    if design_mode and DESIGN_LOG_UNINSTALLER:
-        LOGGER.info("[INFO] Desinstalando desde: %s", base_dir)
 
     close_office_apps(design_mode)
 
@@ -1011,17 +990,12 @@ def main(argv: list[str] | None = None) -> int:
     delete_custom_copies(base_dir, destinations, design_mode)
     clear_mru_entries_for_payload(base_dir, destinations, design_mode)
 
-    if design_mode and DESIGN_LOG_UNINSTALLER:
-        LOGGER.info("[FINAL] Desinstalación completada.")
-    else:
-        print("Ready")
+    print("Ready")
     return 0
 
 
 def _resolve_design_mode() -> bool:
-    if MANUAL_IS_DESIGN_MODE is not None:
-        return bool(MANUAL_IS_DESIGN_MODE)
-    return bool(DEFAULT_DESIGN_MODE)
+    return False
 
 
 if __name__ == "__main__":
