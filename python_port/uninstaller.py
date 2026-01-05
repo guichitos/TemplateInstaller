@@ -45,6 +45,7 @@ def main(argv: list[str] | None = None) -> int:
     destinations = common.default_destinations()
     common.remove_installed_templates(destinations, design_mode)
     common.delete_custom_copies(base_dir, destinations, design_mode)
+    common.clear_mru_entries_for_payload(base_dir, destinations, design_mode)
 
     if design_mode and common.DESIGN_LOG_UNINSTALLER:
         logging.getLogger(__name__).info("[FINAL] Desinstalación completada.")

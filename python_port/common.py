@@ -10,7 +10,7 @@ import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Iterator, List, Optional
+from typing import Iterable, Iterator, List, Optional, Set
 import xml.etree.ElementTree as ET
 
 
@@ -596,6 +596,27 @@ def delete_custom_copies(base_dir: Path, destinations: dict[str, Path], design_m
                 _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", candidate, exc)
 
 
+def clear_mru_entries_for_payload(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
+    """Quita de las MRU las plantillas incluidas en la payload y las plantillas base."""
+    if not is_windows() or winreg is None:
+        return
+    targets = _collect_mru_targets(base_dir, destinations)
+    if not targets:
+        return
+    grouped: dict[str, set[str]] = {"WORD": set(), "POWERPOINT": set(), "EXCEL": set()}
+    for path in targets:
+        ext = path.suffix.lower()
+        if ext in {".dotx", ".dotm"}:
+            grouped["WORD"].add(str(path))
+        elif ext in {".potx", ".potm"}:
+            grouped["POWERPOINT"].add(str(path))
+        elif ext in {".xltx", ".xltm"}:
+            grouped["EXCEL"].add(str(path))
+    for app_label, paths in grouped.items():
+        if paths:
+            _clear_mru_for_app(app_label, paths, design_mode)
+
+
 def backup_existing(target_file: Path, design_mode: bool) -> None:
     if not target_file.exists():
         return
@@ -695,6 +716,51 @@ def _should_update_mru(path: Path) -> bool:
     if ext == ".thmx":
         return False
     return True
+
+
+def _collect_mru_targets(base_dir: Path, destinations: dict[str, Path]) -> list[Path]:
+    """Devuelve rutas potenciales a limpiar de las MRU (base + payload personalizada)."""
+    targets: set[Path] = set()
+    # Base templates
+    base_targets = {
+        "WORD": ["Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm"],
+        "POWERPOINT": ["Blank.potx", "Blank.potm"],
+        "EXCEL": ["Book.xltx", "Book.xltm", "Sheet.xltx", "Sheet.xltm"],
+    }
+    for app, names in base_targets.items():
+        dest = destinations.get(app)
+        if dest:
+            for name in names:
+                targets.add(normalize_path(dest / name))
+    # Custom payload templates
+    for file in iter_template_files(base_dir):
+        if file.name in BASE_TEMPLATE_NAMES:
+            continue
+        ext = file.suffix.lower()
+        if ext == ".thmx":
+            continue
+        if ext in {".dotx", ".dotm"}:
+            dest = destinations.get("WORD_CUSTOM")
+        elif ext in {".potx", ".potm"}:
+            dest = destinations.get("POWERPOINT_CUSTOM")
+        elif ext in {".xltx", ".xltm"}:
+            dest = destinations.get("EXCEL_CUSTOM")
+        else:
+            dest = _destination_for_extension(ext, destinations)
+        if dest:
+            targets.add(normalize_path(dest / file.name))
+    return list(targets)
+
+
+def _clear_mru_for_app(app_label: str, target_paths: Set[str], design_mode: bool) -> None:
+    mru_paths = _find_mru_paths(app_label)
+    if design_mode and DESIGN_LOG_MRU:
+        LOGGER.info("[MRU] Limpieza para %s, rutas objetivo=%s", app_label, sorted(target_paths))
+    for mru_path in mru_paths:
+        try:
+            _rewrite_mru_excluding(mru_path, target_paths, design_mode)
+        except OSError as exc:
+            _design_log(DESIGN_LOG_MRU, design_mode, logging.WARNING, "[MRU] No se pudo limpiar %s (%s)", mru_path, exc)
 
 
 # --------------------------------------------------------------------------- #
@@ -916,6 +982,72 @@ def _extract_mru_path(raw_value: str) -> Optional[str]:
         candidate = raw_value.split("*")[-1]
         return candidate.strip() or None
     return raw_value.strip() or None
+
+
+def _rewrite_mru_excluding(mru_path: str, targets: Set[str], design_mode: bool) -> None:
+    """Reescribe la MRU excluyendo rutas en targets, reindexando los items."""
+    if winreg is None:
+        return
+    hive, subkey = mru_path.split("\\", 1)
+    hive_obj = winreg.HKEY_CURRENT_USER if hive.upper() == "HKCU" else None
+    if hive_obj is None:
+        return
+    try:
+        key = winreg.CreateKeyEx(hive_obj, subkey, 0, winreg.KEY_ALL_ACCESS)
+    except OSError:
+        return
+    with key:
+        items: list[tuple[int, str]] = []
+        metadata: dict[int, str] = {}
+        index = 0
+        try:
+            while True:
+                name, value, _ = winreg.EnumValue(key, index)
+                if not isinstance(value, str):
+                    index += 1
+                    continue
+                if name.startswith("Item Metadata "):
+                    try:
+                        num = int(name.split(" ", 2)[2])
+                        metadata[num] = value
+                    except Exception:
+                        pass
+                elif name.startswith("Item "):
+                    try:
+                        num = int(name.split(" ", 1)[1])
+                    except Exception:
+                        num = 0
+                    items.append((num, value))
+                index += 1
+        except OSError:
+            pass
+        # Eliminar todo antes de reescribir
+        try:
+            index = 0
+            while True:
+                name, _, _ = winreg.EnumValue(key, index)
+                if name.startswith("Item"):
+                    winreg.DeleteValue(key, name)
+                    continue
+                index += 1
+        except OSError:
+            pass
+        # Filtrar y reindexar
+        target_lowers = {t.lower() for t in targets}
+        filtered: list[tuple[str, str]] = []
+        for idx_num, value in sorted(items, key=lambda x: x[0]):
+            path = _extract_mru_path(value)
+            if path and path.lower() in target_lowers:
+                continue
+            meta_val = metadata.get(idx_num, "")
+            filtered.append((value, meta_val))
+        for new_idx, (val, meta_val) in enumerate(filtered, start=1):
+            item_name = f"Item {new_idx}"
+            meta_name = f"Item Metadata {new_idx}"
+            _design_log(DESIGN_LOG_MRU, design_mode, logging.INFO, "[MRU] Limpieza %s -> %s", item_name, _extract_mru_path(val) or val)
+            winreg.SetValueEx(key, item_name, 0, winreg.REG_SZ, val)
+            if meta_val:
+                winreg.SetValueEx(key, meta_name, 0, winreg.REG_SZ, meta_val)
 def _destination_for_extension(extension: str, destinations: dict[str, Path]) -> Optional[Path]:
     if extension in {".dotx", ".dotm"}:
         return destinations["WORD"]
