@@ -169,6 +169,7 @@ DEFAULT_DOCUMENT_THEME_DELAY_SECONDS = int(
 )
 DEFAULT_DESIGN_MODE = os.environ.get("IsDesignModeEnabled", "false").lower() == "true"
 AUTHOR_VALIDATION_ENABLED = os.environ.get("AuthorValidationEnabled", "TRUE").lower() != "false"
+MRU_VALUE_PREFIX = "[F00000001][T01DC7E6C7AE18500][O00000000]*"
 
 
 def _design_flag(env_var: str, manual_override: bool | None, fallback: bool) -> bool:
@@ -899,7 +900,7 @@ def _write_mru_entry(reg_path: str, file_path: Path, design_mode: bool) -> None:
         for idx, entry in enumerate(new_entries, start=1):
             item_name = f"Item {idx}"
             meta_name = f"Item Metadata {idx}"
-            reg_value = f"[F00000000][T0000000000000000][O00000000]*{entry}"
+            reg_value = f"{MRU_VALUE_PREFIX}{entry}"
             meta_value = f"<Metadata><AppSpecific><id>{entry}</id><nm>{basename}</nm><du>{entry}</du></AppSpecific></Metadata>"
             _design_log(DESIGN_LOG_MRU, design_mode, logging.INFO, "[MRU] %s -> %s", item_name, entry)
             _design_log(DESIGN_LOG_MRU, design_mode, logging.DEBUG, "[MRU] %s (nombre=%s)", meta_name, basename)
