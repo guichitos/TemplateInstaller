@@ -32,17 +32,17 @@ LOGGER = logging.getLogger(__name__)
 # --------------------------------------------------------------------------- #
 # Pon en True/False para forzar logs por categoría; deja en None para usar
 # la variable de entorno correspondiente o, en su defecto, IsDesignModeEnabled.
-MANUAL_DESIGN_LOG_PATHS: bool | None = None
-MANUAL_DESIGN_LOG_MRU: bool | None = None
-MANUAL_DESIGN_LOG_OPENING: bool | None = None
-MANUAL_DESIGN_LOG_AUTHOR: bool | None = None
-MANUAL_DESIGN_LOG_COPY_BASE: bool | None = None
-MANUAL_DESIGN_LOG_COPY_CUSTOM: bool | None = None
-MANUAL_DESIGN_LOG_BACKUP: bool | None = None
-MANUAL_DESIGN_LOG_APP_LAUNCH: bool | None = None
-MANUAL_DESIGN_LOG_CLOSE_APPS: bool | None = None
-MANUAL_DESIGN_LOG_INSTALLER: bool | None = None
-MANUAL_DESIGN_LOG_UNINSTALLER: bool | None = None
+MANUAL_DESIGN_LOG_PATHS: bool | None = False
+MANUAL_DESIGN_LOG_MRU: bool | None = True
+MANUAL_DESIGN_LOG_OPENING: bool | None = False
+MANUAL_DESIGN_LOG_AUTHOR: bool | None = False
+MANUAL_DESIGN_LOG_COPY_BASE: bool | None = False
+MANUAL_DESIGN_LOG_COPY_CUSTOM: bool | None = False
+MANUAL_DESIGN_LOG_BACKUP: bool | None = False
+MANUAL_DESIGN_LOG_APP_LAUNCH: bool | None = False
+MANUAL_DESIGN_LOG_CLOSE_APPS: bool | None = False
+MANUAL_DESIGN_LOG_INSTALLER: bool | None = False
+MANUAL_DESIGN_LOG_UNINSTALLER: bool | None = False
 
 
 # --------------------------------------------------------------------------- #
