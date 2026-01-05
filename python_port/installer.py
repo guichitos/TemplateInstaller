@@ -105,6 +105,7 @@ def main(argv: Iterable[str] | None = None) -> int:
             filename,
             base_dir,
             destination,
+            destinations,
             flags,
             allowed_authors,
             validation_enabled,
@@ -120,6 +121,7 @@ def main(argv: Iterable[str] | None = None) -> int:
         validation_enabled=validation_enabled,
         design_mode=design_mode,
     )
+    common.open_template_folders(resolved_paths, design_mode, flags)
 
     if flags.open_document_theme and common.DEFAULT_DOCUMENT_THEME_DELAY_SECONDS > 0:
         if design_mode:

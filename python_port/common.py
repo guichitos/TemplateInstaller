@@ -346,6 +346,12 @@ class InstallFlags:
     open_word: bool = False
     open_ppt: bool = False
     open_excel: bool = False
+    open_theme_folder: bool = False
+    open_custom_word_folder: bool = False
+    open_custom_ppt_folder: bool = False
+    open_custom_excel_folder: bool = False
+    open_roaming_folder: bool = False
+    open_excel_startup_folder: bool = False
     open_document_theme: bool = False
     document_theme_selection: Optional[Path] = None
     custom_selection: Optional[Path] = None
@@ -363,6 +369,7 @@ def install_template(
     filename: str,
     source_root: Path,
     destination_root: Path,
+    destinations_map: dict[str, Path],
     flags: InstallFlags,
     allowed_authors: Iterable[str],
     validation_enabled: bool,
@@ -391,6 +398,7 @@ def install_template(
         flags.totals["files"] += 1
         if design_mode:
             LOGGER.info("[OK] Copiado %s a %s", filename, destination)
+        _mark_folder_open_flag(destination_root, flags, destinations_map)
     except OSError as exc:
         flags.totals["errors"] += 1
         LOGGER.error("[ERROR] Falló la copia de %s (%s)", filename, exc)
@@ -411,8 +419,10 @@ def install_template(
 
     if destination_root == DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH:
         flags.custom_selection = destination
+        flags.open_custom_word_folder = True
     if destination_root == DEFAULT_CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH:
         flags.custom_selection = flags.custom_selection or destination
+        flags.open_custom_excel_folder = True
     if destination_root == DEFAULT_ROAMING_TEMPLATE_FOLDER and filename.lower().endswith(".thmx"):
         flags.open_document_theme = True
         flags.document_theme_selection = destination
@@ -447,6 +457,9 @@ def copy_custom_templates(base_dir: Path, destinations: dict[str, Path], flags: 
         try:
             ensure_parents_and_copy(file, destination_root / filename)
             flags.totals["files"] += 1
+            _mark_folder_open_flag(destination_root, flags, destinations)
+            if design_mode:
+                LOGGER.info("[OK] Copiado %s a %s", filename, destination_root / filename)
         except OSError as exc:
             flags.totals["errors"] += 1
             LOGGER.error("[ERROR] Falló la copia de %s (%s)", filename, exc)
@@ -458,10 +471,18 @@ def copy_custom_templates(base_dir: Path, destinations: dict[str, Path], flags: 
             flags.open_ppt = True
         if extension in {".xltx", ".xltm"}:
             flags.open_excel = True
+        if destination_root == DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH:
+            flags.open_custom_word_folder = True
+        if destination_root == DEFAULT_POWERPOINT_TEMPLATE_PATH or destination_root == DEFAULT_CUSTOM_OFFICE_TEMPLATE_PATH:
+            flags.open_custom_ppt_folder = True
+        if destination_root == DEFAULT_EXCEL_TEMPLATE_PATH or destination_root == DEFAULT_CUSTOM_OFFICE_ADDITIONAL_TEMPLATE_PATH:
+            flags.open_custom_excel_folder = True
         if destination_root == DEFAULT_ROAMING_TEMPLATE_FOLDER:
             flags.roaming_selection = destination_root / filename
+            flags.open_roaming_folder = True
         if destination_root == DEFAULT_EXCEL_STARTUP_FOLDER:
             flags.excel_startup_selection = destination_root / filename
+            flags.open_excel_startup_folder = True
         if extension == ".thmx":
             flags.open_document_theme = True
             flags.document_theme_selection = destination_root / filename
@@ -518,22 +539,24 @@ def backup_existing(target_file: Path, design_mode: bool) -> None:
         LOGGER.warning("[WARN] No se pudo crear backup de %s (%s)", target_file, exc)
 
 
-def open_template_folders(paths: dict[str, Path], design_mode: bool) -> None:
+def open_template_folders(paths: dict[str, Path], design_mode: bool, flags: InstallFlags | None = None) -> None:
     if not is_windows():
         if design_mode:
             LOGGER.info("[WARN] Apertura de carpetas omitida: no es Windows.")
         return
     ordered = [
-        ("THEME_PATH", paths.get("THEME")),
-        ("CUSTOM_WORD_TEMPLATE_PATH", paths.get("CUSTOM_WORD")),
-        ("CUSTOM_PPT_TEMPLATE_PATH", paths.get("CUSTOM_PPT")),
-        ("CUSTOM_EXCEL_TEMPLATE_PATH", paths.get("CUSTOM_EXCEL")),
-        ("ROAMING_TEMPLATE_PATH", paths.get("ROAMING")),
-        ("EXCEL_STARTUP_PATH", paths.get("EXCEL")),
-        ("CUSTOM_ADDITIONAL_PATH", paths.get("CUSTOM_ADDITIONAL")),
+        ("THEME_PATH", "open_theme_folder", paths.get("THEME")),
+        ("CUSTOM_WORD_TEMPLATE_PATH", "open_custom_word_folder", paths.get("CUSTOM_WORD")),
+        ("CUSTOM_PPT_TEMPLATE_PATH", "open_custom_ppt_folder", paths.get("CUSTOM_PPT")),
+        ("CUSTOM_EXCEL_TEMPLATE_PATH", "open_custom_excel_folder", paths.get("CUSTOM_EXCEL")),
+        ("ROAMING_TEMPLATE_PATH", "open_roaming_folder", paths.get("ROAMING")),
+        ("EXCEL_STARTUP_PATH", "open_excel_startup_folder", paths.get("EXCEL")),
+        ("CUSTOM_ADDITIONAL_PATH", "open_custom_excel_folder", paths.get("CUSTOM_ADDITIONAL")),
     ]
-    for label, target in ordered:
+    for label, flag_name, target in ordered:
         if target is None:
+            continue
+        if flags is not None and not getattr(flags, flag_name, False):
             continue
         try:
             ensure_directory(target)
@@ -554,6 +577,21 @@ def open_template_folders(paths: dict[str, Path], design_mode: bool) -> None:
                     LOGGER.warning("[WARN] explorer también falló para %s (%s)", label, exc2)
         except OSError as exc:
             LOGGER.warning("[WARN] No se pudo abrir carpeta %s (%s)", label, exc)
+
+
+def _mark_folder_open_flag(destination_root: Path, flags: InstallFlags, destinations: dict[str, Path]) -> None:
+    if destination_root == destinations.get("THEMES"):
+        flags.open_theme_folder = True
+    if destination_root in {destinations.get("CUSTOM"), destinations.get("WORD_CUSTOM")}:
+        flags.open_custom_word_folder = True
+    if destination_root == destinations.get("POWERPOINT_CUSTOM"):
+        flags.open_custom_ppt_folder = True
+    if destination_root in {destinations.get("EXCEL_CUSTOM"), destinations.get("CUSTOM_ALT")}:
+        flags.open_custom_excel_folder = True
+    if destination_root == destinations.get("ROAMING"):
+        flags.open_roaming_folder = True
+    if destination_root == destinations.get("EXCEL"):
+        flags.open_excel_startup_folder = True
 
 
 # --------------------------------------------------------------------------- #
