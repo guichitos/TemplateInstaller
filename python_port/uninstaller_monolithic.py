@@ -732,10 +732,6 @@ except Exception:
                 winreg.SetValueEx(key, meta_name, 0, winreg.REG_SZ, meta_value)
             _design_log(DESIGN_LOG_MRU, design_mode, logging.INFO, "[MRU] %s actualizado con %s", reg_path, full_path)
 
-    def _design_log(enabled: bool, design_mode: bool, level: int, message: str, *args: object) -> None:
-        if design_mode and enabled:
-            LOGGER.log(level, message, *args)
-
     def close_office_apps(design_mode: bool) -> None:
         if not is_windows():
             return
