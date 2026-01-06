@@ -574,6 +574,14 @@ except Exception:
                 targets.add(normalize_path(dest / file.name))
         return list(targets)
 
+    def _clear_mru_for_app(app_label: str, target_paths: Set[str], design_mode: bool) -> None:
+        mru_paths = _find_mru_paths(app_label)
+        for mru_path in mru_paths:
+            try:
+                _rewrite_mru_excluding(mru_path, target_paths, design_mode)
+            except OSError:
+                pass
+
     def _app_registry_name(app_label: str) -> str:
         mapping = {"WORD": "Word", "POWERPOINT": "PowerPoint", "EXCEL": "Excel"}
         return mapping.get(app_label.upper(), "")
