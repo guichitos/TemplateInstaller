@@ -426,6 +426,14 @@ except Exception:
                 return node.text.strip(), None
         return None, f"[WARN] \"{template_path.name}\" sin autor definido."
 
+    def _normalize_allowed_authors(authors: Iterable[str]) -> list[str]:
+        normalized: list[str] = []
+        for author in authors:
+            cleaned = author.strip()
+            if cleaned:
+                normalized.append(cleaned)
+        return normalized
+
     def check_template_author(
         target: Path,
         allowed_authors: Iterable[str] | None = None,
