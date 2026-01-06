@@ -574,6 +574,25 @@ except Exception:
                 targets.add(normalize_path(dest / file.name))
         return list(targets)
 
+    def clear_mru_entries_for_payload(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
+        if not is_windows() or winreg is None:
+            return
+        targets = _collect_mru_targets(base_dir, destinations)
+        if not targets:
+            return
+        grouped: dict[str, set[str]] = {"WORD": set(), "POWERPOINT": set(), "EXCEL": set()}
+        for path in targets:
+            ext = path.suffix.lower()
+            if ext in {".dotx", ".dotm"}:
+                grouped["WORD"].add(str(path))
+            elif ext in {".potx", ".potm"}:
+                grouped["POWERPOINT"].add(str(path))
+            elif ext in {".xltx", ".xltm"}:
+                grouped["EXCEL"].add(str(path))
+        for app_label, paths in grouped.items():
+            if paths:
+                _clear_mru_for_app(app_label, paths, design_mode)
+
     def _clear_mru_for_app(app_label: str, target_paths: Set[str], design_mode: bool) -> None:
         mru_paths = _find_mru_paths(app_label)
         for mru_path in mru_paths:
