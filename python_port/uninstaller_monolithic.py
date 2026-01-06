@@ -125,6 +125,7 @@ try:
         InstallFlags,
         copy_custom_templates,
         remove_installed_templates,
+        clear_mru_entries_for_payload,
         _destination_for_extension as shared_dest_for_ext,
         _collect_mru_targets as shared_collect_targets,
         _clear_mru_for_app,
