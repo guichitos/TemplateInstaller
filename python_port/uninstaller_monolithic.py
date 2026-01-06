@@ -32,7 +32,7 @@ try:
 except Exception:  # pragma: no cover - entornos no Windows
     winreg = None  # type: ignore[assignment]
 
-LOGGER = None
+LOGGER = logging.getLogger(__name__)
 
 # --------------------------------------------------------------------------- #
 # Constantes base y utilidades compartidas (mismo bloque que el instalador)

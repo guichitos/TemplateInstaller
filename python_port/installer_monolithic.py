@@ -33,7 +33,7 @@ try:
 except Exception:  # pragma: no cover - entornos no Windows
     winreg = None  # type: ignore[assignment]
 
-LOGGER = None
+LOGGER = logging.getLogger(__name__)
 
 _BASE_PATHS = None
 
