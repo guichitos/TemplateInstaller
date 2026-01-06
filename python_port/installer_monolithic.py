@@ -753,14 +753,27 @@ def is_windows() -> bool:
     return os.name == "nt"
 
 
-def close_office_apps(design_mode: bool) -> None:
-    if not is_windows():
-        return
-    for exe in ("WINWORD.EXE", "POWERPNT.EXE", "EXCEL.EXE"):
-        try:
-            os.system(f"taskkill /IM {exe} /F >nul 2>&1")
-        except OSError:
-            _design_log(DESIGN_LOG_CLOSE_APPS, design_mode, logging.DEBUG, "[DEBUG] No se pudo cerrar %s", exe)
+    def close_office_apps(design_mode: bool) -> None:
+        if not is_windows():
+            return
+        processes = ("WINWORD.EXE", "POWERPNT.EXE", "EXCEL.EXE")
+        for exe in processes:
+            try:
+                os.system(f"taskkill /IM {exe} /F >nul 2>&1")
+            except OSError:
+                _design_log(DESIGN_LOG_CLOSE_APPS, design_mode, logging.DEBUG, "[DEBUG] No se pudo cerrar %s", exe)
+        for exe in processes:
+            try:
+                result = subprocess.run(
+                    ["tasklist", "/FI", f"IMAGENAME eq {exe}", "/NH"],
+                    capture_output=True,
+                    text=True,
+                )
+                output = (result.stdout or "") + (result.stderr or "")
+                if exe.lower() in output.lower():
+                    os.system(f"taskkill /IM {exe} /F >nul 2>&1")
+            except OSError:
+                _design_log(DESIGN_LOG_CLOSE_APPS, design_mode, logging.DEBUG, "[DEBUG] No se pudo verificar %s", exe)
 
 
 def launch_office_apps(flags: InstallFlags, design_mode: bool) -> None:
