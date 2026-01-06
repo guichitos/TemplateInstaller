@@ -564,7 +564,7 @@ def copy_custom_templates(base_dir: Path, destinations: dict[str, Path], flags: 
             flags.custom_selection = flags.custom_selection or destination_root / filename
 
 
-def remove_installed_templates(destinations: dict[str, Path], design_mode: bool) -> None:
+def remove_installed_templates(destinations: dict[str, Path], design_mode: bool, payload_dir: Path | None = None) -> None:
     targets = {
         destinations["WORD"]: ["Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm"],
         destinations["POWERPOINT"]: ["Blank.potx", "Blank.potm"],
@@ -575,9 +575,14 @@ def remove_installed_templates(destinations: dict[str, Path], design_mode: bool)
         for name in files:
             target = normalize_path(root / name)
             try:
-                if target.exists():
-                    target.unlink()
-                    _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", target)
+                if not target.exists():
+                    continue
+                if payload_dir:
+                    payload_candidate = normalize_path(payload_dir / name)
+                    if not payload_candidate.exists():
+                        pass
+                target.unlink()
+                _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", target)
             except OSError as exc:
                 _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", target, exc)
 

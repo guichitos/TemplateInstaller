@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
         logging.getLogger(__name__).info("[INFO] Desinstalando desde: %s", base_dir)
 
     destinations = common.default_destinations()
-    common.remove_installed_templates(destinations, design_mode)
+    common.remove_installed_templates(destinations, design_mode, base_dir)
     common.delete_custom_copies(base_dir, destinations, design_mode)
     common.clear_mru_entries_for_payload(base_dir, destinations, design_mode)
 

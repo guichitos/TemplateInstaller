@@ -1031,7 +1031,7 @@ def main(argv: list[str] | None = None) -> int:
         )
 
     destinations = default_destinations()
-    remove_installed_templates(destinations, design_mode)
+    remove_installed_templates(destinations, design_mode, base_dir)
     delete_custom_copies(base_dir, destinations, design_mode)
     clear_mru_entries_for_payload(base_dir, destinations, design_mode)
 
