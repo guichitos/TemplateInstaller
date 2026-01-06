@@ -989,14 +989,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args()
     design_mode = False
     refresh_design_log_flags(design_mode)
+    close_office_apps(design_mode)
 
     base_dir = resolve_base_directory(Path.cwd())
     if base_dir == Path.cwd() and path_in_appdata(base_dir):
         exit_with_error(
             '[ERROR] No se recibió la ruta de las plantillas. Ejecute el desinstalador desde "1. Pin templates..." para que se le pase la carpeta correcta.'
         )
-
-    close_office_apps(design_mode)
 
     destinations = default_destinations()
     remove_installed_templates(destinations, design_mode)

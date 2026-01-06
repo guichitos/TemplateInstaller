@@ -30,6 +30,7 @@ def main(argv: list[str] | None = None) -> int:
     design_mode = _resolve_design_mode()
     common.refresh_design_log_flags(design_mode)
     common.configure_logging(design_mode)
+    common.close_office_apps(design_mode)
 
     base_dir = common.resolve_base_directory(Path.cwd())
     if base_dir == Path.cwd() and common.path_in_appdata(base_dir):
@@ -39,8 +40,6 @@ def main(argv: list[str] | None = None) -> int:
 
     if design_mode and common.DESIGN_LOG_UNINSTALLER:
         logging.getLogger(__name__).info("[INFO] Desinstalando desde: %s", base_dir)
-
-    common.close_office_apps(design_mode)
 
     destinations = common.default_destinations()
     common.remove_installed_templates(destinations, design_mode)
