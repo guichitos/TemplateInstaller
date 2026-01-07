@@ -3,8 +3,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
+try:
+    from . import common
+except ImportError:  # pragma: no cover - permite ejecución directa como script
+    import sys
 
-TEMPLATE_DIR = Path(r"C:\Users\PC\AppData\Roaming\Microsoft\Templates")
+    sys.path.append(str(Path(__file__).resolve().parent))
+    import common  # type: ignore[no-redef]
+
+
+TEMPLATE_DIR = common.resolve_template_paths()["ROAMING"]
 TARGET_FILES = ("Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm")
 
 
