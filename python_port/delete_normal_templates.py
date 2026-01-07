@@ -13,6 +13,7 @@ except ImportError:  # pragma: no cover - permite ejecución directa como script
 
 
 TEMPLATE_DIR = common.resolve_template_paths()["ROAMING"]
+print("[INFO] Ruta obtenida desde common.resolve_template_paths()[\"ROAMING\"]")
 print(f"[INFO] Ruta de plantillas (ROAMING): {TEMPLATE_DIR}")
 TARGET_FILES = ("Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm")
 
