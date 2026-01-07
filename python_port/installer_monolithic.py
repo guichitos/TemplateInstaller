@@ -565,6 +565,14 @@ def remove_installed_templates(destinations: dict[str, Path], design_mode: bool)
                 _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminando %s", target)
                 target.unlink()
                 _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", target)
+                if target.exists():
+                    _design_log(
+                        DESIGN_LOG_UNINSTALLER,
+                        design_mode,
+                        logging.WARNING,
+                        "[WARN] Persistió el archivo tras borrar: %s",
+                        target,
+                    )
             except OSError as exc:
                 _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", target, exc)
 
