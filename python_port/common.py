@@ -571,6 +571,7 @@ def remove_installed_templates(destinations: dict[str, Path], design_mode: bool,
         destinations["EXCEL"]: ["Book.xltx", "Book.xltm", "Sheet.xltx", "Sheet.xltm"],
         destinations["THEMES"]: [],
     }
+    failures: list[Path] = []
     for root, files in targets.items():
         for name in files:
             target = normalize_path(root / name)
@@ -597,8 +598,19 @@ def remove_installed_templates(destinations: dict[str, Path], design_mode: bool,
                         "[WARN] Persistió el archivo tras borrar: %s",
                         target,
                     )
+                    failures.append(target)
             except OSError as exc:
                 _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", target, exc)
+                failures.append(target)
+    if failures:
+        summary = ", ".join(str(path) for path in failures)
+        _design_log(
+            DESIGN_LOG_UNINSTALLER,
+            design_mode,
+            logging.WARNING,
+            "[WARN] Quedaron archivos sin eliminar. Cierra Office/Outlook y reintenta: %s",
+            summary,
+        )
 
 
 def delete_custom_copies(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
@@ -794,7 +806,7 @@ def is_windows() -> bool:
 def close_office_apps(design_mode: bool) -> None:
     if not is_windows():
         return
-    processes = ("WINWORD.EXE", "POWERPNT.EXE", "EXCEL.EXE")
+    processes = ("WINWORD.EXE", "POWERPNT.EXE", "EXCEL.EXE", "OUTLOOK.EXE")
     for exe in processes:
         try:
             os.system(f"taskkill /IM {exe} /F >nul 2>&1")
