@@ -576,11 +576,10 @@ def remove_installed_templates(destinations: dict[str, Path], design_mode: bool,
             target = normalize_path(root / name)
             try:
                 if not target.exists():
+                    _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] No existe %s", target)
                     continue
-                if payload_dir:
-                    payload_candidate = normalize_path(payload_dir / name)
-                    if not payload_candidate.exists():
-                        pass
+                backup_existing(target, design_mode)
+                _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminando %s", target)
                 target.unlink()
                 _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", target)
             except OSError as exc:
