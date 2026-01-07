@@ -10,7 +10,7 @@ import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Iterator, List, Optional, Set
+from typing import Callable, Iterable, Iterator, List, Optional, Set
 import xml.etree.ElementTree as ET
 
 
@@ -611,6 +611,31 @@ def remove_installed_templates(destinations: dict[str, Path], design_mode: bool,
             "[WARN] Quedaron archivos sin eliminar. Cierra Office/Outlook y reintenta: %s",
             summary,
         )
+
+
+def remove_normal_templates(design_mode: bool, emit: Callable[[str], None] | None = None) -> None:
+    if emit is None:
+        emit = lambda message: _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, message)
+    template_dir = resolve_template_paths()["ROAMING"]
+    emit('[INFO] Ruta obtenida desde common.resolve_template_paths()["ROAMING"]')
+    emit(f"[INFO] Ruta de plantillas (ROAMING): {template_dir}")
+    if not template_dir.exists():
+        emit(f"[ERROR] La carpeta no existe: {template_dir}")
+        return
+    targets = ("Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm")
+    for filename in targets:
+        target = template_dir / filename
+        if not target.exists():
+            emit(f"[SKIP] No existe: {target}")
+            continue
+        try:
+            target.unlink()
+            if target.exists():
+                emit(f"[WARN] Persistió tras borrar: {target}")
+            else:
+                emit(f"[OK] Eliminado: {target}")
+        except OSError as exc:
+            emit(f"[ERROR] No se pudo eliminar {target} ({exc})")
 
 
 def delete_custom_copies(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
