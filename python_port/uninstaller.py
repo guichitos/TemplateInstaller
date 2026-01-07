@@ -5,23 +5,32 @@ import argparse
 import logging
 from pathlib import Path
 
-from . import common
+# Configuración manual para el modo diseño.
+# - Establece en True para forzar modo diseño siempre.
+# - Establece en False para desactivarlo siempre.
+# - Deja en None para usar la lógica normal basada en entorno.
+MANUAL_IS_DESIGN_MODE: bool | None = True
+
+try:
+    from . import common
+except ImportError:  # pragma: no cover - permite ejecución directa como script
+    import sys
+
+    sys.path.append(str(Path(__file__).resolve().parent))
+    import common  # type: ignore[no-redef]
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Desinstalador de plantillas de Office (Python)")
-    parser.add_argument(
-        "--design-mode",
-        action="store_true",
-        help="Muestra salida detallada similar a IsDesignModeEnabled=true.",
-    )
     return parser.parse_args()
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args()
-    design_mode = args.design_mode or common.DEFAULT_DESIGN_MODE
+    design_mode = _resolve_design_mode()
+    common.refresh_design_log_flags(design_mode)
     common.configure_logging(design_mode)
+    common.close_office_apps(design_mode)
 
     base_dir = common.resolve_base_directory(Path.cwd())
     if base_dir == Path.cwd() and common.path_in_appdata(base_dir):
@@ -29,20 +38,33 @@ def main(argv: list[str] | None = None) -> int:
             '[ERROR] No se recibió la ruta de las plantillas. Ejecute el desinstalador desde "1. Pin templates..." para que se le pase la carpeta correcta.'
         )
 
-    if design_mode:
+    if design_mode and common.DESIGN_LOG_UNINSTALLER:
         logging.getLogger(__name__).info("[INFO] Desinstalando desde: %s", base_dir)
 
-    common.close_office_apps(design_mode)
-
     destinations = common.default_destinations()
-    common.remove_installed_templates(destinations, design_mode)
+    if design_mode and common.DESIGN_LOG_UNINSTALLER:
+        logging.getLogger(__name__).info(
+            "[INFO] Rutas default: WORD=%s PPT=%s EXCEL=%s",
+            destinations.get("WORD"),
+            destinations.get("POWERPOINT"),
+            destinations.get("EXCEL"),
+        )
+    common.log_template_folder_contents(common.resolve_template_paths(), design_mode)
+    common.remove_installed_templates(destinations, design_mode, base_dir)
     common.delete_custom_copies(base_dir, destinations, design_mode)
+    common.clear_mru_entries_for_payload(base_dir, destinations, design_mode)
 
-    if design_mode:
+    if design_mode and common.DESIGN_LOG_UNINSTALLER:
         logging.getLogger(__name__).info("[FINAL] Desinstalación completada.")
     else:
         print("Ready")
     return 0
+
+
+def _resolve_design_mode() -> bool:
+    if MANUAL_IS_DESIGN_MODE is not None:
+        return bool(MANUAL_IS_DESIGN_MODE)
+    return bool(common.DEFAULT_DESIGN_MODE)
 
 
 if __name__ == "__main__":
