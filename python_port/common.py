@@ -881,6 +881,30 @@ def log_template_paths(paths: dict[str, Path], design_mode: bool) -> None:
     logger.info("====================================================")
 
 
+def log_template_folder_contents(paths: dict[str, Path], design_mode: bool) -> None:
+    if not design_mode or not DESIGN_LOG_PATHS:
+        return
+    logger = logging.getLogger(__name__)
+    targets = [
+        ("THEME_PATH", paths["THEME"]),
+        ("CUSTOM_WORD_TEMPLATE_PATH", paths["CUSTOM_WORD"]),
+        ("CUSTOM_PPT_TEMPLATE_PATH", paths["CUSTOM_PPT"]),
+        ("CUSTOM_EXCEL_TEMPLATE_PATH", paths["CUSTOM_EXCEL"]),
+        ("ROAMING_TEMPLATE_PATH", paths["ROAMING"]),
+        ("EXCEL_STARTUP_PATH", paths["EXCEL"]),
+        ("CUSTOM_ADDITIONAL_PATH", paths["CUSTOM_ADDITIONAL"]),
+    ]
+    for label, folder in targets:
+        try:
+            if not folder.exists():
+                logger.info("[INFO] %s no existe: %s", label, folder)
+                continue
+            files = sorted(p.name for p in folder.iterdir() if p.is_file())
+            logger.info("[INFO] %s (%s): %s", label, folder, ", ".join(files) if files else "[vacío]")
+        except OSError as exc:
+            logger.warning("[WARN] No se pudo listar %s (%s)", folder, exc)
+
+
 def log_registry_sources(design_mode: bool) -> None:
     if not design_mode or not DESIGN_LOG_MRU:
         return
