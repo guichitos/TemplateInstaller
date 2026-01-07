@@ -882,7 +882,7 @@ def log_template_paths(paths: dict[str, Path], design_mode: bool) -> None:
 
 
 def log_template_folder_contents(paths: dict[str, Path], design_mode: bool) -> None:
-    if not design_mode or not DESIGN_LOG_PATHS:
+    if not design_mode or not (DESIGN_LOG_PATHS or DESIGN_LOG_MRU):
         return
     logger = logging.getLogger(__name__)
     targets = [
