@@ -110,6 +110,7 @@ try:
         configure_logging,
         default_destinations,
         delete_custom_copies,
+        determine_uninstall_open_flags,
         ensure_parents_and_copy,
         exit_with_error,
         log_registry_sources,
