@@ -10,7 +10,7 @@ import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Iterable, Iterator, List, Optional, Set
+from typing import Callable, Iterable, Iterator, List, Optional, Set
 import xml.etree.ElementTree as ET
 
 
@@ -571,6 +571,7 @@ def remove_installed_templates(destinations: dict[str, Path], design_mode: bool,
         destinations["EXCEL"]: ["Book.xltx", "Book.xltm", "Sheet.xltx", "Sheet.xltm"],
         destinations["THEMES"]: [],
     }
+    failures: list[Path] = []
     for root, files in targets.items():
         for name in files:
             target = normalize_path(root / name)
@@ -597,8 +598,44 @@ def remove_installed_templates(destinations: dict[str, Path], design_mode: bool,
                         "[WARN] Persistió el archivo tras borrar: %s",
                         target,
                     )
+                    failures.append(target)
             except OSError as exc:
                 _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", target, exc)
+                failures.append(target)
+    if failures:
+        summary = ", ".join(str(path) for path in failures)
+        _design_log(
+            DESIGN_LOG_UNINSTALLER,
+            design_mode,
+            logging.WARNING,
+            "[WARN] Quedaron archivos sin eliminar. Cierra Office/Outlook y reintenta: %s",
+            summary,
+        )
+
+
+def remove_normal_templates(design_mode: bool, emit: Callable[[str], None] | None = None) -> None:
+    if emit is None:
+        emit = lambda message: _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, message)
+    template_dir = resolve_template_paths()["ROAMING"]
+    emit('[INFO] Ruta obtenida desde common.resolve_template_paths()["ROAMING"]')
+    emit(f"[INFO] Ruta de plantillas (ROAMING): {template_dir}")
+    if not template_dir.exists():
+        emit(f"[ERROR] La carpeta no existe: {template_dir}")
+        return
+    targets = ("Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm")
+    for filename in targets:
+        target = template_dir / filename
+        if not target.exists():
+            emit(f"[SKIP] No existe: {target}")
+            continue
+        try:
+            target.unlink()
+            if target.exists():
+                emit(f"[WARN] Persistió tras borrar: {target}")
+            else:
+                emit(f"[OK] Eliminado: {target}")
+        except OSError as exc:
+            emit(f"[ERROR] No se pudo eliminar {target} ({exc})")
 
 
 def delete_custom_copies(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
@@ -794,7 +831,7 @@ def is_windows() -> bool:
 def close_office_apps(design_mode: bool) -> None:
     if not is_windows():
         return
-    processes = ("WINWORD.EXE", "POWERPNT.EXE", "EXCEL.EXE")
+    processes = ("WINWORD.EXE", "POWERPNT.EXE", "EXCEL.EXE", "OUTLOOK.EXE")
     for exe in processes:
         try:
             os.system(f"taskkill /IM {exe} /F >nul 2>&1")
@@ -1121,6 +1158,7 @@ def configure_logging(design_mode: bool) -> None:
     logging.basicConfig(level=level, format="%(message)s")
 
 
-def exit_with_error(message: str) -> None:
-    print(message)
+def exit_with_error(message: str, design_mode: bool = DEFAULT_DESIGN_MODE) -> None:
+    if design_mode:
+        print(message)
     sys.exit(1)
