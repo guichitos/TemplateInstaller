@@ -863,22 +863,63 @@ except Exception:
                 exc,
             )
 
-    def remove_installed_templates(destinations: dict[str, Path], design_mode: bool) -> None:
+    def remove_installed_templates(destinations: dict[str, Path], design_mode: bool, payload_dir: Path | None = None) -> None:
         targets = {
             destinations["WORD"]: ["Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm"],
             destinations["POWERPOINT"]: ["Blank.potx", "Blank.potm"],
             destinations["EXCEL"]: ["Book.xltx", "Book.xltm", "Sheet.xltx", "Sheet.xltm"],
             destinations["THEMES"]: [],
         }
+        failures: list[Path] = []
         for root, files in targets.items():
             for name in files:
                 target = normalize_path(root / name)
                 try:
+                    _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Verificando %s", target)
+                    if not target.exists():
+                        _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] No existe %s", target)
+                        continue
+                    backup_existing(target, design_mode)
+                    _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminando %s", target)
+                    target.unlink()
+                    _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", target)
                     if target.exists():
-                        target.unlink()
-                        _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", target)
+                        _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] Persistió el archivo tras borrar: %s", target)
+                        failures.append(target)
                 except OSError as exc:
                     _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", target, exc)
+                    failures.append(target)
+        if failures:
+            summary = ", ".join(str(path) for path in failures)
+            _design_log(
+                DESIGN_LOG_UNINSTALLER,
+                design_mode,
+                logging.WARNING,
+                "[WARN] Quedaron archivos sin eliminar. Cierra Office/Outlook y reintenta: %s",
+                summary,
+            )
+
+    def remove_normal_templates(design_mode: bool) -> None:
+        template_dir = resolve_template_paths()["ROAMING"]
+        _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, '[INFO] Ruta obtenida desde common.resolve_template_paths()["ROAMING"]')
+        _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Ruta de plantillas (ROAMING): %s", template_dir)
+        if not template_dir.exists():
+            _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[ERROR] La carpeta no existe: %s", template_dir)
+            return
+        targets = ("Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm")
+        for filename in targets:
+            target = template_dir / filename
+            if not target.exists():
+                _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[SKIP] No existe: %s", target)
+                continue
+            try:
+                target.unlink()
+                if target.exists():
+                    _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] Persistió tras borrar: %s", target)
+                else:
+                    _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[OK] Eliminado: %s", target)
+            except OSError as exc:
+                _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[ERROR] No se pudo eliminar %s (%s)", target, exc)
 
     def delete_custom_copies(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
         for file in iter_template_files(base_dir):
@@ -892,6 +933,45 @@ except Exception:
                         _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", candidate)
                 except OSError as exc:
                     _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", candidate, exc)
+
+    def determine_uninstall_open_flags(base_dir: Path, destinations: dict[str, Path]) -> InstallFlags:
+        flags = InstallFlags()
+        roaming = destinations["ROAMING"]
+        excel = destinations["EXCEL"]
+        custom_word = destinations["WORD_CUSTOM"]
+        custom_ppt = destinations["POWERPOINT_CUSTOM"]
+        custom_excel = destinations["EXCEL_CUSTOM"]
+        custom_additional = destinations["CUSTOM_ALT"]
+        base_targets = ("Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm", "Blank.potx", "Blank.potm")
+        for name in base_targets:
+            candidate = normalize_path(roaming / name)
+            if candidate.exists():
+                flags.open_roaming_folder = True
+                break
+        excel_targets = ("Book.xltx", "Book.xltm", "Sheet.xltx", "Sheet.xltm")
+        for name in excel_targets:
+            candidate = normalize_path(excel / name)
+            if candidate.exists():
+                flags.open_excel_startup_folder = True
+                break
+        for file in iter_template_files(base_dir):
+            if file.name in BASE_TEMPLATE_NAMES:
+                continue
+            for dest in destinations.values():
+                candidate = normalize_path(dest / file.name)
+                if not candidate.exists():
+                    continue
+                if dest == roaming:
+                    flags.open_roaming_folder = True
+                if dest == excel:
+                    flags.open_excel_startup_folder = True
+                if dest == custom_word:
+                    flags.open_custom_word_folder = True
+                if dest == custom_ppt:
+                    flags.open_custom_ppt_folder = True
+                if dest in {custom_excel, custom_additional}:
+                    flags.open_custom_excel_folder = True
+        return flags
 
     def clear_mru_entries_for_payload(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
         if not is_windows() or winreg is None:
@@ -1003,8 +1083,9 @@ except Exception:
     def is_windows() -> bool:
         return os.name == "nt"
 
-    def exit_with_error(message: str) -> None:
-        print(message)
+    def exit_with_error(message: str, design_mode: bool = DEFAULT_DESIGN_MODE) -> None:
+        if design_mode:
+            print(message)
         sys.exit(1)
 
 
@@ -1020,27 +1101,31 @@ def parse_args() -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args()
-    design_mode = False
+    design_mode = DEFAULT_DESIGN_MODE
     refresh_design_log_flags(design_mode)
+    configure_logging(design_mode)
     close_office_apps(design_mode)
 
     base_dir = resolve_base_directory(Path.cwd())
     if base_dir == Path.cwd() and path_in_appdata(base_dir):
         exit_with_error(
-            '[ERROR] No se recibió la ruta de las plantillas. Ejecute el desinstalador desde "1. Pin templates..." para que se le pase la carpeta correcta.'
+            '[ERROR] No se recibió la ruta de las plantillas. Ejecute el desinstalador desde "1. Pin templates..." para que se le pase la carpeta correcta.',
+            design_mode,
         )
 
     destinations = default_destinations()
+    open_flags = determine_uninstall_open_flags(base_dir, destinations)
+    remove_normal_templates(design_mode)
     remove_installed_templates(destinations, design_mode, base_dir)
     delete_custom_copies(base_dir, destinations, design_mode)
     clear_mru_entries_for_payload(base_dir, destinations, design_mode)
-
-    print("Ready")
+    remove_normal_templates(design_mode)
+    open_template_folders(resolve_template_paths(), design_mode, open_flags)
     return 0
 
 
 def _resolve_design_mode() -> bool:
-    return False
+    return DEFAULT_DESIGN_MODE
 
 
 if __name__ == "__main__":

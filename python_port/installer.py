@@ -62,7 +62,8 @@ def main(argv: Iterable[str] | None = None) -> int:
 
     if base_dir == working_dir and common.path_in_appdata(working_dir):
         common.exit_with_error(
-            '[ERROR] No se recibió la ruta de las plantillas. Ejecute el instalador desde "1. Pin templates..." para que se le pase la carpeta correcta.'
+            '[ERROR] No se recibió la ruta de las plantillas. Ejecute el instalador desde "1. Pin templates..." para que se le pase la carpeta correcta.',
+            design_mode,
         )
 
     allowed_authors = _resolve_allowed_authors(args.allowed_authors)
