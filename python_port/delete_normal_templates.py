@@ -13,7 +13,13 @@ except ImportError:  # pragma: no cover - permite ejecución directa como script
 
 
 def delete_normal_templates() -> None:
-    common.remove_normal_templates(design_mode=False, emit=print)
+    design_mode = common.DEFAULT_DESIGN_MODE
+    common.refresh_design_log_flags(design_mode)
+    if design_mode:
+        common.configure_logging(design_mode)
+        common.remove_normal_templates(design_mode, emit=print)
+    else:
+        common.remove_normal_templates(design_mode)
 
 
 if __name__ == "__main__":

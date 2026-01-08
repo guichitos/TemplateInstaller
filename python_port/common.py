@@ -1158,6 +1158,7 @@ def configure_logging(design_mode: bool) -> None:
     logging.basicConfig(level=level, format="%(message)s")
 
 
-def exit_with_error(message: str) -> None:
-    print(message)
+def exit_with_error(message: str, design_mode: bool = DEFAULT_DESIGN_MODE) -> None:
+    if design_mode:
+        print(message)
     sys.exit(1)

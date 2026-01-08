@@ -9,7 +9,7 @@ from pathlib import Path
 # - Establece en True para forzar modo diseño siempre.
 # - Establece en False para desactivarlo siempre.
 # - Deja en None para usar la lógica normal basada en entorno.
-MANUAL_IS_DESIGN_MODE: bool | None = True
+MANUAL_IS_DESIGN_MODE: bool | None = None
 
 try:
     from . import common
@@ -35,7 +35,8 @@ def main(argv: list[str] | None = None) -> int:
     base_dir = common.resolve_base_directory(Path.cwd())
     if base_dir == Path.cwd() and common.path_in_appdata(base_dir):
         common.exit_with_error(
-            '[ERROR] No se recibió la ruta de las plantillas. Ejecute el desinstalador desde "1. Pin templates..." para que se le pase la carpeta correcta.'
+            '[ERROR] No se recibió la ruta de las plantillas. Ejecute el desinstalador desde "1. Pin templates..." para que se le pase la carpeta correcta.',
+            design_mode,
         )
 
     if design_mode and common.DESIGN_LOG_UNINSTALLER:
@@ -58,8 +59,6 @@ def main(argv: list[str] | None = None) -> int:
 
     if design_mode and common.DESIGN_LOG_UNINSTALLER:
         logging.getLogger(__name__).info("[FINAL] Desinstalación completada.")
-    else:
-        print("Ready")
     return 0
 
 
