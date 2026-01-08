@@ -652,6 +652,46 @@ def delete_custom_copies(base_dir: Path, destinations: dict[str, Path], design_m
                 _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", candidate, exc)
 
 
+def determine_uninstall_open_flags(base_dir: Path, destinations: dict[str, Path]) -> InstallFlags:
+    flags = InstallFlags()
+    roaming = destinations["ROAMING"]
+    excel = destinations["EXCEL"]
+    custom_word = destinations["WORD_CUSTOM"]
+    custom_ppt = destinations["POWERPOINT_CUSTOM"]
+    custom_excel = destinations["EXCEL_CUSTOM"]
+    custom_additional = destinations["CUSTOM_ALT"]
+    base_targets = ("Normal.dotx", "Normal.dotm", "NormalEmail.dotx", "NormalEmail.dotm", "Blank.potx", "Blank.potm")
+    for name in base_targets:
+        candidate = normalize_path(roaming / name)
+        if candidate.exists():
+            flags.open_roaming_folder = True
+            break
+    excel_targets = ("Book.xltx", "Book.xltm", "Sheet.xltx", "Sheet.xltm")
+    for name in excel_targets:
+        candidate = normalize_path(excel / name)
+        if candidate.exists():
+            flags.open_excel_startup_folder = True
+            break
+    for file in iter_template_files(base_dir):
+        if file.name in BASE_TEMPLATE_NAMES:
+            continue
+        for dest in destinations.values():
+            candidate = normalize_path(dest / file.name)
+            if not candidate.exists():
+                continue
+            if dest == roaming:
+                flags.open_roaming_folder = True
+            if dest == excel:
+                flags.open_excel_startup_folder = True
+            if dest == custom_word:
+                flags.open_custom_word_folder = True
+            if dest == custom_ppt:
+                flags.open_custom_ppt_folder = True
+            if dest in {custom_excel, custom_additional}:
+                flags.open_custom_excel_folder = True
+    return flags
+
+
 def clear_mru_entries_for_payload(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
     """Quita de las MRU las plantillas incluidas en la payload y las plantillas base."""
     if not is_windows() or winreg is None:
