@@ -847,10 +847,10 @@ except Exception:
     def backup_existing(target_file: Path, design_mode: bool) -> None:
         if not target_file.exists():
             return
-        backup_dir = target_file.parent / "Backup"
+        backup_dir = target_file.parent / "Backups"
         ensure_directory(backup_dir)
         timestamp = datetime.now().strftime("%Y.%m.%d.%H%M")
-        backup_path = backup_dir / f"{timestamp}_{target_file.name}"
+        backup_path = backup_dir / f"{timestamp} - {target_file.name}"
         try:
             shutil.copy2(target_file, backup_path)
             _design_log(DESIGN_LOG_BACKUP, design_mode, logging.INFO, "[BACKUP] Copia creada en %s", backup_path)
