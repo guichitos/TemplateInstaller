@@ -558,7 +558,7 @@ if /I "%IsDesignModeEnabled%"=="true" (
 )
 
 if exist "%BET_TargetFile%" (
-    set "BET_BackupDir=%BET_DestinationDirectory%\Backup"
+    set "BET_BackupDir=%BET_DestinationDirectory%\Backups"
     if /I "%BET_DesignMode%"=="true" echo [DEBUG] Preparing backup directory at "!BET_BackupDir!"
 
     if not exist "!BET_BackupDir!" (
@@ -574,7 +574,7 @@ if exist "%BET_TargetFile%" (
     for /f "delims=" %%T in ('powershell -NoProfile -Command "Get-Date -Format yyyy.MM.dd.HHmm"') do set "BET_Timestamp=%%T"
     if not defined BET_Timestamp set "BET_Timestamp=%DATE%_%TIME%"
 
-    set "BET_BackupPath=!BET_BackupDir!\!BET_Timestamp!_%BET_DestinationFileName%"
+    set "BET_BackupPath=!BET_BackupDir!\!BET_Timestamp! - %BET_DestinationFileName%"
 
     if /I "%BET_DesignMode%"=="true" (
         echo [INFO] Preparing backup.
