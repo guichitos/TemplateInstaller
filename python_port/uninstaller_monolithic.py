@@ -367,6 +367,9 @@ except Exception:
 
     def resolve_base_directory(base_dir: Path) -> Path:
         candidates = [base_dir, base_dir / "payload", base_dir / "templates", base_dir / "extracted"]
+        parent = base_dir.parent
+        if parent != base_dir:
+            candidates.extend([parent, parent / "payload", parent / "templates", parent / "extracted"])
         for candidate in candidates:
             if any(candidate.glob("*.dot*")) or any(candidate.glob("*.pot*")) or any(candidate.glob("*.xlt*")):
                 return normalize_path(candidate)
@@ -831,13 +834,19 @@ except Exception:
                 ensure_directory(target)
                 if not target.exists():
                     _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] La carpeta %s no existe tras crearla: %s", label, target)
+                if design_mode:
+                    print(f"[OPEN] Intentando abrir carpeta {label}: {target}")
                 _design_log(DESIGN_LOG_OPENING, design_mode, logging.INFO, "[ACTION] Abriendo carpeta %s: %s", label, target)
                 try:
+                    if design_mode:
+                        print(f"[OPEN] Comando abrir (startfile): {target}")
                     os.startfile(str(target))  # type: ignore[arg-type]
                     _design_log(DESIGN_LOG_OPENING, design_mode, logging.INFO, "[OK] startfile lanzado para %s", label)
                 except OSError as exc:
                     _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] startfile falló para %s (%s); usando explorer.", label, exc)
                     try:
+                        if design_mode:
+                            print(f"[OPEN] Comando abrir (explorer): explorer {target}")
                         subprocess.run(["explorer", str(target)], check=False)
                     except OSError as exc2:
                         _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] explorer también falló para %s (%s)", label, exc2)
@@ -847,10 +856,10 @@ except Exception:
     def backup_existing(target_file: Path, design_mode: bool) -> None:
         if not target_file.exists():
             return
-        backup_dir = target_file.parent / "Backup"
+        backup_dir = target_file.parent / "Backups"
         ensure_directory(backup_dir)
         timestamp = datetime.now().strftime("%Y.%m.%d.%H%M")
-        backup_path = backup_dir / f"{timestamp}_{target_file.name}"
+        backup_path = backup_dir / f"{timestamp} - {target_file.name}"
         try:
             shutil.copy2(target_file, backup_path)
             _design_log(DESIGN_LOG_BACKUP, design_mode, logging.INFO, "[BACKUP] Copia creada en %s", backup_path)
@@ -930,15 +939,18 @@ except Exception:
                 candidate = normalize_path(dest / file.name)
                 try:
                     if candidate.exists():
+                        if design_mode:
+                            print(f"[DELETE] Eliminando archivo: {candidate}")
                         candidate.unlink()
                         _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", candidate)
                 except OSError as exc:
                     _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", candidate, exc)
 
-    def determine_uninstall_open_flags(base_dir: Path, destinations: dict[str, Path]) -> InstallFlags:
+    def determine_uninstall_open_flags(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> InstallFlags:
         flags = InstallFlags()
         roaming = destinations["ROAMING"]
         excel = destinations["EXCEL"]
+        theme = destinations.get("THEMES")
         custom_word = destinations["WORD_CUSTOM"]
         custom_ppt = destinations["POWERPOINT_CUSTOM"]
         custom_excel = destinations["EXCEL_CUSTOM"]
@@ -955,6 +967,11 @@ except Exception:
             if candidate.exists():
                 flags.open_excel_startup_folder = True
                 break
+        if theme is not None and design_mode:
+            print(f"[ANALYZE] Revisando carpeta de temas: {theme}")
+        if theme is not None and theme.exists():
+            flags.open_theme_folder = True
+            flags.open_document_theme = True
         for file in iter_template_files(base_dir):
             if file.name in BASE_TEMPLATE_NAMES:
                 continue
@@ -972,6 +989,11 @@ except Exception:
                     flags.open_custom_ppt_folder = True
                 if dest in {custom_excel, custom_additional}:
                     flags.open_custom_excel_folder = True
+            if file.suffix.lower() == ".thmx":
+                if design_mode:
+                    print(f"[ANALYZE] Detectado tema en payload: {file}")
+                flags.open_theme_folder = True
+                flags.open_document_theme = True
         return flags
 
     def clear_mru_entries_for_payload(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
@@ -1114,15 +1136,29 @@ def main(argv: list[str] | None = None) -> int:
             design_mode,
         )
 
+    _print_intro(base_dir, design_mode)
+
     destinations = default_destinations()
-    open_flags = determine_uninstall_open_flags(base_dir, destinations)
+    open_flags = determine_uninstall_open_flags(base_dir, destinations, design_mode)
     remove_normal_templates(design_mode)
     remove_installed_templates(destinations, design_mode, base_dir)
     delete_custom_copies(base_dir, destinations, design_mode)
     clear_mru_entries_for_payload(base_dir, destinations, design_mode)
     remove_normal_templates(design_mode)
     open_template_folders(resolve_template_paths(), design_mode, open_flags)
+    if design_mode and DESIGN_LOG_UNINSTALLER:
+        logging.getLogger(__name__).info("[FINAL] Desinstalación completada.")
+    else:
+        print("Ready")
     return 0
+
+
+def _print_intro(base_dir: Path, design_mode: bool) -> None:
+    if design_mode and DESIGN_LOG_UNINSTALLER:
+        logging.getLogger(__name__).info("[DEBUG] Modo diseño habilitado=true")
+        logging.getLogger(__name__).info("[INFO] Carpeta base: %s", base_dir)
+    else:
+        print("Removing custom templates and restoring the Microsoft Office default settings...")
 
 
 def _resolve_design_mode() -> bool:
