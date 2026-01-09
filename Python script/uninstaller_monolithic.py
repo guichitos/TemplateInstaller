@@ -1114,6 +1114,8 @@ def main(argv: list[str] | None = None) -> int:
             design_mode,
         )
 
+    _print_intro(base_dir, design_mode)
+
     destinations = default_destinations()
     open_flags = determine_uninstall_open_flags(base_dir, destinations)
     remove_normal_templates(design_mode)
@@ -1123,6 +1125,14 @@ def main(argv: list[str] | None = None) -> int:
     remove_normal_templates(design_mode)
     open_template_folders(resolve_template_paths(), design_mode, open_flags)
     return 0
+
+
+def _print_intro(base_dir: Path, design_mode: bool) -> None:
+    if design_mode and DESIGN_LOG_UNINSTALLER:
+        logging.getLogger(__name__).info("[DEBUG] Modo diseño habilitado=true")
+        logging.getLogger(__name__).info("[INFO] Carpeta base: %s", base_dir)
+    else:
+        print("Removing custom templates and restoring the Microsoft Office default settings...")
 
 
 def _resolve_design_mode() -> bool:
