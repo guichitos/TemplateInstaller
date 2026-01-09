@@ -946,7 +946,7 @@ except Exception:
                 except OSError as exc:
                     _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.WARNING, "[WARN] No se pudo eliminar %s (%s)", candidate, exc)
 
-    def determine_uninstall_open_flags(base_dir: Path, destinations: dict[str, Path]) -> InstallFlags:
+    def determine_uninstall_open_flags(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> InstallFlags:
         flags = InstallFlags()
         roaming = destinations["ROAMING"]
         excel = destinations["EXCEL"]
@@ -1139,7 +1139,7 @@ def main(argv: list[str] | None = None) -> int:
     _print_intro(base_dir, design_mode)
 
     destinations = default_destinations()
-    open_flags = determine_uninstall_open_flags(base_dir, destinations)
+    open_flags = determine_uninstall_open_flags(base_dir, destinations, design_mode)
     remove_normal_templates(design_mode)
     remove_installed_templates(destinations, design_mode, base_dir)
     delete_custom_copies(base_dir, destinations, design_mode)
