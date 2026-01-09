@@ -258,6 +258,9 @@ def iter_template_files(base_dir: Path) -> Iterator[Path]:
 def resolve_base_directory(base_dir: Path) -> Path:
     """Busca la carpeta que contiene las plantillas dentro de la ruta actual."""
     candidates = [base_dir, base_dir / "payload", base_dir / "templates", base_dir / "extracted"]
+    parent = base_dir.parent
+    if parent != base_dir:
+        candidates.extend([parent, parent / "payload", parent / "templates", parent / "extracted"])
     for candidate in candidates:
         if any(candidate.glob("*.dot*")) or any(candidate.glob("*.pot*")) or any(candidate.glob("*.xlt*")):
             return normalize_path(candidate)
@@ -615,10 +618,10 @@ def clear_mru_entries_for_payload(base_dir: Path, destinations: dict[str, Path],
 def backup_existing(target_file: Path, design_mode: bool) -> None:
     if not target_file.exists():
         return
-    backup_dir = target_file.parent / "Backup"
+    backup_dir = target_file.parent / "Backups"
     ensure_directory(backup_dir)
     timestamp = datetime.now().strftime("%Y.%m.%d.%H%M")
-    backup_path = backup_dir / f"{timestamp}_{target_file.name}"
+    backup_path = backup_dir / f"{timestamp} - {target_file.name}"
     try:
         shutil.copy2(target_file, backup_path)
         _design_log(DESIGN_LOG_BACKUP, design_mode, logging.INFO, "[BACKUP] Copia creada en %s", backup_path)
