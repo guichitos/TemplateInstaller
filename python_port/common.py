@@ -649,7 +649,8 @@ def delete_custom_copies(base_dir: Path, destinations: dict[str, Path], design_m
             candidate = normalize_path(dest / file.name)
             try:
                 if candidate.exists():
-                    print(f"[DELETE] Eliminando archivo: {candidate}")
+                    if design_mode:
+                        print(f"[DELETE] Eliminando archivo: {candidate}")
                     candidate.unlink()
                     _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", candidate)
             except OSError as exc:
@@ -677,7 +678,7 @@ def determine_uninstall_open_flags(base_dir: Path, destinations: dict[str, Path]
         if candidate.exists():
             flags.open_excel_startup_folder = True
             break
-    if theme is not None:
+    if theme is not None and design_mode:
         print(f"[ANALYZE] Revisando carpeta de temas: {theme}")
     if theme is not None and theme.exists():
         flags.open_theme_folder = True
@@ -700,7 +701,8 @@ def determine_uninstall_open_flags(base_dir: Path, destinations: dict[str, Path]
             if dest in {custom_excel, custom_additional}:
                 flags.open_custom_excel_folder = True
         if file.suffix.lower() == ".thmx":
-            print(f"[ANALYZE] Detectado tema en payload: {file}")
+            if design_mode:
+                print(f"[ANALYZE] Detectado tema en payload: {file}")
             flags.open_theme_folder = True
             flags.open_document_theme = True
     return flags
@@ -770,16 +772,19 @@ def open_template_folders(paths: dict[str, Path], design_mode: bool, flags: Inst
             ensure_directory(target)
             if not target.exists():
                 _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] La carpeta %s no existe tras crearla: %s", label, target)
-            print(f"[OPEN] Intentando abrir carpeta {label}: {target}")
+            if design_mode:
+                print(f"[OPEN] Intentando abrir carpeta {label}: {target}")
             _design_log(DESIGN_LOG_OPENING, design_mode, logging.INFO, "[ACTION] Abriendo carpeta %s: %s", label, target)
             try:
-                print(f"[OPEN] Comando abrir (startfile): {target}")
+                if design_mode:
+                    print(f"[OPEN] Comando abrir (startfile): {target}")
                 os.startfile(str(target))  # type: ignore[arg-type]
                 _design_log(DESIGN_LOG_OPENING, design_mode, logging.INFO, "[OK] startfile lanzado para %s", label)
             except OSError as exc:
                 _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] startfile falló para %s (%s); usando explorer.", label, exc)
                 try:
-                    print(f"[OPEN] Comando abrir (explorer): explorer {target}")
+                    if design_mode:
+                        print(f"[OPEN] Comando abrir (explorer): explorer {target}")
                     subprocess.run(["explorer", str(target)], check=False)
                 except OSError as exc2:
                     _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] explorer también falló para %s (%s)", label, exc2)
