@@ -942,6 +942,7 @@ except Exception:
         flags = InstallFlags()
         roaming = destinations["ROAMING"]
         excel = destinations["EXCEL"]
+        theme = destinations.get("THEMES")
         custom_word = destinations["WORD_CUSTOM"]
         custom_ppt = destinations["POWERPOINT_CUSTOM"]
         custom_excel = destinations["EXCEL_CUSTOM"]
@@ -958,6 +959,8 @@ except Exception:
             if candidate.exists():
                 flags.open_excel_startup_folder = True
                 break
+        if theme is not None and theme.exists():
+            flags.open_document_theme = True
         for file in iter_template_files(base_dir):
             if file.name in BASE_TEMPLATE_NAMES:
                 continue
@@ -975,6 +978,8 @@ except Exception:
                     flags.open_custom_ppt_folder = True
                 if dest in {custom_excel, custom_additional}:
                     flags.open_custom_excel_folder = True
+            if file.suffix.lower() == ".thmx":
+                flags.open_document_theme = True
         return flags
 
     def clear_mru_entries_for_payload(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
