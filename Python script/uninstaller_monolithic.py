@@ -367,6 +367,9 @@ except Exception:
 
     def resolve_base_directory(base_dir: Path) -> Path:
         candidates = [base_dir, base_dir / "payload", base_dir / "templates", base_dir / "extracted"]
+        parent = base_dir.parent
+        if parent != base_dir:
+            candidates.extend([parent, parent / "payload", parent / "templates", parent / "extracted"])
         for candidate in candidates:
             if any(candidate.glob("*.dot*")) or any(candidate.glob("*.pot*")) or any(candidate.glob("*.xlt*")):
                 return normalize_path(candidate)
@@ -847,10 +850,10 @@ except Exception:
     def backup_existing(target_file: Path, design_mode: bool) -> None:
         if not target_file.exists():
             return
-        backup_dir = target_file.parent / "Backup"
+        backup_dir = target_file.parent / "Backups"
         ensure_directory(backup_dir)
         timestamp = datetime.now().strftime("%Y.%m.%d.%H%M")
-        backup_path = backup_dir / f"{timestamp}_{target_file.name}"
+        backup_path = backup_dir / f"{timestamp} - {target_file.name}"
         try:
             shutil.copy2(target_file, backup_path)
             _design_log(DESIGN_LOG_BACKUP, design_mode, logging.INFO, "[BACKUP] Copia creada en %s", backup_path)
@@ -939,6 +942,7 @@ except Exception:
         flags = InstallFlags()
         roaming = destinations["ROAMING"]
         excel = destinations["EXCEL"]
+        theme = destinations.get("THEMES")
         custom_word = destinations["WORD_CUSTOM"]
         custom_ppt = destinations["POWERPOINT_CUSTOM"]
         custom_excel = destinations["EXCEL_CUSTOM"]
@@ -955,6 +959,8 @@ except Exception:
             if candidate.exists():
                 flags.open_excel_startup_folder = True
                 break
+        if theme is not None and theme.exists():
+            flags.open_document_theme = True
         for file in iter_template_files(base_dir):
             if file.name in BASE_TEMPLATE_NAMES:
                 continue
@@ -972,6 +978,8 @@ except Exception:
                     flags.open_custom_ppt_folder = True
                 if dest in {custom_excel, custom_additional}:
                     flags.open_custom_excel_folder = True
+            if file.suffix.lower() == ".thmx":
+                flags.open_document_theme = True
         return flags
 
     def clear_mru_entries_for_payload(base_dir: Path, destinations: dict[str, Path], design_mode: bool) -> None:
@@ -1114,6 +1122,8 @@ def main(argv: list[str] | None = None) -> int:
             design_mode,
         )
 
+    _print_intro(base_dir, design_mode)
+
     destinations = default_destinations()
     open_flags = determine_uninstall_open_flags(base_dir, destinations)
     remove_normal_templates(design_mode)
@@ -1122,7 +1132,19 @@ def main(argv: list[str] | None = None) -> int:
     clear_mru_entries_for_payload(base_dir, destinations, design_mode)
     remove_normal_templates(design_mode)
     open_template_folders(resolve_template_paths(), design_mode, open_flags)
+    if design_mode and DESIGN_LOG_UNINSTALLER:
+        logging.getLogger(__name__).info("[FINAL] Desinstalación completada.")
+    else:
+        print("Ready")
     return 0
+
+
+def _print_intro(base_dir: Path, design_mode: bool) -> None:
+    if design_mode and DESIGN_LOG_UNINSTALLER:
+        logging.getLogger(__name__).info("[DEBUG] Modo diseño habilitado=true")
+        logging.getLogger(__name__).info("[INFO] Carpeta base: %s", base_dir)
+    else:
+        print("Removing custom templates and restoring the Microsoft Office default settings...")
 
 
 def _resolve_design_mode() -> bool:
