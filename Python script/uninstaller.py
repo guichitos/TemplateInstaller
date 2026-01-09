@@ -63,6 +63,8 @@ def main(argv: list[str] | None = None) -> int:
 
     if design_mode and common.DESIGN_LOG_UNINSTALLER:
         logging.getLogger(__name__).info("[FINAL] Desinstalación completada.")
+    else:
+        print("Ready")
     return 0
 
 

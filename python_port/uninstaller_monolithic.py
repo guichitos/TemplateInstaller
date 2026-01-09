@@ -1124,6 +1124,10 @@ def main(argv: list[str] | None = None) -> int:
     clear_mru_entries_for_payload(base_dir, destinations, design_mode)
     remove_normal_templates(design_mode)
     open_template_folders(resolve_template_paths(), design_mode, open_flags)
+    if design_mode and DESIGN_LOG_UNINSTALLER:
+        logging.getLogger(__name__).info("[FINAL] Desinstalación completada.")
+    else:
+        print("Ready")
     return 0
 
 
