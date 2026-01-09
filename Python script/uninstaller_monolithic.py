@@ -367,6 +367,9 @@ except Exception:
 
     def resolve_base_directory(base_dir: Path) -> Path:
         candidates = [base_dir, base_dir / "payload", base_dir / "templates", base_dir / "extracted"]
+        parent = base_dir.parent
+        if parent != base_dir:
+            candidates.extend([parent, parent / "payload", parent / "templates", parent / "extracted"])
         for candidate in candidates:
             if any(candidate.glob("*.dot*")) or any(candidate.glob("*.pot*")) or any(candidate.glob("*.xlt*")):
                 return normalize_path(candidate)
