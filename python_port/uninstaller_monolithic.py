@@ -834,13 +834,16 @@ except Exception:
                 ensure_directory(target)
                 if not target.exists():
                     _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] La carpeta %s no existe tras crearla: %s", label, target)
+                print(f"[TRACE] Intentando abrir carpeta {label}: {target}")
                 _design_log(DESIGN_LOG_OPENING, design_mode, logging.INFO, "[ACTION] Abriendo carpeta %s: %s", label, target)
                 try:
+                    print(f"[TRACE] Comando abrir (startfile): {target}")
                     os.startfile(str(target))  # type: ignore[arg-type]
                     _design_log(DESIGN_LOG_OPENING, design_mode, logging.INFO, "[OK] startfile lanzado para %s", label)
                 except OSError as exc:
                     _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] startfile falló para %s (%s); usando explorer.", label, exc)
                     try:
+                        print(f"[TRACE] Comando abrir (explorer): explorer {target}")
                         subprocess.run(["explorer", str(target)], check=False)
                     except OSError as exc2:
                         _design_log(DESIGN_LOG_OPENING, design_mode, logging.WARNING, "[WARN] explorer también falló para %s (%s)", label, exc2)
@@ -933,6 +936,7 @@ except Exception:
                 candidate = normalize_path(dest / file.name)
                 try:
                     if candidate.exists():
+                        print(f"[TRACE] Eliminando archivo: {candidate}")
                         candidate.unlink()
                         _design_log(DESIGN_LOG_UNINSTALLER, design_mode, logging.INFO, "[INFO] Eliminado %s", candidate)
                 except OSError as exc:
@@ -959,6 +963,8 @@ except Exception:
             if candidate.exists():
                 flags.open_excel_startup_folder = True
                 break
+        if theme is not None:
+            print(f"[TRACE] Analizando carpeta de temas: {theme}")
         if theme is not None and theme.exists():
             flags.open_document_theme = True
         for file in iter_template_files(base_dir):
@@ -979,6 +985,7 @@ except Exception:
                 if dest in {custom_excel, custom_additional}:
                     flags.open_custom_excel_folder = True
             if file.suffix.lower() == ".thmx":
+                print(f"[TRACE] Detectado tema en payload: {file}")
                 flags.open_document_theme = True
         return flags
 
