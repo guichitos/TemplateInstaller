@@ -12,7 +12,7 @@ from typing import Iterable
 # - Establece en True para forzar modo diseño siempre.
 # - Establece en False para desactivarlo siempre.
 # - Deja en None para usar la lógica normal basada en entorno.
-MANUAL_IS_DESIGN_MODE: bool | None = True
+MANUAL_IS_DESIGN_MODE: bool | None = False
 
 try:
     from . import common
